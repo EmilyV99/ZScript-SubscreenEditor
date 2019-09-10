@@ -341,23 +341,21 @@ namespace Venrob::Subscreen
 	}
 	bool replace_active_module(untyped module_arr, int indx)
 	{
-		traceactivemods();
 		remove_active_module(indx);
-		traceactivemods();
 		add_active_module(module_arr, indx);
-		traceactivemods();
 	}
-	
-	void traceactivemods(){printf("Active Modules: %d\n", g_arr[NUM_ACTIVE_MODULES]);traceArr(activeModules, 0, g_arr[NUM_ACTIVE_MODULES]+1);}
 	
 	/*
 	 * Add a module to the current subscreen.
 	 * 'module_arr' should be of the form: {MODULE_TYPE_CONSTANT, (data/params)...}
 	 * The 'MODULE_TYPE_' constants represent the valid module types, and each have comments for their data parameters.
 	 */
-	bool add_passive_module(untyped module_arr)
+	bool add_passive_module(untyped module_arr, int indx)
 	{
 		unless(validate_passive_module(module_arr)) return false;
+		TraceS("Adding passive module, at: ");
+		Trace(indx);
+		indx = VBound(indx, g_arr[NUM_PASSIVE_MODULES], 1);
 		switch(module_arr[M_TYPE])
 		{
 			case MODULE_TYPE_SETTINGS:
@@ -371,15 +369,71 @@ namespace Venrob::Subscreen
 			
 			default:
 			{
-				int index = passiveModules[g_arr[NUM_PASSIVE_MODULES]];
-				memcpy(passiveData, index, module_arr, 0, module_arr[M_SIZE]);
+				if(indx < g_arr[NUM_PASSIVE_MODULES])
+				{
+					int sz_shift = passiveModules[g_arr[NUM_PASSIVE_MODULES]] - passiveModules[indx];
+					printf("Transposing: sz_shift of %d, sz of %d\n", sz_shift, module_arr[M_SIZE]);
+					untyped buf[SUBSCR_STORAGE_SIZE];
+					memcpy(buf, passiveData, SUBSCR_STORAGE_SIZE);
+					memcpy(passiveData, passiveModules[indx]+module_arr[M_SIZE], buf, passiveModules[indx], sz_shift);
+					memcpy(passiveData, passiveModules[indx], module_arr, 0, module_arr[M_SIZE]);
+					g_arr[SZ_PASSIVE_DATA] += module_arr[M_SIZE];
+					for(int q = g_arr[NUM_PASSIVE_MODULES]; q > indx; --q)
+					{
+						passiveModules[q] = passiveModules[q-1] + module_arr[M_SIZE];
+					}
+				}
+				else
+				{
+					memcpy(passiveData, passiveModules[indx], module_arr, 0, module_arr[M_SIZE]);
+					g_arr[SZ_PASSIVE_DATA] += module_arr[M_SIZE];
+					passiveModules[indx+1] = g_arr[SZ_PASSIVE_DATA];
+				}
+				++g_arr[NUM_PASSIVE_MODULES];
+				passiveModules[g_arr[NUM_PASSIVE_MODULES]] = g_arr[SZ_PASSIVE_DATA];
+				for(int q = 0; q < module_arr[0]; ++q)
+				{
+					printf("%d: %d\n", q, module_arr[q]);
+				}
 				break;
 			}
 		}
-		++g_arr[NUM_PASSIVE_MODULES];
-		g_arr[SZ_PASSIVE_DATA] += module_arr[M_SIZE];
-		passiveModules[g_arr[NUM_PASSIVE_MODULES]] = g_arr[SZ_PASSIVE_DATA];
 		return true;
+	}
+	bool add_passive_module(untyped module_arr)
+	{
+		return add_passive_module(module_arr, g_arr[NUM_PASSIVE_MODULES]);
+	}
+	void remove_passive_module(int indx)
+	{
+		if(indx < 1) return;
+		else if(indx > g_arr[NUM_PASSIVE_MODULES]) indx = g_arr[NUM_PASSIVE_MODULES];
+		int sz = passiveData[passiveModules[indx]];
+		printf("Removal found sz %d\n", sz);
+		if(indx < g_arr[NUM_PASSIVE_MODULES])
+		{
+			int sz_shift = passiveModules[g_arr[NUM_PASSIVE_MODULES]] - (passiveModules[indx]+sz);
+			memmove(passiveData, passiveModules[indx], passiveData, passiveModules[indx]+sz, sz_shift);
+			memset(passiveData, passiveModules[g_arr[NUM_PASSIVE_MODULES]]-sz, 0, g_arr[SZ_PASSIVE_DATA]-(passiveModules[g_arr[NUM_PASSIVE_MODULES]]-sz));
+			g_arr[SZ_PASSIVE_DATA] -= sz;
+			for(int q = indx; q <= g_arr[NUM_PASSIVE_MODULES]; ++q)
+			{
+				passiveModules[q] = passiveModules[q+1] - sz;	
+			}
+		}
+		else if(indx < 1) return;
+		else
+		{
+			memset(passiveData, passiveModules[indx], 0, sz);
+			g_arr[SZ_PASSIVE_DATA] -= sz;
+			passiveModules[g_arr[NUM_PASSIVE_MODULES]] = 0;
+		}
+		--g_arr[NUM_PASSIVE_MODULES];
+	}
+	bool replace_passive_module(untyped module_arr, int indx)
+	{
+		remove_passive_module(indx);
+		add_passive_module(module_arr, indx);
 	}
 	
 	/*
@@ -1049,19 +1103,18 @@ namespace Venrob::Subscreen
 	
 	bitmap getSubscreenBitmap(bool active)
 	{
-		bool oldargs = Game->FFRules[qr_OLDCREATEBITMAP_ARGS];
 		if(active)
 		{
 			DEFINE H = 168+56, W = 256;
-			unless((<bitmap>g_arr[ACTIVE_BITMAP])->isAllocated()) g_arr[ACTIVE_BITMAP] = Game->CreateBitmap(oldargs ? H : W, oldargs ? W : H);
-			else unless((<bitmap>g_arr[ACTIVE_BITMAP])->isValid()) (<bitmap>g_arr[ACTIVE_BITMAP])->Create(0, oldargs ? H : W, oldargs ? W : H);
+			unless((<bitmap>g_arr[ACTIVE_BITMAP])->isAllocated()) g_arr[ACTIVE_BITMAP] = Game->AllocateBitmap();
+			unless((<bitmap>g_arr[ACTIVE_BITMAP])->isValid()) generate((<bitmap>g_arr[ACTIVE_BITMAP]), W, H);
 			return (<bitmap>g_arr[ACTIVE_BITMAP]);
 		}
 		else
 		{
 			DEFINE H = 56, W = 256;
-			unless((<bitmap>g_arr[PASSIVE_BITMAP])->isAllocated()) g_arr[PASSIVE_BITMAP] = Game->CreateBitmap(oldargs ? H : W, oldargs ? W : H);
-			else unless((<bitmap>g_arr[PASSIVE_BITMAP])->isValid()) (<bitmap>g_arr[PASSIVE_BITMAP])->Create(0, oldargs ? H : W, oldargs ? W : H);
+			unless((<bitmap>g_arr[PASSIVE_BITMAP])->isAllocated()) g_arr[PASSIVE_BITMAP] = Game->AllocateBitmap();
+			unless((<bitmap>g_arr[PASSIVE_BITMAP])->isValid()) generate((<bitmap>g_arr[PASSIVE_BITMAP]), W, H);
 			return (<bitmap>g_arr[PASSIVE_BITMAP]);
 		}
 	}
