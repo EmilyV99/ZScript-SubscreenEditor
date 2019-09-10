@@ -193,7 +193,7 @@ namespace Venrob::SubscreenEditor
 			int _strchr(char32 str, int pos, char32 chr)
 			{	//Find the first NON-ESCAPED instance of a character
 				int ret = strchr(str, pos, chr);
-				until(ret<0 || str[ret-1]!='\\')
+				until(ret<0 || (ret==0 || str[ret-1]!='\\'))
 					ret = strchr(str, ret+1, chr);
 				return ret;
 			}
@@ -222,7 +222,6 @@ namespace Venrob::SubscreenEditor
 			}
 			bool shortcut_text(bitmap bit, int x, int y, char32 str, int color) //Character following a % will be underlined
 			{
-				printf("str: %s\n", str);
 				int pos = _strchr(str, 0, '%');
 				if(pos<0)
 				{
@@ -246,41 +245,47 @@ namespace Venrob::SubscreenEditor
 					}
 				}
 				remnchr(buf, pos, remlen);
-				printf("buf: %s\n", buf);
 				if(key)
 				{
-					while(true)
+					pos = _strchr(buf, 0, '%');
+					unless(pos<0)
 					{
-						pos = _strchr(buf, 0, '%');
-						if(pos>-1)
+						remnchr(buf, pos, 1);
+						int pos2 = _strchr(buf, pos, '%');
+						unless(pos2<0)
 						{
-							remnchr(buf, pos, 1);
+							printf("\"%s\"[%d]\n", buf, pos2);
+							remnchr(buf, pos2, 1);
 							char32 t_buf[256];
 							strncpy(t_buf, buf, pos);
-							printf("t_buf: %s\n", t_buf);
-							int strwid = Text->StringWidth(t_buf, DIA_FONT), strhei = Text->FontHeight(DIA_FONT);
+							printf(t_buf);
 							bit->DrawString(0, x, y, DIA_FONT, color, -1, TF_NORMAL, t_buf, OP_OPAQUE);
-							c = buf[pos];
-							line(bit, x+strwid-1, y+strhei, x+strwid-1+Text->CharWidth(c, DIA_FONT), y+strhei, color);
-							remnchr(buf, 0, pos);
-							x+=strwid;
-						}
-						else
-						{
-							bit->DrawString(0, x, y, DIA_FONT, color, -1, TF_NORMAL, buf, OP_OPAQUE);
+							int wid1 = Text->StringWidth(t_buf, DIA_FONT);
+							remchr(t_buf, 0);
+							strncpy(t_buf, 0, buf, pos, pos2-pos);
+							printf(t_buf);
+							bit->DrawString(0, x+wid1, y, DIA_FONT, color, -1, TF_NORMAL, t_buf, OP_OPAQUE);
+							int wid2 = Text->StringWidth(t_buf, DIA_FONT);
+							remchr(t_buf, 0);
+							strncpy(t_buf, 0, buf, pos2, strlen(buf)-pos2);
+							printf(t_buf);
+							bit->DrawString(0, x+wid1+wid2, y, DIA_FONT, color, -1, TF_NORMAL, t_buf, OP_OPAQUE);
+							int strhei = Text->FontHeight(DIA_FONT);
+							line(bit, x+wid1, y+strhei, x+wid1+wid2-2, y+strhei, color);
 							return keyproc(key);
 						}
 					}
+					bit->DrawString(0, x, y, DIA_FONT, color, -1, TF_NORMAL, buf, OP_OPAQUE);
+					return keyproc(key);
 				}
 				else
 				{
 					char32 t_buf[256];
 					strncpy(t_buf, buf, pos);
-					printf("t_buf: %s\n", t_buf);
 					int strwid = Text->StringWidth(t_buf, DIA_FONT), strhei = Text->FontHeight(DIA_FONT);
 					bit->DrawString(0, x, y, DIA_FONT, color, -1, TF_NORMAL, buf, OP_OPAQUE);
 					c = buf[pos];
-					line(bit, x+strwid-1, y+strhei, x+strwid-1+Text->CharWidth(c, DIA_FONT), y+strhei, color);
+					line(bit, x+strwid, y+strhei, x+strwid+Text->CharWidth(c, DIA_FONT)-2, y+strhei, color);
 					return ((isAlphabetic(c) && keyproc(LowerToUpper(c)-'A'+KEY_A))||(isNumber(c) && keyproc(c-'0'+KEY_0)));
 				}
 			}
@@ -403,15 +408,22 @@ namespace Venrob::SubscreenEditor
 				}
 				else was_held = false;
 				
-				if(indented) inv_frame_rect(bit, x, y, x2, y2, isDefault ? 2 : 1);
-				else frame_rect(bit, x, y, x2, y2, isDefault ? 2 : 1);
+				bitmap tbit = rent_bitmap();
+				generate(tbit, dlgdata[DLG_DATA_WID], dlgdata[DLG_DATA_HEI]);
+				tbit->Clear(0);
 				
-				int txtwid = shortcuttext_width(btnText, DIA_FONT);
-				if(shortcut_text(bit, x+((wid-txtwid)/2), y+Ceiling((hei-Text->FontHeight(DIA_FONT))/2), btnText, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]) || (isDefault && DefaultButton()))
+				if((shortcut_text(tbit, x+((wid-shortcuttext_width(btnText, DIA_FONT))/2), y+Ceiling((hei-Text->FontHeight(DIA_FONT))/2), btnText, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]) || (isDefault && DefaultButton())) && !disabled)
 				{
 					KillDLGButtons();
 					ret = PROC_CONFIRM;
+					indented = true;
 				}
+				
+				if(indented) inv_frame_rect(bit, x, y, x2, y2, isDefault ? 2 : 1);
+				else frame_rect(bit, x, y, x2, y2, isDefault ? 2 : 1);
+				
+				fullblit(0, bit, tbit);
+				free_bitmap(tbit);
 				
 				proc_data[proc_indx] = was_held;
 				return ret;
@@ -497,7 +509,14 @@ namespace Venrob::SubscreenEditor
 		//start Key procs
 		bool keyproc(int key)
 		{
+			bool ret = Input->Key[key];
+			printf("KeyProc'ing key %d (%s?): %s\n", key, {key-KEY_A+'A', 0}, ret?"true":"false");
+			return ret;
+		}
+		bool keyprocp(int key)
+		{
 			return Input->ReadKey[key];
+			
 		}
 		bool DefaultButton()
 		{
@@ -533,6 +552,10 @@ namespace Venrob::SubscreenEditor
 			KillClicks();
 			KillDLGButtons();
 			KillButtons();
+		} //end
+		void gen_final() //start
+		{
+			null_screen();
 		} //end
 		//Full DLGs
 		//start Edit Object
@@ -591,7 +614,7 @@ namespace Venrob::SubscreenEditor
 					running = false;
 					do_save_changes = true;
 				}
-				if(PROC_CONFIRM==button(bit, FRAME_X+(2*(BUTTON_WIDTH+3)), HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%%77%%D%e%lete", data, proc_data, 3))
+				if(PROC_CONFIRM==button(bit, FRAME_X+(2*(BUTTON_WIDTH+3)), HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%%77%%Del%ete", data, proc_data, 3))
 				{
 					if(yesno_dlg("Are you sure you want to delete this?"))
 					{
@@ -599,6 +622,7 @@ namespace Venrob::SubscreenEditor
 						SubEditorData[SED_QUEUED_DELETION] = mod_indx;
 						SubEditorData[SED_HIGHLIGHTED] = 0; //This had to be highlighted to open this menu!
 						free_bitmap(bit);
+						gen_final();
 						return;
 					}
 				}
@@ -650,6 +674,7 @@ namespace Venrob::SubscreenEditor
 			}
 			
 			free_bitmap(bit);
+			gen_final();
 		} //end editObj
 		//start Main GUI
 		enum GuiState
@@ -658,7 +683,7 @@ namespace Venrob::SubscreenEditor
 			GUISTATE_MAX
 		};
 		DEFINE MAIN_GUI_WIDTH = 256;
-		DEFINE MAIN_GUI_HEIGHT = 32;
+		DEFINE MAIN_GUI_HEIGHT = 40;
 		bool isHoveringGUI()
 		{
 			int yoffs = -56;
@@ -711,16 +736,16 @@ namespace Venrob::SubscreenEditor
 				//Func
 				//start BUTTONS
 				DEFINE FIRSTROW_HEIGHT = Text->FontHeight(DIA_FONT)+3;
-				DEFINE BUTTON_HEIGHT = Text->FontHeight(DIA_FONT)+3;
-				DEFINE BUTTON_WIDTH = 58;//38;
-				DEFINE BUTTON_HSPACE = 5;//4;
-				DEFINE BUTTON_VSPACE = 3;
+				DEFINE BUTTON_HEIGHT = Text->FontHeight(DIA_FONT)+8;
+				DEFINE BUTTON_WIDTH = 62;//58;
+				DEFINE BUTTON_HSPACE = 0;//5;
+				DEFINE BUTTON_VSPACE = 0;
 				DEFINE LEFT_MARGIN = 4;
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "New Obj", data, main_proc_data, 0))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%New Obj", data, main_proc_data, 0))
 				{
 					open_data_pane(DLG_NEWOBJ, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "Edit", data, main_proc_data, 1, SubEditorData[SED_HIGHLIGHTED] ? FLAG_DEFAULT : FLAG_DISABLE))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Edit", data, main_proc_data, 1, SubEditorData[SED_HIGHLIGHTED] ? FLAG_DEFAULT : FLAG_DISABLE))
 				{
 					open_data_pane(SubEditorData[SED_HIGHLIGHTED], active);
 				}
@@ -728,23 +753,23 @@ namespace Venrob::SubscreenEditor
 				{
 					
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "Settings", data, main_proc_data, 3))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Options", data, main_proc_data, 3))
 				{
-					open_data_pane(DLG_SETTINGS, PANE_T_SYSTEM);
+					open_data_pane(DLG_OPTIONS, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "Save", data, main_proc_data, 4))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Save", data, main_proc_data, 4))
 				{
 					open_data_pane(DLG_SAVEAS, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "Load", data, main_proc_data, 5))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Load", data, main_proc_data, 5))
 				{
 					open_data_pane(DLG_LOAD, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "System", data, main_proc_data, 6))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, main_proc_data, 6))
 				{
 					open_data_pane(DLG_SYSTEM, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "Themes", data, main_proc_data, 7))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Themes", data, main_proc_data, 7))
 				{
 					open_data_pane(DLG_THEMES, PANE_T_SYSTEM);
 				}
@@ -922,6 +947,7 @@ namespace Venrob::SubscreenEditor
 			}
 			
 			free_bitmap(bit);
+			gen_final();
 		}
 		//end
 		//Misc Mini-DLGs
@@ -991,6 +1017,7 @@ namespace Venrob::SubscreenEditor
 			}
 			
 			free_bitmap(bit);
+			gen_final();
 			if(do_save_changes)
 			{
 				return active_swatch;
@@ -1077,6 +1104,7 @@ namespace Venrob::SubscreenEditor
 			}
 			
 			free_bitmap(bit);
+			gen_final();
 			return ret;
 		}
 		//end 

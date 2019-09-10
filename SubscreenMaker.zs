@@ -144,7 +144,6 @@ namespace Venrob::SubscreenEditor
 							}
 							SubEditorData[SED_QUEUED_DELETION]=0;
 						}
-						DIALOG::runGUI(true);
 						KillButtons();
 						break;
 					case 2:
@@ -153,12 +152,12 @@ namespace Venrob::SubscreenEditor
 						ColorScreen(PAL[COL_NULL], true);
 						getSubscreenBitmap(false)->Blit(7, RT_SCREEN, 0, 0, 256, 56, 0, PASSIVE_EDITOR_TOP, 256, 56, 0, 0, 0, 0, 0, true);
 						clearPassive1frame();
-						DIALOG::runGUI(false);
 						KillButtons();
 						break;
 				}
 				handleEndFrame();
 				if(handle_data_pane()) continue;
+				if(editing) DIALOG::runGUI(editing==1);
 				if(Input->ReadKey[KEY_P])
 				{
 					++editing;
@@ -382,7 +381,7 @@ namespace Venrob::SubscreenEditor
 	
 	enum SystemPane
 	{
-		DLG_LOAD, DLG_SAVEAS, DLG_THEMES, DLG_SETTINGS, DLG_NEWOBJ, DLG_SYSTEM
+		DLG_LOAD, DLG_SAVEAS, DLG_THEMES, DLG_OPTIONS, DLG_NEWOBJ, DLG_SYSTEM
 	};
 	
 	void open_data_pane(int indx, bool active)
@@ -428,7 +427,7 @@ namespace Venrob::SubscreenEditor
 					//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNFINISHED DIALOGUES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 					case DLG_LOAD:
 					case DLG_SAVEAS:
-					case DLG_SETTINGS:
+					case DLG_OPTIONS:
 					case DLG_NEWOBJ:
 					case DLG_SYSTEM:
 						break;
@@ -482,7 +481,7 @@ namespace Venrob::SubscreenEditor
 			DrawCursor(SubEditorData[SED_CURSOR_VER], Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y]);
 		}
 		
-		if(Input->Key[KEY_O])
+		if(Input->Key[KEY_G])
 		{
 			if(PressShift())
 			{
