@@ -155,7 +155,6 @@ namespace Venrob::SubscreenEditor
 						KillButtons();
 						break;
 				}
-				handleEndFrame();
 				if(handle_data_pane()) continue;
 				if(editing) DIALOG::runGUI(editing==1);
 				if(Input->ReadKey[KEY_P])
@@ -164,8 +163,7 @@ namespace Venrob::SubscreenEditor
 					editing %= 3;
 					Input->DisableKey[KEY_ESC] = editing!=0;
 				}
-				Waitframe();
-				handleStartFrame();
+				subscr_Waitframe();
 			}
 		}
 	}
