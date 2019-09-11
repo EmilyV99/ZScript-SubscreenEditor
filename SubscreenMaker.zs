@@ -12,11 +12,9 @@ namespace Venrob::SubscreenEditor
 	using namespace Venrob::Subscreen::Internal;
 	using namespace Venrob::BitmapRental;
 	
-	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, 0, 0};
+	untyped SubEditorData[MAX_INT] = {0, 0, 0, false, false, false, false, false, false, 0, 0};
 	enum
 	{
-		SED_CURSORTILE, //if >0, tile to draw for cursor
-		SED_CURSOR_VER, //if SED_CURSORTILE <= 0, then which packaged cursor style to draw
 		SED_HIGHLIGHTED,
 		SED_DRAGGING,
 		SED_ACTIVE_PANE,
@@ -35,7 +33,17 @@ namespace Venrob::SubscreenEditor
 		SED_LASTMOUSE_Y,
 		SED_GUISTATE,
 		SED_GUI_BMP,
-		SED_QUEUED_DELETION
+		SED_QUEUED_DELETION,
+		SED_GLOBAL_TIMER
+	};
+	
+	untyped sys_settings[MAX_INT];
+	enum sysSetting
+	{
+		SSET_CURSORTILE, //if >0, tile to draw for cursor
+		SSET_CURSOR_VER, //if SED_CURSORTILE <= 0, then which packaged cursor style to draw
+		SSET_DELWARN,
+		SSET_MAX
 	};
 	
 	global script Init //start
@@ -43,9 +51,9 @@ namespace Venrob::SubscreenEditor
 		void run()
 		{
 			Subscreen::init();
-			loadBasicPal(PAL);
-			//SubEditorData[SED_CURSORTILE] = 10;
-			load_active_settings({0|FLAG_ITEMS_USE_HITBOX_FOR_SELECTOR,30,SEL_RECTANGLE,WHITE,0,SFX_CURSOR});
+			//loadClassicPal(PAL);
+			loadClassicDarkPal(PAL);
+			//sys_settings[SSET_CURSORTILE] = 10;
 			untyped buf[MAX_MODULE_SIZE];
 			MakeBGColorModule(buf);
 			add_active_module(buf);
@@ -106,17 +114,29 @@ namespace Venrob::SubscreenEditor
 			buf[M_X] = 144;
 			buf[M_Y] = 24;
 			add_passive_module(buf);
-			printf("NumActiveModules: %d\n", g_arr[NUM_ACTIVE_MODULES]);
 			for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = MAX_COUNTER;
 		}
 	} //end Init
-
+	
+	global script onF6 //start
+	{
+		void run()
+		{
+			if(!DEBUG && DIALOG::yesno_dlg("Exit Game","Would you like to save+exit, or just exit?","Save","Quit"))
+			{
+				Game->SaveAndQuit();
+			}
+			Game->End();
+		}
+	} //end
+	
 	DEFINE PASSIVE_EDITOR_TOP = ((224/2)-(56/2))-56;
 	global script Active //Subscreen Editor
 	{
 		void run()
 		{
 			Game->DisableActiveSubscreen = true;
+			TypeAString::setEnterEndsTyping(false); TypeAString::setAllowBackspaceDelete(true); TypeAString::setOverflowWraps(false);
 			int editing = 1;
 			Input->DisableKey[KEY_ESC] = editing!=0;
 			while(true)
@@ -155,7 +175,7 @@ namespace Venrob::SubscreenEditor
 						KillButtons();
 						break;
 				}
-				if(handle_data_pane()) continue;
+				if(handle_data_pane(editing==1)) continue;
 				if(editing) DIALOG::runGUI(editing==1);
 				if(Input->ReadKey[KEY_P])
 				{
@@ -348,9 +368,12 @@ namespace Venrob::SubscreenEditor
 		{
 			if(DIALOG::keyproc(KEY_DEL) || DIALOG::keyproc(KEY_DEL_PAD))
 			{
-				SubEditorData[SED_QUEUED_DELETION] = mod_indx;
-				SubEditorData[SED_HIGHLIGHTED] = 0;
-				if(isDragging) SubEditorData[SED_DRAGGING] = 0;
+				if(mod_indx>1 && (!sys_settings[SSET_DELWARN] || DIALOG::yesno_dlg("Are you sure you want to delete this?")))
+				{
+					SubEditorData[SED_QUEUED_DELETION] = mod_indx;
+					SubEditorData[SED_HIGHLIGHTED] = 0;
+					if(isDragging) SubEditorData[SED_DRAGGING] = 0;
+				}
 			}
 			if(!isDragging && isHovering)
 			{
@@ -379,7 +402,7 @@ namespace Venrob::SubscreenEditor
 	
 	enum SystemPane
 	{
-		DLG_LOAD, DLG_SAVEAS, DLG_THEMES, DLG_OPTIONS, DLG_NEWOBJ, DLG_SYSTEM
+		DLG_LOAD = 1, DLG_SAVEAS, DLG_THEMES, DLG_OPTIONS, DLG_NEWOBJ, DLG_SYSTEM
 	};
 	
 	void open_data_pane(int indx, bool active)
@@ -390,7 +413,6 @@ namespace Venrob::SubscreenEditor
 	void open_data_pane(int indx, int panetype)
 	{
 		if(SubEditorData[SED_ACTIVE_PANE]) return;
-		printf("Opening Data Pane: Indx %d, type %d\n", indx, panetype);
 		SubEditorData[SED_ACTIVE_PANE] = indx;
 		SubEditorData[SED_PANE_MENU_TYPE] = panetype;
 	}
@@ -401,7 +423,7 @@ namespace Venrob::SubscreenEditor
 		SubEditorData[SED_PANE_MENU_TYPE] = false;
 	}
 	
-	bool handle_data_pane()
+	bool handle_data_pane(bool active)
 	{
 		int pane = SubEditorData[SED_ACTIVE_PANE];
 		unless(pane) return false;
@@ -425,11 +447,18 @@ namespace Venrob::SubscreenEditor
 					//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNFINISHED DIALOGUES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 					case DLG_LOAD:
 					case DLG_SAVEAS:
-					case DLG_OPTIONS:
-					case DLG_NEWOBJ:
-					case DLG_SYSTEM:
+						DIALOG::msg_dlg("WIP", "This feature is still under construction. Please wait for an update.");
 						break;
 						
+					case DLG_NEWOBJ:
+						DIALOG::new_obj(active);
+						break;
+					case DLG_SYSTEM:
+						DIALOG::sys_dlg();
+						break;
+					case DLG_OPTIONS:
+						DIALOG::opt_dlg(active);
+						break;
 					case DLG_THEMES:
 						DIALOG::editThemes();
 						break;
@@ -453,6 +482,8 @@ namespace Venrob::SubscreenEditor
 	
 	void handleStartFrame()
 	{
+		++SubEditorData[SED_GLOBAL_TIMER];
+		SubEditorData[SED_GLOBAL_TIMER]%=3600;
 		SubEditorData[SED_LCLICKED] = Input->Mouse[MOUSE_LEFT] && !SubEditorData[SED_LCLICKING];
 		SubEditorData[SED_RCLICKED] = Input->Mouse[MOUSE_RIGHT] && !SubEditorData[SED_RCLICKING];
 		SubEditorData[SED_MCLICKED] = Input->Mouse[MOUSE_MIDDLE] && !SubEditorData[SED_MCLICKING];
@@ -470,13 +501,13 @@ namespace Venrob::SubscreenEditor
 	{
 		SubEditorData[SED_LASTMOUSE_X] = Input->Mouse[MOUSE_X];
 		SubEditorData[SED_LASTMOUSE_Y] = Input->Mouse[MOUSE_Y];
-		if(SubEditorData[SED_CURSORTILE])
+		if(sys_settings[SSET_CURSORTILE])
 		{
-			Screen->FastTile(7, Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y], SubEditorData[SED_CURSORTILE], 0, OP_OPAQUE);
+			Screen->FastTile(7, Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y], sys_settings[SSET_CURSORTILE], 0, OP_OPAQUE);
 		}
 		else
 		{
-			DrawCursor(SubEditorData[SED_CURSOR_VER], Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y]);
+			DrawCursor(sys_settings[SSET_CURSOR_VER], Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y]);
 		}
 		
 		if(Input->Key[KEY_G])

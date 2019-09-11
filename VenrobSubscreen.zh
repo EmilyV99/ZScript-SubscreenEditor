@@ -40,6 +40,9 @@ namespace Venrob::Subscreen
 		START_SETTINGS_META,
 		START_SETTINGS = START_SETTINGS_META + P1,
 		STTNG_FLAGS1 = START_SETTINGS,
+		STTNG_FLAGS2,
+		STTNG_FLAGS3,
+		STTNG_FLAGS4,
 		A_STTNG_FRAME_HOLD_DELAY,
 		A_STTNG_SELECTOR_TYPE,
 		A_STTNG_SELECTOR_VALUE,
@@ -85,24 +88,27 @@ namespace Venrob::Subscreen
 		P1, P2, P3, P4, P5, P6, P7, P8, P9, P10
 	};
 
+	DEFINE SUBSCR_BITS_INT = 18;
 	enum
 	{
-		FLAG1  = 0000000000000001b,
-		FLAG2  = 0000000000000010b,
-		FLAG3  = 0000000000000100b,
-		FLAG4  = 0000000000001000b,
-		FLAG5  = 0000000000010000b,
-		FLAG6  = 0000000000100000b,
-		FLAG7  = 0000000001000000b,
-		FLAG8  = 0000000010000000b,
-		FLAG9  = 0000000100000000b,
-		FLAG10 = 0000001000000000b,
-		FLAG11 = 0000010000000000b,
-		FLAG12 = 0000100000000000b,
-		FLAG13 = 0001000000000000b,
-		FLAG14 = 0010000000000000b,
-		FLAG15 = 0100000000000000b,
-		FLAG16 = 1000000000000000b
+		FLAG1  = 000000000000000001b,
+		FLAG2  = 000000000000000010b,
+		FLAG3  = 000000000000000100b,
+		FLAG4  = 000000000000001000b,
+		FLAG5  = 000000000000010000b,
+		FLAG6  = 000000000000100000b,
+		FLAG7  = 000000000001000000b,
+		FLAG8  = 000000000010000000b,
+		FLAG9  = 000000000100000000b,
+		FLAG10 = 000000001000000000b,
+		FLAG11 = 000000010000000000b,
+		FLAG12 = 000000100000000000b,
+		FLAG13 = 000001000000000000b,
+		FLAG14 = 000010000000000000b,
+		FLAG15 = 000100000000000000b,
+		FLAG16 = 001000000000000000b,
+		FLAG17 = 010000000000000000b,
+		FLAG18 = 100000000000000000b
 	};
 	enum //SelectableItems
 	{
@@ -656,25 +662,50 @@ namespace Venrob::Subscreen
 	
 	void load_active_settings(untyped settings_arr)
 	{
-		// {FLAGS1, A_STTNG_FRAME_HOLD_DELAY, SELECTION_SHAPE, SELECTION_VAL, SELECTION_VAL2, SELECTOR SFX}
-		untyped settings[NUM_SETTINGS] = {0, 30, SEL_RECTANGLE, 0x01, 0, SFX_CURSOR};
+		untyped settings[MODULE_META_SIZE+NUM_SETTINGS];
+		load_default_settings(settings, true);
 		if(IsValidArray(settings_arr))
+		{
 			memcpy(settings, 0, settings_arr, 0, Min(NUM_SETTINGS, SizeOfArray(settings_arr)));
-		memcpy(activeData, START_SETTINGS, settings, 0, NUM_SETTINGS);
+		}
+		memcpy(activeData, START_SETTINGS, settings, START_SETTINGS, NUM_SETTINGS);
 		activeData[M_SIZE] = NUM_SETTINGS + MODULE_META_SIZE;
 		activeData[M_TYPE] = MODULE_TYPE_SETTINGS;
-		
 	}
 	
 	void load_passive_settings(untyped settings_arr)
 	{
-		untyped settings[NUM_SETTINGS] = {0};
-		if(settings_arr)
+		untyped settings[MODULE_META_SIZE+NUM_SETTINGS];
+		load_default_settings(settings, false);
+		if(IsValidArray(settings_arr))
 			memcpy(settings, 0, settings_arr, 0, Min(NUM_SETTINGS, SizeOfArray(settings_arr)-1));
 		memcpy(passiveData, START_SETTINGS, settings, 0, NUM_SETTINGS);
 		passiveData[M_SIZE] = NUM_SETTINGS + MODULE_META_SIZE;
 		passiveData[M_TYPE] = MODULE_TYPE_SETTINGS;
-	} //end Modules
+	}
+
+	void load_default_settings(untyped settings, bool active)
+	{
+		if(active)
+		{
+			settings[STTNG_FLAGS1] = 000000000000000000b;
+			settings[STTNG_FLAGS2] = 000000000000000000b;
+			settings[STTNG_FLAGS3] = 000000000000000000b;
+			settings[STTNG_FLAGS4] = 000000000000000000b;
+			settings[A_STTNG_FRAME_HOLD_DELAY] = 30;
+			settings[A_STTNG_SELECTOR_TYPE] = SEL_RECTANGLE;
+			settings[A_STTNG_SELECTOR_VALUE] = 0x01;
+			settings[A_STTNG_SELECTOR_VALUE2] = 0;
+			settings[A_STTNG_SELECTOR_SFX] = SFX_CURSOR;
+		}
+		else
+		{
+			settings[STTNG_FLAGS1] = 000000000000000000b;
+			settings[STTNG_FLAGS2] = 000000000000000000b;
+			settings[STTNG_FLAGS3] = 000000000000000000b;
+			settings[STTNG_FLAGS4] = 000000000000000000b;
+		}
+	}//end Modules
 	
 	enum moduleType
 	{
@@ -712,6 +743,17 @@ namespace Venrob::Subscreen
 		memset(buf_arr, 0, MAX_MODULE_SIZE);
 		if(active) memcpy(buf_arr, 0, activeData, activeModules[mod_indx], activeData[activeModules[mod_indx]]);
 		else memcpy(buf_arr, 0, passiveData, passiveModules[mod_indx], passiveData[passiveModules[mod_indx]]);
+	}
+	
+	void cloneModule(int mod_indx, bool active)
+	{
+		if(mod_indx<2) return; //No cloning settings/BGColor
+		untyped buf_arr[MAX_MODULE_SIZE];
+		saveModule(buf_arr, mod_indx, active);
+		if(active)
+			add_active_module(buf_arr);
+		else
+			add_passive_module(buf_arr);
 	}
 	
 	void runActiveSubscreen()
@@ -782,7 +824,7 @@ namespace Venrob::Subscreen
 		for(int q = INPUT_TIMERS; q < INPUT_TIMERS+18; ++q)
 		{
 			++g_arr[q];
-			g_arr[q]%=activeData[A_STTNG_FRAME_HOLD_DELAY];
+			g_arr[q]%=Max(1, activeData[A_STTNG_FRAME_HOLD_DELAY]);
 		}
 	}
 	
@@ -825,10 +867,13 @@ namespace Venrob::Subscreen
 		{
 			case MODULE_TYPE_BGCOLOR:
 			{
-				if(active)
-					bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 224, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
-				else
-					bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 56, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+				if(module_arr[P1])
+				{
+					if(active)
+						bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 224, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+					else
+						bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 56, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+				}
 				break;
 			}
 			
