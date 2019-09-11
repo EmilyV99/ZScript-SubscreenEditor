@@ -262,8 +262,6 @@ namespace Venrob::Subscreen
 	bool add_active_module(untyped module_arr, int indx)
 	{
 		unless(validate_active_module(module_arr)) return false;
-		TraceS("Adding active module, at: ");
-		Trace(indx);
 		indx = VBound(indx, g_arr[NUM_ACTIVE_MODULES], 1);
 		switch(module_arr[M_TYPE])
 		{
@@ -281,7 +279,6 @@ namespace Venrob::Subscreen
 				if(indx < g_arr[NUM_ACTIVE_MODULES])
 				{
 					int sz_shift = activeModules[g_arr[NUM_ACTIVE_MODULES]] - activeModules[indx];
-					printf("Transposing: sz_shift of %d, sz of %d\n", sz_shift, module_arr[M_SIZE]);
 					untyped buf[SUBSCR_STORAGE_SIZE];
 					memcpy(buf, activeData, SUBSCR_STORAGE_SIZE);
 					memcpy(activeData, activeModules[indx]+module_arr[M_SIZE], buf, activeModules[indx], sz_shift);
@@ -300,10 +297,6 @@ namespace Venrob::Subscreen
 				}
 				++g_arr[NUM_ACTIVE_MODULES];
 				activeModules[g_arr[NUM_ACTIVE_MODULES]] = g_arr[SZ_ACTIVE_DATA];
-				for(int q = 0; q < module_arr[0]; ++q)
-				{
-					printf("%d: %d\n", q, module_arr[q]);
-				}
 				break;
 			}
 		}
@@ -318,7 +311,6 @@ namespace Venrob::Subscreen
 		if(indx < 1) return;
 		else if(indx > g_arr[NUM_ACTIVE_MODULES]) indx = g_arr[NUM_ACTIVE_MODULES];
 		int sz = activeData[activeModules[indx]];
-		printf("Removal found sz %d\n", sz);
 		if(indx < g_arr[NUM_ACTIVE_MODULES])
 		{
 			int sz_shift = activeModules[g_arr[NUM_ACTIVE_MODULES]] - (activeModules[indx]+sz);
@@ -353,8 +345,6 @@ namespace Venrob::Subscreen
 	bool add_passive_module(untyped module_arr, int indx)
 	{
 		unless(validate_passive_module(module_arr)) return false;
-		TraceS("Adding passive module, at: ");
-		Trace(indx);
 		indx = VBound(indx, g_arr[NUM_PASSIVE_MODULES], 1);
 		switch(module_arr[M_TYPE])
 		{
@@ -372,7 +362,6 @@ namespace Venrob::Subscreen
 				if(indx < g_arr[NUM_PASSIVE_MODULES])
 				{
 					int sz_shift = passiveModules[g_arr[NUM_PASSIVE_MODULES]] - passiveModules[indx];
-					printf("Transposing: sz_shift of %d, sz of %d\n", sz_shift, module_arr[M_SIZE]);
 					untyped buf[SUBSCR_STORAGE_SIZE];
 					memcpy(buf, passiveData, SUBSCR_STORAGE_SIZE);
 					memcpy(passiveData, passiveModules[indx]+module_arr[M_SIZE], buf, passiveModules[indx], sz_shift);
@@ -391,10 +380,6 @@ namespace Venrob::Subscreen
 				}
 				++g_arr[NUM_PASSIVE_MODULES];
 				passiveModules[g_arr[NUM_PASSIVE_MODULES]] = g_arr[SZ_PASSIVE_DATA];
-				for(int q = 0; q < module_arr[0]; ++q)
-				{
-					printf("%d: %d\n", q, module_arr[q]);
-				}
 				break;
 			}
 		}
@@ -409,7 +394,6 @@ namespace Venrob::Subscreen
 		if(indx < 1) return;
 		else if(indx > g_arr[NUM_PASSIVE_MODULES]) indx = g_arr[NUM_PASSIVE_MODULES];
 		int sz = passiveData[passiveModules[indx]];
-		printf("Removal found sz %d\n", sz);
 		if(indx < g_arr[NUM_PASSIVE_MODULES])
 		{
 			int sz_shift = passiveModules[g_arr[NUM_PASSIVE_MODULES]] - (passiveModules[indx]+sz);
@@ -451,6 +435,12 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 						error("MODULE_TYPE_BGCOLOR (%d) must have argument size (1) in format {COLOR}; argument size %d found", MODULE_TYPE_BGCOLOR, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[M_LAYER]!=0)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_BGCOLOR (%d) must use layer 0; %d found", MODULE_TYPE_BGCOLOR, module_arr[M_LAYER]);
 					return false;
 				}
 				if(module_arr[P1] < 0 || module_arr[P1] > 0xFF || (module_arr[P1]%1))
@@ -726,7 +716,7 @@ namespace Venrob::Subscreen
 	
 	void runActiveSubscreen()
 	{
-		for(int q = 0; q <= g_arr[NUM_ACTIVE_MODULES]; ++q)
+		/*for(int q = 0; q <= g_arr[NUM_ACTIVE_MODULES]; ++q)
 		{
 			Trace(activeModules[q]);
 		}
@@ -741,7 +731,7 @@ namespace Venrob::Subscreen
 			if(isSz) TraceNL();
 			printf("%d: %d\n", iter++, activeData[q]);
 			//Trace(activeData[q]);
-		}
+		}*/
 		event_t event = EVENT_NONE;
 		bitmap abit = getSubscreenBitmap(true), pbit = getSubscreenBitmap(false);
 		do
