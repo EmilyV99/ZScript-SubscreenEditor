@@ -1741,6 +1741,25 @@ namespace Venrob::SubscreenEditor
 			gen_final();
 		}
 		//end
+		//start Dropdown
+		void dropdown_open(bitmap parentBit, const int x, const int y, untyped parentDLGData, char32 strings, const int NUM_OPTS, const int NUM_VIS_OPTS)
+		{
+			/* Notes:
+			parentBit is not actually `bit`, but needs to be a new sub-bitmap (same size as `bit`). 
+			`fullblit(0, sub, bit)` should be called before `ClearToColor`, so the sub stores the last frame's draw. (in the dlg that calls this)
+			Also, a proc needs to call this. The proc handles the part that's always visible, this func only handles the list itself after opening.
+			/
+			strings is char32[][]; an array of char32[] pointers. Each index is a full string!
+			/
+			Make a subbitmap for the procs to draw to. Blit a portion of that (based on scroll) to the main bitmap of the dlg.
+			Scroll: No bar, just buttons; a button for up/down, and top/bottom. Buttons should take the entire bar space.
+			*/
+			int TRUE_OPTS = NUM_OPTS;
+			for(int q = SizeOfArray(strings)-1; q >= 0; --q)
+			{
+				if(strings[q][0] == '-') --TRUE_OPTS;
+			}
+		} //end
 		//Other
 		//start Spacing
 		DEFINE CENTER_VIS_X = 256/2;
