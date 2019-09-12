@@ -83,7 +83,7 @@ namespace Venrob::Subscreen
 	enum //For parameters for modules.
 	{
 		//Meta
-		M_SIZE, M_TYPE, M_PANEL, M_LAYER, M_X, M_Y, M_FLAGS1,
+		M_SIZE, M_META_SIZE, M_TYPE, M_PANEL, M_LAYER, M_X, M_Y, M_FLAGS1,
 		//Parameters
 		P1, P2, P3, P4, P5, P6, P7, P8, P9, P10
 	};
@@ -824,7 +824,8 @@ namespace Venrob::Subscreen
 		for(int q = INPUT_TIMERS; q < INPUT_TIMERS+18; ++q)
 		{
 			++g_arr[q];
-			g_arr[q]%=Max(1, activeData[A_STTNG_FRAME_HOLD_DELAY]);
+			if(activeData[A_STTNG_FRAME_HOLD_DELAY])
+				g_arr[q]%=activeData[A_STTNG_FRAME_HOLD_DELAY];
 		}
 	}
 	
@@ -993,10 +994,18 @@ namespace Venrob::Subscreen
 		return EVENT_NONE;
 	}//end Running
 	//start Constructors
-	void MakeBGColorModule(untyped buf_arr)
+	void MakeModule(untyped buf_arr)
 	{
 		memset(buf_arr, 0, SizeOfArray(buf_arr));
+		buf_arr[M_META_SIZE] = MODULE_META_SIZE;
+	}
+	
+	void MakeBGColorModule(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = P1+1;
+		buf_arr[M_X] = 0;
+		buf_arr[M_Y] = 0;
 		buf_arr[M_LAYER] = 0;
 		buf_arr[M_TYPE] = MODULE_TYPE_BGCOLOR;
 		
@@ -1005,7 +1014,7 @@ namespace Venrob::Subscreen
 	
 	void MakeSelectableItemID(untyped buf_arr)
 	{
-		memset(buf_arr, 0, SizeOfArray(buf_arr));
+		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = P6+1;
 		buf_arr[M_LAYER] = 1;
 		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_ID;
@@ -1021,14 +1030,14 @@ namespace Venrob::Subscreen
 	
 	void MakeSelectableItemClass(untyped buf_arr)
 	{
-		memset(buf_arr, 0, SizeOfArray(buf_arr));
+		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = P6+1;
 		buf_arr[M_LAYER] = 1;
 		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_CLASS;
 		buf_arr[M_FLAGS1] = FLAG_BBTN;
 		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_ABTN:0) | FLAG_BBTN;
 		
-		buf_arr[P1] = IC_BRANG;
+		buf_arr[P1] = 0;
 		buf_arr[P2] = -1;
 		buf_arr[P3] = -1;
 		buf_arr[P4] = -1;
@@ -1038,25 +1047,23 @@ namespace Venrob::Subscreen
 	
 	void MakeAButtonItem(untyped buf_arr)
 	{
-		memset(buf_arr, 0, SizeOfArray(buf_arr));
+		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_LAYER] = 1;
 		buf_arr[M_TYPE] = MODULE_TYPE_ABUTTONITEM;
 	}
 	
 	void MakeBButtonItem(untyped buf_arr)
 	{
-		memset(buf_arr, 0, SizeOfArray(buf_arr));
+		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_LAYER] = 1;
 		buf_arr[M_TYPE] = MODULE_TYPE_BBUTTONITEM;
 	}
 	
 	void MakePassiveSubscreen(untyped buf_arr)
 	{
-		memset(buf_arr, 0, SizeOfArray(buf_arr));
+		MakeModule(buf_arr);
+		buf_arr[M_X] = 0;
 		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_LAYER] = 1;
 		buf_arr[M_TYPE] = MODULE_TYPE_PASSIVESUBSCREEN;
 	}
 	//end Constructors
@@ -1077,6 +1084,7 @@ namespace Venrob::Subscreen
 	void runPreparedSelector(bool active)
 	{
 		if(g_arr[PREPARED_SELECTOR_DATA_START+0] < 0 || active != g_arr[PREPARED_SELECTOR_DATA_START+5]) return;
+		g_arr[PREPARED_SELECTOR_DATA_START+0] = 7; //Force layer to top, to draw over everything else.
 		DrawSelector(g_arr[PREPARED_SELECTOR_DATA_START+0],g_arr[PREPARED_SELECTOR_DATA_START+1],g_arr[PREPARED_SELECTOR_DATA_START+2],
 		             g_arr[PREPARED_SELECTOR_DATA_START+3],g_arr[PREPARED_SELECTOR_DATA_START+4],g_arr[PREPARED_SELECTOR_DATA_START+5],
 		             false,                                g_arr[PREPARED_SELECTOR_DATA_START+6],g_arr[PREPARED_SELECTOR_DATA_START+7],
@@ -1105,8 +1113,6 @@ namespace Venrob::Subscreen
 		{
 			PrepareSelector(layer, x, y, wid, hei, active, selection_style, val1, val2);
 			return;
-			//if(g_arr[ACTIVE_1FRAME_FLAGS_1] & FLAG_DREW_SELECTOR) return; //Only draw a selector once per frame!
-			//g_arr[ACTIVE_1FRAME_FLAGS_1] |= FLAG_DREW_SELECTOR; //Set drawn this frame
 		}
 		bitmap bit = getSubscreenBitmap(active);
 		switch(selection_style)

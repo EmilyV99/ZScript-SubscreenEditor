@@ -1,6 +1,7 @@
 #option SHORT_CIRCUIT on
 #option HEADER_GUARD on
 #include "TypeAString.zh"
+#include "VenrobKeyboardManager.zh"
 
 namespace Venrob::SubscreenEditor
 {
@@ -215,13 +216,13 @@ namespace Venrob::SubscreenEditor
 				}
 				return Text->StringWidth(buf, font);
 			} //end
-			bool shortcut_text(bitmap bit, int x, int y, char32 str, int color) //start Character following a % will be underlined
+			int shortcut_text(bitmap bit, int x, int y, char32 str, int color) //start Character following a % will be underlined
 			{
 				int pos = _strchr(str, 0, '%');
 				if(pos<0)
 				{
 					text(bit, x, y, TF_NORMAL, str, color);
-					return false;
+					return NULL;
 				}
 				char32 c;
 				int key;
@@ -263,11 +264,11 @@ namespace Venrob::SubscreenEditor
 							bit->DrawString(0, x+wid1+wid2, y, DIA_FONT, color, -1, TF_NORMAL, t_buf, OP_OPAQUE);
 							int strhei = Text->FontHeight(DIA_FONT);
 							line(bit, x+wid1, y+strhei, x+wid1+wid2-2, y+strhei, color);
-							return keyproc(key);
+							return key;
 						}
 					}
 					bit->DrawString(0, x, y, DIA_FONT, color, -1, TF_NORMAL, buf, OP_OPAQUE);
-					return keyproc(key);
+					return key;
 				}
 				else
 				{
@@ -277,8 +278,9 @@ namespace Venrob::SubscreenEditor
 					bit->DrawString(0, x, y, DIA_FONT, color, -1, TF_NORMAL, buf, OP_OPAQUE);
 					c = buf[pos];
 					line(bit, x+strwid, y+strhei, x+strwid+Text->CharWidth(c, DIA_FONT)-2, y+strhei, color);
-					return ((isAlphabetic(c) && keyproc(LowerToUpper(c)-'A'+KEY_A))||(isNumber(c) && keyproc(c-'0'+KEY_0)));
+					return isAlphabetic(c) ? (LowerToUpper(c)-'A'+KEY_A) : (isNumber(c) ? (c-'0'+KEY_0) : NULL);
 				}
+				return NULL;
 			} //end
 			void line(bitmap bit, int x, int y, int x2, int y2, int color) //start
 			{
@@ -383,38 +385,52 @@ namespace Venrob::SubscreenEditor
 			} //end
 			ProcRet button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, untyped proc_data, int proc_indx, int flags) //start
 			{
-				bool was_held = proc_data[proc_indx];
+				int was_held = proc_data[proc_indx];
+				DEFINE FLAG_HELD_MOUSE = 01b;
+				DEFINE FLAG_HELD_KEY = 10b;
 				bool disabled = flags&FLAG_DISABLE;
 				bool isDefault = flags&FLAG_DEFAULT;
 				ProcRet ret = PROC_NULL;
 				int x2 = x + wid - 1, y2 = y + hei - 1;
 				bool indented = false;
-				if(!disabled && DLGCursorBox(x,y,x2,y2,dlgdata))
-				{
-					if(SubEditorData[SED_LCLICKED] || (SubEditorData[SED_LCLICKING] && was_held))
-					{
-						was_held = true;
-						indented = true;
-					}
-					else if(was_held)
-					{
-						was_held = false;
-						ret = PROC_CONFIRM;
-					}
-				}
-				else was_held = false;
-				
 				bitmap tbit = rent_bitmap();
 				generate(tbit, dlgdata[DLG_DATA_WID], dlgdata[DLG_DATA_HEI]);
 				tbit->Clear(0);
-				
-				if((shortcut_text(tbit, x+((wid-shortcuttext_width(btnText, DIA_FONT))/2), y+Ceiling((hei-Text->FontHeight(DIA_FONT))/2), btnText, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]) || (isDefault && DefaultButton())) && !disabled)
+				int key = shortcut_text(tbit, x+((wid-shortcuttext_width(btnText, DIA_FONT))/2), y+Ceiling((hei-Text->FontHeight(DIA_FONT))/2), btnText, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+				if(!disabled)
 				{
-					KillDLGButtons();
-					ret = PROC_CONFIRM;
-					indented = true;
+					bool cursor = DLGCursorBox(x,y,x2,y2,dlgdata);
+					
+					if(cursor&&SubEditorData[SED_LCLICKED])
+					{
+						was_held |= FLAG_HELD_MOUSE;
+						indented = true;
+					}
+					else if((was_held & FLAG_HELD_MOUSE) && (cursor&&SubEditorData[SED_LCLICKING]))
+					{
+						indented = true;
+					}
+					else if(was_held & FLAG_HELD_MOUSE)
+					{
+						was_held = 0;
+						if(cursor) ret = PROC_CONFIRM; //If you slid the cursor off the button, don't register it as a click!
+					}
+					
+					if(key&&keyprocp(key) || (isDefault&&DefaultButtonP()))
+					{
+						was_held |= FLAG_HELD_KEY;
+						indented = true;
+					}
+					else if((was_held & FLAG_HELD_KEY) && ((key&&keyproc(key)) || (isDefault&&DefaultButton())))
+					{
+						indented = true;
+					}
+					else if(was_held & FLAG_HELD_KEY)
+					{
+						was_held = 0;
+						ret = PROC_CONFIRM;
+					}
 				}
-				
 				if(indented) inv_frame_rect(bit, x, y, x2, y2, isDefault ? 2 : 1);
 				else frame_rect(bit, x, y, x2, y2, isDefault ? 2 : 1);
 				
@@ -628,21 +644,33 @@ namespace Venrob::SubscreenEditor
 		//start Key procs
 		bool keyproc(int key)
 		{
-			bool ret = Input->Key[key];
+			return KeyInput(key);
 			//printf("KeyProc'ing key %d (%s?): %s\n", key, {key-KEY_A+'A', 0}, ret?"true":"false");
-			return ret;
 		}
 		bool keyprocp(int key)
 		{
-			return Input->ReadKey[key];
+			return KeyPressed(key);
+		}
+		void killkey(int key)
+		{
+			KeyPressed(key, false);
+			KeyInput(key, false);
 		}
 		bool DefaultButton()
 		{
-			return SubEditorData[SED_DEFAULTBTN_PRESSED];
+			return KeyInput(SubEditorData[SED_DEFAULTBTN]);
+		}
+		bool DefaultButtonP()
+		{
+			return KeyPressed(SubEditorData[SED_DEFAULTBTN]);
 		}
 		bool CancelButton()
 		{
-			return SubEditorData[SED_CANCELBTN_PRESSED];
+			return KeyInput(SubEditorData[SED_CANCELBTN]);
+		}
+		bool CancelButtonP()
+		{
+			return KeyPressed(SubEditorData[SED_CANCELBTN]);
 		}
 		bool HelpButton()
 		{
@@ -650,8 +678,7 @@ namespace Venrob::SubscreenEditor
 		}
 		void KillDLGButtons()
 		{
-			SubEditorData[SED_CANCELBTN_PRESSED] = false;
-			SubEditorData[SED_DEFAULTBTN_PRESSED] = false;
+			KillAllKeyboard();
 		}
 		//end 
 		//Flagsets
@@ -679,6 +706,7 @@ namespace Venrob::SubscreenEditor
 		void gen_final() //start
 		{
 			null_screen();
+			KillDLGButtons();
 		} //end
 		//Full DLGs
 		//start Edit Object
@@ -737,20 +765,50 @@ namespace Venrob::SubscreenEditor
 				sprintf(TITLEBUF, title, mod_indx, module_name);
 				char32 DESCBUF[1024];
 				get_module_desc(DESCBUF, module_arr[M_TYPE]);
-				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, TITLEBUF, data, DESCBUF)==PROC_CANCEL || CancelButton())
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, TITLEBUF, data, DESCBUF)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
+				if(DEBUG && PROC_CONFIRM==button(bit, WIDTH-(9*3)-1, 2, 7, 7, "D", data, proc_data, 1))
+				{
+					printf("Debug Printout (%d)\n", mod_indx);
+					for(int q = 0; q < module_arr[M_SIZE]; ++q)
+					{
+						switch(q)
+						{
+							case MODULE_META_SIZE:
+								TraceNL();
+								printf("%d: %d\n", q, module_arr[q]);
+								break;
+							
+							case M_META_SIZE:
+								if(module_arr[M_META_SIZE] == MODULE_META_SIZE)
+									printf("%d: %d\n", q, module_arr[q]);
+								else printf("%d: %d (Bad Size! Should be %d)\n", q, module_arr[q], MODULE_META_SIZE);
+								break;
+							
+							case M_TYPE:
+								char32 buf[64];
+								get_module_name(buf, module_arr[M_TYPE]);
+								printf("%d: %d (%s)\n", q, module_arr[q], buf);
+								break;
+								
+							default:
+								printf("%d: %d\n", q, module_arr[q]);
+						}
+					}
+					printf("/Debug Printout (%d)\n", mod_indx);
+				}
 				DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
-				if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 1))
+				if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 2))
 				{
 					running = false;
 				}
-				if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Confirm", data, proc_data, 2, FLAG_DEFAULT))
+				if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Confirm", data, proc_data, 3, FLAG_DEFAULT))
 				{
 					running = false;
 					do_save_changes = true;
 				}
-				if(PROC_CONFIRM==button(bit, FRAME_X+(2*(BUTTON_WIDTH+3)), HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%%77%%Del%ete", data, proc_data, 3, module_arr[M_TYPE]==MODULE_TYPE_BGCOLOR?FLAG_DISABLE:0))
+				if(PROC_CONFIRM==button(bit, FRAME_X+(2*(BUTTON_WIDTH+3)), HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%%77%%Del%ete", data, proc_data, 4, module_arr[M_TYPE]==MODULE_TYPE_BGCOLOR?FLAG_DISABLE:0))
 				{
 					if(!sys_settings[SSET_DELWARN] || yesno_dlg("Are you sure you want to delete this?"))
 					{
@@ -941,9 +999,14 @@ namespace Venrob::SubscreenEditor
 				}
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Clone", data, main_proc_data, 2, SubEditorData[SED_HIGHLIGHTED] > 1 ? 0 : FLAG_DISABLE))
 				{
-					cloneModule(SubEditorData[SED_HIGHLIGHTED], active);
-					SubEditorData[SED_HIGHLIGHTED] = active ? g_arr[NUM_ACTIVE_MODULES]-1 : g_arr[NUM_PASSIVE_MODULES]-1;
+					unless(SubEditorData[SED_JUST_CLONED]) //Don't clone every frame it's held, just the first frame pressed!
+					{
+						cloneModule(SubEditorData[SED_HIGHLIGHTED], active);
+						SubEditorData[SED_HIGHLIGHTED] = active ? g_arr[NUM_ACTIVE_MODULES]-1 : g_arr[NUM_PASSIVE_MODULES]-1;
+						SubEditorData[SED_JUST_CLONED] = true;
+					}
 				}
+				else SubEditorData[SED_JUST_CLONED] = false;
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Options", data, main_proc_data, 3))
 				{
 					open_data_pane(DLG_OPTIONS, PANE_T_SYSTEM);
@@ -1012,7 +1075,7 @@ namespace Venrob::SubscreenEditor
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
-				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, "The Theme Editor allows you to customize the colors used by the editor windows. Use the presets to the left, or modify the color swatches individually to the right.")==PROC_CANCEL || CancelButton())
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, "The Theme Editor allows you to customize the colors used by the editor windows. Use the presets to the left, or modify the color swatches individually to the right.")==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
 				switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y, 7, preview&1b, data, 0, "Preview", "If enabled, the palette will be live-updated. Else, changes will not take effect until you click 'Accept'."))
@@ -1178,7 +1241,7 @@ namespace Venrob::SubscreenEditor
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
-				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data)==PROC_CANCEL || CancelButton())
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
 				switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y, 7, sys_settings[SSET_DELWARN], data, 0, "Recieve Deletion Warnings", "If checked, a confirmation prompt will appear when attempting to delete objects."))
@@ -1249,7 +1312,10 @@ namespace Venrob::SubscreenEditor
 			bitmap bit = rent_bitmap();
 			generate(bit, WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
-			
+			//
+			untyped settings_arr[NUM_SETTINGS + MODULE_META_SIZE];
+			saveModule(settings_arr, 0, active);
+			//
 			char32 title[128];
 			strcpy(title, active ? "Active Subscreen Settings" : "Passive Subscreen Settings");
 			char32 desc_str[128];
@@ -1257,6 +1323,29 @@ namespace Venrob::SubscreenEditor
 			untyped data[DLG_DATA_SZ];
 			data[DLG_DATA_WID] = WIDTH;
 			data[DLG_DATA_HEI] = HEIGHT;
+			//
+			DEFINE MISCFIELD_WID = 28;
+			DEFINE MISCFIELD_NUMCHARS = 5;
+			DEFINE MISCFIELD_SPACE = 2;
+			char32 b1[MISCFIELD_NUMCHARS+1];
+			char32 b2[MISCFIELD_NUMCHARS+1];
+			char32 b3[MISCFIELD_NUMCHARS+1];
+			char32 b4[MISCFIELD_NUMCHARS+1];
+			char32 b5[MISCFIELD_NUMCHARS+1];
+			char32 b6[MISCFIELD_NUMCHARS+1];
+			char32 b7[MISCFIELD_NUMCHARS+1];
+			char32 b8[MISCFIELD_NUMCHARS+1];
+			char32 b9[MISCFIELD_NUMCHARS+1];
+			char32 b10[MISCFIELD_NUMCHARS+1];
+			//
+			if(active)
+			{
+				itoa(b1, settings_arr[A_STTNG_FRAME_HOLD_DELAY]);
+			}
+			else
+			{
+			
+			}
 			//
 			null_screen();
 			draw_dlg(bit, data);
@@ -1269,15 +1358,13 @@ namespace Venrob::SubscreenEditor
 			bool do_save_changes = false;
 			//end
 			untyped proc_data[6];
-			untyped settings_arr[NUM_SETTINGS + MODULE_META_SIZE];
-			saveModule(settings_arr, 0, active);
 			while(running)
 			{
 				bit->ClearToColor(0, PAL[COL_NULL]);
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
-				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, desc_str)==PROC_CANCEL || CancelButton())
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, desc_str)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
 				int flags_x = FRAME_X, flags_y = FRAME_Y;
@@ -1317,6 +1404,52 @@ namespace Venrob::SubscreenEditor
 					}
 				}
 				
+				int tfx = WIDTH-FRAME_X-MISCFIELD_WID, tfy = FRAME_Y;
+				if(active)
+				{
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b1, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 1, 0, "Input Repeat Rate:");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b2, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 2, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b3, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 3, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b4, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 4, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b5, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 5, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b6, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 6, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b7, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 7, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b8, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 8, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b9, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 9, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b10, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 10, FLAG_DISABLE, "--");
+				}
+				else
+				{
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b1, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 1, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b2, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 2, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b3, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 3, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b4, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 4, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b5, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 5, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b6, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 6, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b7, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 7, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b8, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 8, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b9, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 9, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b10, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 10, FLAG_DISABLE, "--");
+				}
+				
 				//
 				null_screen();
 				draw_dlg(bit, data);
@@ -1334,8 +1467,15 @@ namespace Venrob::SubscreenEditor
 			if(do_save_changes)
 			{
 				bit->Write(0, "_DIALOGUE.png", true);
-				if(active) load_active_settings(settings_arr);
-				else load_passive_settings(settings_arr);
+				if(active)
+				{
+					settings_arr[A_STTNG_FRAME_HOLD_DELAY] = VBound(atoi(b1), MAX_INT, 0);
+					load_active_settings(settings_arr);
+				}
+				else
+				{
+					load_passive_settings(settings_arr);
+				}
 			}
 			else
 			{
@@ -1391,7 +1531,7 @@ namespace Venrob::SubscreenEditor
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
-				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, "Choose a color from the palette selector.")==PROC_CANCEL || CancelButton())
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, "Choose a color from the palette selector.")==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
 				active_swatch = colorgrid(bit, 32, 32, active_swatch, 4, data, proc_data, 0);
@@ -1484,7 +1624,7 @@ namespace Venrob::SubscreenEditor
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
-				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, descstr)==PROC_CANCEL || CancelButton())
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, descstr)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
 				text(bit, WIDTH/2, BAR_HEIGHT + 5, TF_CENTERED, msg, PAL[COL_TEXT_MAIN], TXTWID);
@@ -1570,7 +1710,7 @@ namespace Venrob::SubscreenEditor
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
-				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, descstr)==PROC_CANCEL || CancelButton())
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, descstr)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
 				text(bit, WIDTH/2, BAR_HEIGHT + 5, TF_CENTERED, msg, PAL[COL_TEXT_MAIN], TXTWID);
@@ -1715,14 +1855,14 @@ namespace Venrob::SubscreenEditor
 					{
 						strcat(buf, "Items Use Hitbox Size"); break;
 					}
-					default: break;
+					default: strcat(buf, "--"); break;
 				}
 			}
 			else
 			{
 				switch(flag)
 				{
-					default: break;
+					default: strcat(buf, "--"); break;
 				}
 			}
 		} //end

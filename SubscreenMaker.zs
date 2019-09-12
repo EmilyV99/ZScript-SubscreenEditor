@@ -12,7 +12,7 @@ namespace Venrob::SubscreenEditor
 	using namespace Venrob::Subscreen::Internal;
 	using namespace Venrob::BitmapRental;
 	
-	untyped SubEditorData[MAX_INT] = {0, 0, 0, false, false, false, false, false, false, 0, 0};
+	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
 	enum
 	{
 		SED_HIGHLIGHTED,
@@ -25,16 +25,15 @@ namespace Venrob::SubscreenEditor
 		SED_LCLICKING,
 		SED_RCLICKING,
 		SED_MCLICKING,
-		SED_DEFAULTBTN_PRESSED,
 		SED_DEFAULTBTN,
-		SED_CANCELBTN_PRESSED,
 		SED_CANCELBTN,
 		SED_LASTMOUSE_X,
 		SED_LASTMOUSE_Y,
 		SED_GUISTATE,
 		SED_GUI_BMP,
 		SED_QUEUED_DELETION,
-		SED_GLOBAL_TIMER
+		SED_GLOBAL_TIMER,
+		SED_JUST_CLONED
 	};
 	
 	untyped sys_settings[MAX_INT];
@@ -487,14 +486,11 @@ namespace Venrob::SubscreenEditor
 		SubEditorData[SED_LCLICKED] = Input->Mouse[MOUSE_LEFT] && !SubEditorData[SED_LCLICKING];
 		SubEditorData[SED_RCLICKED] = Input->Mouse[MOUSE_RIGHT] && !SubEditorData[SED_RCLICKING];
 		SubEditorData[SED_MCLICKED] = Input->Mouse[MOUSE_MIDDLE] && !SubEditorData[SED_MCLICKING];
-		SubEditorData[SED_DEFAULTBTN_PRESSED] = Input->Key[KEY_ENTER] && !SubEditorData[SED_DEFAULTBTN];
-		SubEditorData[SED_DEFAULTBTN] = Input->Key[KEY_ENTER];
-		SubEditorData[SED_CANCELBTN_PRESSED] = Input->Key[KEY_ESC] && !SubEditorData[SED_CANCELBTN];
-		SubEditorData[SED_CANCELBTN] = Input->Key[KEY_ESC];
 		SubEditorData[SED_LCLICKING] = Input->Mouse[MOUSE_LEFT];
 		SubEditorData[SED_RCLICKING] = Input->Mouse[MOUSE_RIGHT];
 		SubEditorData[SED_MCLICKING] = Input->Mouse[MOUSE_MIDDLE];
 		unless(Input->Mouse[MOUSE_LEFT]) SubEditorData[SED_DRAGGING] = 0;
+		pollKeys();
 	}
 	
 	void handleEndFrame()
