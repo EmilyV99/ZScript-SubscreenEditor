@@ -1016,7 +1016,7 @@ namespace Venrob::Subscreen
 	{
 		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = P6+1;
-		buf_arr[M_LAYER] = 1;
+		buf_arr[M_LAYER] = 0;
 		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_ID;
 		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_ABTN:0) | FLAG_BBTN;
 		
@@ -1032,7 +1032,7 @@ namespace Venrob::Subscreen
 	{
 		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = P6+1;
-		buf_arr[M_LAYER] = 1;
+		buf_arr[M_LAYER] = 0;
 		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_CLASS;
 		buf_arr[M_FLAGS1] = FLAG_BBTN;
 		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_ABTN:0) | FLAG_BBTN;
