@@ -368,18 +368,19 @@ namespace Venrob::SubscreenEditor
 				if(checked) x(bit, x+1, y+1, len-2, (disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
 				return ret;
 			} //end
-			ProcRet insta_button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata) //start
+			ProcRet insta_button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, int flags) //start
 			{
+				bool disabled = flags&FLAG_DISABLE;
 				ProcRet ret = PROC_NULL;
 				int x2 = x + wid - 1, y2 = y + hei - 1;
-				if(DLGCursorBox(x,y,x2,y2,dlgdata) && SubEditorData[SED_LCLICKED])
+				if(!disabled && SubEditorData[SED_LCLICKED] && DLGCursorBox(x,y,x2,y2,dlgdata))
 				{
 					ret = PROC_CONFIRM;
 				}
 				
 				frame_rect(bit, x, y, x2, y2, 1);
 				
-				text(bit, x+(wid/2), y+Ceiling((hei-Text->FontHeight(DIA_FONT))/2), TF_CENTERED, btnText, PAL[COL_TEXT_MAIN]);
+				text(bit, x+(wid/2), y+Ceiling((hei-Text->FontHeight(DIA_FONT))/2), TF_CENTERED, btnText, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				
 				return ret;
 			} //end
@@ -454,6 +455,25 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1, swatch_color);
 				return swatch_color;
 			}//end
+			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int NUM_VIS_OPTS, bitmap lastframe, int flags)
+			{
+				bool disabled = flags&FLAG_DISABLE;
+				int hei = 2 + 2 + Text->FontHeight(DIA_FONT);
+				frame_rect(bit, x, y, x+wid-1, y+hei-1, 1, disabled ? PAL[COL_BODY_MAIN_MED] : PAL[COL_FIELD_BG]);
+				text(bit, x+2, y+2, TF_NORMAL, strings[indx], disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_FIELD]);
+				//
+				DEFINE BTN_HEIGHT = hei, BTN_WIDTH = hei;
+				int bx = x + (wid - BTN_WIDTH);
+				frame_rect(bit, bx, y, bx+BTN_WIDTH-1, y+BTN_HEIGHT-1, 1);
+				line(bit, bx + 2, y + 5, (bx + BTN_WIDTH/2)-1, y+(BTN_HEIGHT/2)+2, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+				line(bit, bx + BTN_WIDTH - 2 - 1, y + 5, (bx + BTN_WIDTH/2), y+(BTN_HEIGHT/2)+2, (disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
+				//
+				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x, y, x+wid-1, y+hei-1, dlgdata))
+				{
+					indx = dropdown_open(lastframe, x, y+hei, wid, indx, dlgdata, strings, NUM_VIS_OPTS);
+				}
+				return indx;
+			}
 			//end
 			//start compounds
 			ProcRet title_bar(bitmap bit, int margin, int barheight, char32 title, untyped dlgdata, char32 descstr) //start
@@ -629,7 +649,7 @@ namespace Venrob::SubscreenEditor
 			{
 				bool disabled = !strlen(info);
 				int col = disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN];
-				ProcRet p = insta_button(bit, x, y, 7, 7, "", dlgdata);
+				ProcRet p = insta_button(bit, x, y, 7, 7, "", dlgdata, 0);
 				pix(bit, x+3, y+1, col);
 				pix(bit, x+2, y+3, col);
 				line(bit, x+3, y+3, x+3, y+5, col);
@@ -1485,10 +1505,110 @@ namespace Venrob::SubscreenEditor
 			gen_final();
 		}
 		//end
-		//start
+		//start New Object
 		void new_obj(bool active)
 		{
+			gen_startup();
 			
+			//start setup
+			DEFINE MARGIN_WIDTH = 1
+			     , WIDTH = 162
+				 , TXTWID = WIDTH - ((MARGIN_WIDTH+1)*2)
+				 , BAR_HEIGHT = 11
+			     , HEIGHT = BAR_HEIGHT+4+(Text->FontHeight(DIA_FONT)*2) + 14
+				 , FRAME_X = MARGIN_WIDTH+2
+				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+(Text->FontHeight(DIA_FONT)/2)
+				 ;
+			bitmap bit = rent_bitmap();
+			generate(bit, WIDTH, HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			bitmap lastframe = rent_bitmap();
+			generate(lastframe, WIDTH, HEIGHT);
+			lastframe->ClearToColor(0, PAL[COL_NULL]);
+			
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			//
+			null_screen();
+			draw_dlg(bit, data);
+			KillButtons();
+			Waitframe();
+			//
+			center_dlg(bit, data);
+			
+			bool running = true;
+			//end
+			untyped proc_data[1];
+			int indx;
+			int val[] = {2,3,4,5,6};
+			while(running)
+			{
+				lastframe->Clear(0);
+				fullblit(0, lastframe, bit);
+				bit->ClearToColor(0, PAL[COL_NULL]);
+				//Deco
+				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
+				//Func
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, "Create Object", data, "Create a new object of a given type, at it's default settings.\nAfter creating the object, it's editing window will open.")==PROC_CANCEL || CancelButtonP())
+					running = false;
+				
+				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen"}, 10, lastframe, 0);
+				
+				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
+				if(PROC_CONFIRM==button(bit, (WIDTH/2)-(BUTTON_WIDTH/2), HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, "Create", data, proc_data, 0, FLAG_DEFAULT))
+				{
+					untyped module_arr[MAX_MODULE_SIZE];
+					switch(val[indx])
+					{
+						case MODULE_TYPE_SELECTABLE_ITEM_ID:
+						{
+							MakeSelectableItemID(module_arr); break;
+						}
+						case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+						{
+							MakeSelectableItemClass(module_arr); break;
+						}
+						case MODULE_TYPE_ABUTTONITEM:
+						{
+							MakeAButtonItem(module_arr); break;
+						}
+						case MODULE_TYPE_BBUTTONITEM:
+						{
+							MakeBButtonItem(module_arr); break;
+						}
+						default:
+						case MODULE_TYPE_PASSIVESUBSCREEN:
+						{
+							MakePassiveSubscreen(module_arr); break;
+						}
+					}
+					if(active) add_active_module(module_arr);
+					else add_passive_module(module_arr);
+					int indx = (active ? g_arr[NUM_ACTIVE_MODULES] : g_arr[NUM_PASSIVE_MODULES])-1;
+					open_data_pane(indx, active); //Go directly into the editObj dialogue from here!
+					SubEditorData[SED_HIGHLIGHTED] = indx; //And highlight it, too!
+					running = false;
+				}
+				//
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
+			{
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			bit->Write(0, "_DIALOGUE.png", true);
+			
+			free_bitmap(bit);
+			free_bitmap(lastframe);
+			gen_final();	
 		}
 		//end
 		//Misc Mini-DLGs
@@ -1742,8 +1862,9 @@ namespace Venrob::SubscreenEditor
 		}
 		//end
 		//start Dropdown
-		void dropdown_open(bitmap parentBit, const int x, const int y, untyped parentDLGData, char32 strings, const int NUM_OPTS, const int NUM_VIS_OPTS)
+		int dropdown_open(bitmap parentBit, const int x, int y, const int WIDTH, int selIndx, untyped parentDLGData, char32 strings, int NUM_VIS_OPTS)
 		{
+			DEFINE BKUP_INDX = selIndx;
 			/* Notes:
 			parentBit is not actually `bit`, but needs to be a new sub-bitmap (same size as `bit`). 
 			`fullblit(0, sub, bit)` should be called before `ClearToColor`, so the sub stores the last frame's draw. (in the dlg that calls this)
@@ -1754,11 +1875,193 @@ namespace Venrob::SubscreenEditor
 			Make a subbitmap for the procs to draw to. Blit a portion of that (based on scroll) to the main bitmap of the dlg.
 			Scroll: No bar, just buttons; a button for up/down, and top/bottom. Buttons should take the entire bar space.
 			*/
-			int TRUE_OPTS = NUM_OPTS;
-			for(int q = SizeOfArray(strings)-1; q >= 0; --q)
+			//start setup
+			gen_startup();
+			DEFINE MARGIN_WIDTH = 0;
+			DEFINE TXT_VSPACE = 2;
+			DEFINE UNIT_HEIGHT = TXT_VSPACE + Text->FontHeight(DIA_FONT);
+			DEFINE NUM_OPTS_FLIP = 8;
+			DEFINE NUM_OPTS = SizeOfArray(strings);
+			if(NUM_VIS_OPTS < 0) //Fit-to-screen
 			{
-				if(strings[q][0] == '-') --TRUE_OPTS;
+				NUM_VIS_OPTS = Min(Div(224 - (2*MARGIN_WIDTH) - y, UNIT_HEIGHT), NUM_OPTS);
+				if(NUM_VIS_OPTS < NUM_OPTS_FLIP && NUM_VIS_OPTS < NUM_OPTS)
+				{
+					y -= UNIT_HEIGHT*(NUM_OPTS_FLIP+1)+1;
+					NUM_VIS_OPTS = NUM_OPTS_FLIP;
+				}
 			}
+			else if(y+(UNIT_HEIGHT * Min(NUM_VIS_OPTS, NUM_OPTS_FLIP))>224)
+			{
+				NUM_VIS_OPTS = Min(Div(224 - (2*MARGIN_WIDTH) - y, UNIT_HEIGHT), NUM_OPTS);
+				if(NUM_VIS_OPTS < NUM_OPTS_FLIP && NUM_VIS_OPTS < NUM_OPTS)
+				{
+					NUM_VIS_OPTS = Min(NUM_OPTS_FLIP, NUM_OPTS);
+					y -= UNIT_HEIGHT*(NUM_VIS_OPTS+1)+1;
+				}
+			}
+			NUM_VIS_OPTS = Min(NUM_VIS_OPTS, NUM_OPTS);
+			DEFINE MAX_SCROLL_INDX = NUM_OPTS-NUM_VIS_OPTS;
+			DEFINE TXT_X = MARGIN_WIDTH+2;
+			DEFINE BTN_WIDTH = 10;
+			DEFINE BMP_WIDTH = WIDTH - BTN_WIDTH;
+			DEFINE BTN_X = BMP_WIDTH;
+			DEFINE HEIGHT = Max((MARGIN_WIDTH * 2) + (UNIT_HEIGHT*NUM_VIS_OPTS)-1, BTN_WIDTH*4);
+			DEFINE BMP_HEIGHT = (MARGIN_WIDTH * 2) + (UNIT_HEIGHT*NUM_OPTS);
+			DEFINE BTN_HEIGHT = HEIGHT/4;
+			int scrollIndx = Min(selIndx, MAX_SCROLL_INDX);
+			bitmap bit = rent_bitmap(),
+			       listbit = rent_bitmap();
+			generate(bit, WIDTH, HEIGHT);
+			generate(listbit, BMP_WIDTH, BMP_HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			listbit->ClearToColor(0, PAL[COL_NULL]);
+			
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			data[DLG_DATA_XOFFS] = x + parentDLGData[DLG_DATA_XOFFS];
+			data[DLG_DATA_YOFFS] = y + parentDLGData[DLG_DATA_YOFFS];
+			untyped ldata[DLG_DATA_SZ];
+			ldata[DLG_DATA_WID] = BMP_WIDTH;
+			ldata[DLG_DATA_HEI] = BMP_HEIGHT;
+			ldata[DLG_DATA_XOFFS] = data[DLG_DATA_XOFFS];
+			ldata[DLG_DATA_YOFFS] = data[DLG_DATA_YOFFS] - (scrollIndx*UNIT_HEIGHT);
+			//
+			null_screen();
+			draw_dlg(parentBit, parentDLGData);
+			KillButtons();
+			Waitframe(); //NOT subscr_Waitframe.
+			//
+			bool running = true;
+			//end
+			untyped proc_data[4];
+			bool was_clicking;
+			while(running)
+			{
+				bit->Clear(0);
+				listbit->Clear(0);
+				ldata[DLG_DATA_YOFFS] = data[DLG_DATA_YOFFS] - (scrollIndx*UNIT_HEIGHT); //update to current scroll
+				rect(bit, 0, 0, WIDTH-1, HEIGHT-1, PAL[COL_FIELD_BG]);
+				bool isHoveringList = DLGCursorBox(0, 0, HEIGHT-1, BMP_WIDTH-1, data);
+				int cy = DLGMouseY(ldata);
+				//List options
+				{
+					int ty = MARGIN_WIDTH + 2;
+					for(int q = 0; q < NUM_OPTS; ++q)
+					{
+						if(q==selIndx) rect(listbit, 0, ty-2, 0+BMP_WIDTH-1, ty+UNIT_HEIGHT-2, PAL[COL_HIGHLIGHT]);
+						text(listbit, TXT_X, ty, TF_NORMAL, strings[q], PAL[COL_TEXT_FIELD]);
+						ty += Text->FontHeight(DIA_FONT) + TXT_VSPACE;
+					}
+				}
+				//Directionals
+				{
+					if(keyprocp(KEY_UP))
+					{
+						selIndx = Max(selIndx-1, 0);
+						scrollIndx = VBound(scrollIndx, Min(MAX_SCROLL_INDX, selIndx), Max(0, selIndx-NUM_VIS_OPTS+1));
+					}	
+					else if(keyprocp(KEY_DOWN))
+					{
+						selIndx = Min(selIndx+1, NUM_OPTS-1);
+						scrollIndx = VBound(scrollIndx, Min(MAX_SCROLL_INDX, selIndx), Max(0, selIndx-NUM_VIS_OPTS+1));
+					}
+				}
+				//Buttons
+				{
+					int by = 0;
+					if(PROC_CONFIRM==button(bit, BTN_X, by, BTN_WIDTH, BTN_HEIGHT, "", data, proc_data, 0, (scrollIndx <= 0) ? FLAG_DISABLE : 0))
+					{
+						scrollIndx = 0;
+					}
+					line(bit, BTN_X + 2, by + (BTN_HEIGHT/2)-1, (BTN_X + BTN_WIDTH/2)-1, by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + BTN_WIDTH - 2 - 1, by + (BTN_HEIGHT/2)-1, (BTN_X + BTN_WIDTH/2), by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + 2, by + BTN_HEIGHT - 2 - 1, (BTN_X + BTN_WIDTH/2)-1, by + (BTN_HEIGHT/2), (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + BTN_WIDTH - 2 - 1, by + BTN_HEIGHT - 2 - 1, (BTN_X + BTN_WIDTH/2), by + (BTN_HEIGHT/2), (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					by += BTN_HEIGHT;
+					if(PROC_CONFIRM==button(bit, BTN_X, by, BTN_WIDTH, BTN_HEIGHT, "", data, proc_data, 1, (scrollIndx <= 0) ? FLAG_DISABLE : 0))
+					{
+						scrollIndx = Max(scrollIndx-1, 0);
+					}
+					line(bit, BTN_X + 2, by + (BTN_HEIGHT/2)-1, (BTN_X + BTN_WIDTH/2)-1, by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + BTN_WIDTH - 2 - 1, by + (BTN_HEIGHT/2)-1, (BTN_X + BTN_WIDTH/2), by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					by += BTN_HEIGHT;
+					if(PROC_CONFIRM==button(bit, BTN_X, by, BTN_WIDTH, BTN_HEIGHT, "", data, proc_data, 2, (scrollIndx >= MAX_SCROLL_INDX) ? FLAG_DISABLE : 0))
+					{
+						scrollIndx = Min(scrollIndx+1, MAX_SCROLL_INDX);
+					}
+					line(bit, BTN_X + 2, by + 5, (BTN_X + BTN_WIDTH/2)-1, by+(BTN_HEIGHT/2)+2, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + BTN_WIDTH - 2 - 1, by + 5, (BTN_X + BTN_WIDTH/2), by+(BTN_HEIGHT/2)+2, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					by += BTN_HEIGHT;
+					if(PROC_CONFIRM==button(bit, BTN_X, by, BTN_WIDTH, BTN_HEIGHT, "", data, proc_data, 3, (scrollIndx >= MAX_SCROLL_INDX) ? FLAG_DISABLE : 0))
+					{
+						scrollIndx = MAX_SCROLL_INDX;
+					}
+					line(bit, BTN_X + 2, by + 2, (BTN_X + BTN_WIDTH/2)-1, by+(BTN_HEIGHT/2)-1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + BTN_WIDTH - 2 - 1, by + 2, (BTN_X + BTN_WIDTH/2), by+(BTN_HEIGHT/2)-1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + 2, by + (BTN_HEIGHT/2), (BTN_X + BTN_WIDTH/2)-1, by + BTN_HEIGHT - 2 - 1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					line(bit, BTN_X + BTN_WIDTH - 2 - 1, by + (BTN_HEIGHT/2), (BTN_X + BTN_WIDTH/2), by + BTN_HEIGHT - 2 - 1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+				}
+				
+				if(isHoveringList)
+				{
+					if(SubEditorData[SED_LCLICKING])
+					{
+						was_clicking = true;
+						selIndx = Div(cy-MARGIN_WIDTH, UNIT_HEIGHT); //Select clicked option
+					}
+					else if(was_clicking)
+					{
+						printf("Clicked on list option!\n");
+						running = false;
+					}
+				}
+				else
+				{
+					was_clicking = false;
+					if(SubEditorData[SED_LCLICKED] && !DLGCursorBox(0, 0, WIDTH-1, HEIGHT-1, data))
+					{
+						printf("Clicked off!\n");
+						selIndx = BKUP_INDX;
+						running = false;
+					}
+				}
+				if(DefaultButtonP())
+				{
+					printf("Enter!\n");
+					running = false;
+				}
+				if(CancelButtonP())
+				{
+					printf("Esc!\n");
+					selIndx = BKUP_INDX;
+					running = false;
+				}
+				
+				listbit->Blit(7, bit, 0, MARGIN_WIDTH+(scrollIndx*UNIT_HEIGHT)+1, BMP_WIDTH, HEIGHT-(MARGIN_WIDTH*2), 0, MARGIN_WIDTH, BMP_WIDTH, HEIGHT-(MARGIN_WIDTH*2), 0, 0, 0, 0, 0, true);
+				null_screen();
+				draw_dlg(parentBit, parentDLGData);
+				draw_dlg(bit, data);
+				if(keyprocp(KEY_R))
+				{
+					bitmap out = rent_bitmap();
+					generate(out, parentDLGData[DLG_DATA_WID], parentDLGData[DLG_DATA_HEI]);
+					out->ClearToColor(0, PAL[COL_NULL]);
+					moveblit(7, out, parentBit, parentDLGData[DLG_DATA_WID], parentDLGData[DLG_DATA_HEI]);
+					bit->Blit(7, out, 0, 0, WIDTH-1, HEIGHT-1, data[DLG_DATA_XOFFS] - parentDLGData[DLG_DATA_XOFFS], data[DLG_DATA_YOFFS] - parentDLGData[DLG_DATA_YOFFS], WIDTH-1, HEIGHT-1, 0, 0, 0, 0, 0, true);
+					out->Write(7, "_DIALOGUE.png", true);
+					free_bitmap(out);
+				}
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			free_bitmap(listbit);
+			free_bitmap(bit);
+			
+			gen_final();
+			return selIndx;
 		} //end
 		//Other
 		//start Spacing
