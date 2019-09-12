@@ -4,7 +4,7 @@
 
 namespace Venrob
 {
-	/*
+	/**
 	 * Returns true if the cursor is inside the box defined by (x,y) -> (x2,y2)
 	 * Effectively, Point/Rect collision, for the mouse cursor's point.
 	 */
@@ -19,7 +19,7 @@ namespace Venrob
 			&& Input->Mouse[MOUSE_Y] + yoffs >= y && Input->Mouse[MOUSE_Y] + yoffs <= y2;
 	}
 	
-	/*
+	/**
 	 * Returns true if the cursor is inside the circle defined by (x,y), radius.
 	 */
 	bool CursorRadius(int x, int y, int radius)

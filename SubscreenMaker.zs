@@ -428,6 +428,7 @@ namespace Venrob::SubscreenEditor
 		unless(pane) return false;
 		int panetype = SubEditorData[SED_PANE_MENU_TYPE];
 		untyped module_arr[MAX_MODULE_SIZE];
+		close_data_pane(); //here, so that the pane can open another from inside.
 		switch(panetype)
 		{
 			case PANE_T_ACTIVE:
@@ -468,7 +469,7 @@ namespace Venrob::SubscreenEditor
 				}
 				break;
 		}
-		close_data_pane();
+		//close_data_pane();
 		return true;
 	}
 	
