@@ -267,8 +267,10 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
 			{
 				unless(active) break; //Not allowed on passive
-				int itmid = ((module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_CLASS)?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
-				if(itmid < 0 || !Hero->Item[itmid]) break;
+				bool class = (module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_CLASS);
+				int itmid = (class?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
+				if(itmid < 0) itmid = class ? get_item_of_class(module_arr[P1], true) : 0;
+				if(itmid < 0) itmid = 0;
 				
 				itemdata id = Game->LoadItemData(itmid);
 				int frm = Div(g_arr[ACTIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));

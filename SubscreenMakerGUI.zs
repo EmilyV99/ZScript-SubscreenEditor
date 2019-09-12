@@ -169,30 +169,30 @@ namespace Venrob::SubscreenEditor
 		{
 			//Deco type procs: purely visual
 			//start Deco: Generic
-			void rect(bitmap bit, int x1, int y1, int x2, int y2, int color)
+			void rect(bitmap bit, int x1, int y1, int x2, int y2, int color) //start
 			{
 				bit->Rectangle(0, x1, y1, x2, y2, color, 1, 0, 0, 0, true, OP_OPAQUE);
-			}
-			void h_rect(bitmap bit, int x1, int y1, int x2, int y2, int color)
+			} //end
+			void h_rect(bitmap bit, int x1, int y1, int x2, int y2, int color) //start
 			{
 				bit->Rectangle(0, x1, y1, x2, y2, color, 1, 0, 0, 0, false, OP_OPAQUE);
-			}
-			void circ(bitmap bit, int x, int y, int rad, int color)
+			} //end
+			void circ(bitmap bit, int x, int y, int rad, int color) //start
 			{
 				bit->Circle(0, x, y, rad, color, 1, 0, 0, 0, true, OP_OPAQUE);
-			}
-			void tri(bitmap bit, int x1, int y1, int x2, int y2, int x3, int y3, int color)
+			} //end
+			void tri(bitmap bit, int x1, int y1, int x2, int y2, int x3, int y3, int color) //start
 			{
 				bit->Triangle(0, x1, y1, x2, y2, x3, y3, 0, 0, color, 0, 0, 0, NULL);
-			}
-			void text(bitmap bit, int x, int y, int tf, char32 str, int color) //No width; straight draw
+			} //end
+			void text(bitmap bit, int x, int y, int tf, char32 str, int color)  //start No width; straight draw
 			{
 				bit->DrawString(0, x, y, DIA_FONT, color, -1, tf, str, OP_OPAQUE);
-			}
-			void text(bitmap bit, int x, int y, int tf, char32 str, int color, int width) //Width; will wrap to next line
+			} //end
+			void text(bitmap bit, int x, int y, int tf, char32 str, int color, int width) //start Width; will wrap to next line
 			{
 				DrawStringsBitmap(bit, 0, x, y, DIA_FONT, color, -1, tf, str, OP_OPAQUE, Text->FontHeight(DIA_FONT)/2, width);
-			}
+			} //end
 			int shortcuttext_width(char32 str, int font) //start
 			{
 				int pos = _strchr(str, 0, '%');
@@ -295,6 +295,31 @@ namespace Venrob::SubscreenEditor
 			void pix(bitmap bit, int x, int y, int color) //start
 			{
 				bit->PutPixel(0, x, y, color, 0, 0, 0, OP_OPAQUE);
+			} //end
+			void tile(bitmap bit, int x, int y, int tile, int cset) //start
+			{
+				bit->FastTile(0, x, y, tile, cset, OP_OPAQUE);
+			} //end
+			void combo(bitmap bit, int x, int y, int combo, int cset) //start
+			{
+				bit->FastCombo(0, x, y, combo, cset, OP_OPAQUE);
+			} //end
+			void minitile(bitmap bit, int x, int y, int tile, int cset, int corner) //start
+			{
+				bitmap sub = rent_bitmap();
+				generate(sub, 16, 16);
+				sub->Clear(0);
+				tile(sub, 0, 0, tile, cset);
+				sub->Blit(0, bit, (corner&01b)?8:0, (corner&10b)?8:0, 8, 8, x, y, 8, 8, 0, 0, 0, 0, 0, true);
+				free_bitmap(sub);
+			} //end
+			void itm(bitmap bit, int x, int y, int id) //start
+			{
+				itemdata id = Game->LoadItemData(id);
+				int aspeedtime = (Max(1,id->ASpeed*id->AFrames));
+				int tmr = SubEditorData[SED_GLOBAL_TIMER] % (aspeedtime+id->Delay);
+				int frm = (tmr - aspeedtime >= 0) ? 0 : Div(tmr, Max(1,id->ASpeed));
+				bit->FastTile(0, x, y, id->Tile + frm, id->CSet, OP_OPAQUE);
 			} //end
 			//end
 			//start Deco: Special
@@ -763,6 +788,23 @@ namespace Venrob::SubscreenEditor
 			char32 buf_pos[3];
 			itoa(buf_pos, mod_indx);
 			
+			
+			char32 argbuf1[16];
+			char32 argbuf2[16];
+			char32 argbuf3[16];
+			char32 argbuf4[16];
+			char32 argbuf5[16];
+			char32 argbuf6[16];
+			char32 argbuf7[16];
+			char32 argbuf8[16];
+			char32 argbuf9[16];
+			char32 argbuf10[16];
+			char32 argbuf[11] = {argbuf1, argbuf2, argbuf3, argbuf4, argbuf5, argbuf6, argbuf7, argbuf8, argbuf9, argbuf10, -1};
+			for(int q = MODULE_META_SIZE; q < module_arr[M_SIZE] && argbuf[q-MODULE_META_SIZE] != -1; ++q)
+			{
+				itoa(argbuf[q-MODULE_META_SIZE], module_arr[q]);
+			}
+			
 			//
 			null_screen();
 			draw_dlg(bit, data);
@@ -788,7 +830,7 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, TITLEBUF, data, DESCBUF)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				if(DEBUG && PROC_CONFIRM==button(bit, WIDTH-(9*3)-1, 2, 7, 7, "D", data, proc_data, 1))
+				if(DEBUG && PROC_CONFIRM==button(bit, WIDTH-(9*3)-1, 2, 7, 7, "D", data, proc_data, 1)) //start
 				{
 					printf("Debug Printout (%d)\n", mod_indx);
 					for(int q = 0; q < module_arr[M_SIZE]; ++q)
@@ -817,7 +859,7 @@ namespace Venrob::SubscreenEditor
 						}
 					}
 					printf("/Debug Printout (%d)\n", mod_indx);
-				}
+				} //end
 				DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
 				if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 2))
 				{
@@ -893,6 +935,30 @@ namespace Venrob::SubscreenEditor
 						break;
 					}
 					
+					case MODULE_TYPE_SELECTABLE_ITEM_ID:
+					case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+					{
+						bool class = module_arr[M_TYPE] == MODULE_TYPE_SELECTABLE_ITEM_CLASS;
+						char32 buf[16];
+						strcpy(buf, class ? "Class:" : "Item:");
+						DEFINE FIELD_WID = 28, FIELD_X = WIDTH - MARGIN_WIDTH - 2 - FIELD_WID;
+						titled_inc_text_field(bit, FRAME_X + Text->StringWidth(buf, DIA_FONT)+2, FRAME_Y+12+(10*1), FIELD_WID, argbuf1, 3, false, data, 5, 0, MIN_ITEMDATA, MAX_ITEMDATA, buf);
+						DEFINE ITMX = (FRAME_X + Text->StringWidth(buf, DIA_FONT) + FIELD_WID + 4 +1), ITMY = FRAME_Y+18;
+						frame_rect(bit, ITMX-1, ITMY-1, ITMX+16, ITMY+16, 1);
+						int itmid = (class?(get_item_of_class(atoi(argbuf1))):(atoi(argbuf1)));
+						if(itmid < 0) itmid = class ? get_item_of_class(atoi(argbuf1), true) : 0;
+						if(itmid < 0) itmid = 0;
+						itm(bit, ITMX, ITMY, itmid);
+						titled_inc_text_field(bit, FIELD_X-(FIELD_WID*1), FRAME_Y+12+(10*0), FIELD_WID, argbuf2, 3, true, data, 6, 0, -1, MAX_MODULES, "Pos:");
+						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*1), FIELD_WID, argbuf3, 3, true, data, 7, 0, -1, MAX_MODULES);
+						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*3), FIELD_WID, argbuf4, 3, true, data, 8, 0, -1, MAX_MODULES);
+						titled_inc_text_field(bit, FIELD_X-(FIELD_WID*2), FRAME_Y+12+(10*2), FIELD_WID, argbuf5, 3, true, data, 9, 0, -1, MAX_MODULES, "Dirs:");
+						inc_text_field(bit, FIELD_X, FRAME_Y+12+(10*2), FIELD_WID, argbuf6, 3, true, data, 10, 0, -1, MAX_MODULES);
+						break;
+					}
+					
+					case MODULE_TYPE_ABUTTONITEM:
+					case MODULE_TYPE_BBUTTONITEM:
 					case MODULE_TYPE_PASSIVESUBSCREEN:
 					{
 						break;
@@ -925,6 +991,20 @@ namespace Venrob::SubscreenEditor
 				module_arr[M_X] = VBound(atoi(buf_x), max_x(module_arr), min_x(module_arr));
 				module_arr[M_Y] = VBound(atoi(buf_y), max_y(module_arr, active), min_y(module_arr));
 				module_arr[M_LAYER] = VBound(atoi(buf_lyr), 7, 0);
+				switch(module_arr[M_TYPE])
+				{
+					case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+					case MODULE_TYPE_SELECTABLE_ITEM_ID:
+					{
+						module_arr[P1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
+						module_arr[P2] = VBound(atoi(argbuf2), MAX_MODULES, -1);
+						module_arr[P3] = VBound(atoi(argbuf3), MAX_MODULES, -1);
+						module_arr[P4] = VBound(atoi(argbuf4), MAX_MODULES, -1);
+						module_arr[P5] = VBound(atoi(argbuf5), MAX_MODULES, -1);
+						module_arr[P6] = VBound(atoi(argbuf6), MAX_MODULES, -1);
+						break;
+					}
+				}
 				if(active)
 				{
 					mod_indx = VBound(atoi(buf_pos), g_arr[NUM_ACTIVE_MODULES]-1, 1);
@@ -1273,7 +1353,6 @@ namespace Venrob::SubscreenEditor
 						sys_settings[SSET_DELWARN]=true;
 						break;
 				}
-				
 				//Buttons
 				{
 					DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;

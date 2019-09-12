@@ -1319,12 +1319,16 @@ namespace Venrob::Subscreen
 		
 		int get_item_of_class(int ic)
 		{
+			get_item_of_class(ic, false);
+		}
+		int get_item_of_class(int ic, bool noRequire)
+		{
 			int highestLevel = -1;
 			int highestID = -1;
 			for(int q = MIN_ITEMDATA; q <= MAX_ITEMDATA; ++q)
 			{
 				itemdata id = Game->LoadItemData(q);
-				if(Hero->Item[q] && !(Game->DisableItem[q]))
+				if(noRequire || (Hero->Item[q] && !(Game->DisableItem[q])))
 				{
 					if(id->Type == ic)
 					{

@@ -98,6 +98,12 @@ namespace Venrob
 		    h = Min(dest->Height, src->Height);
 		src->Blit(layer, dest, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, 0, 0, true);
 	}
+	void fullblit(int layer, bitmap dest, bitmap src, int dx, int dy)
+	{
+		int w = Min(dest->Width, src->Width),
+		    h = Min(dest->Height, src->Height);
+		src->Blit(layer, dest, 0, 0, w, h, dx, dy, w, h, 0, 0, 0, 0, 0, true);
+	}
 	void moveblit(int layer, bitmap dest, bitmap src, int width, int height)
 	{
 		src->Blit(layer, dest, 0, 0, width, height, 0, 0, width, height, 0, 0, 0, 0, 0, true);
