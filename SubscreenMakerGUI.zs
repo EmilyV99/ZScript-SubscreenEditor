@@ -306,12 +306,11 @@ namespace Venrob::SubscreenEditor
 			} //end
 			void minitile(bitmap bit, int x, int y, int tile, int cset, int corner) //start
 			{
-				bitmap sub = rent_bitmap();
-				generate(sub, 16, 16);
+				bitmap sub = create(16, 16);
 				sub->Clear(0);
 				tile(sub, 0, 0, tile, cset);
 				sub->Blit(0, bit, (corner&01b)?8:0, (corner&10b)?8:0, 8, 8, x, y, 8, 8, 0, 0, 0, 0, 0, true);
-				free_bitmap(sub);
+				sub->Free();
 			} //end
 			void itm(bitmap bit, int x, int y, int id) //start
 			{
@@ -329,13 +328,12 @@ namespace Venrob::SubscreenEditor
 				    y1 = corner_y,
 					x2 = corner_x,
 				    y2 = corner_y + (remX(corner_dir)==DIR_DOWN ? -len : len);
-				bitmap sub = rent_bitmap();
-				generate(sub, bit->Width, bit->Height);
+				bitmap sub = create(bit->Width, bit->Height);
 				sub->Clear(0);
 				tri(sub, corner_x, corner_y, x1, y1, x2, y2, color);
 				circ(sub, x1, y2, len, 0x00);
 				fullblit(0, bit, sub);
-				free_bitmap(sub);
+				sub->Free();
 			}
 			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol, int ULCol, int DRCol)
 			{
@@ -419,8 +417,7 @@ namespace Venrob::SubscreenEditor
 				ProcRet ret = PROC_NULL;
 				int x2 = x + wid - 1, y2 = y + hei - 1;
 				bool indented = false;
-				bitmap tbit = rent_bitmap();
-				generate(tbit, dlgdata[DLG_DATA_WID], dlgdata[DLG_DATA_HEI]);
+				bitmap tbit = create(dlgdata[DLG_DATA_WID], dlgdata[DLG_DATA_HEI]);
 				tbit->Clear(0);
 				int key = shortcut_text(tbit, x+((wid-shortcuttext_width(btnText, DIA_FONT))/2), y+Ceiling((hei-Text->FontHeight(DIA_FONT))/2), btnText, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				if(!disabled)
@@ -461,7 +458,7 @@ namespace Venrob::SubscreenEditor
 				else frame_rect(bit, x, y, x2, y2, isDefault ? 2 : 1);
 				
 				fullblit(0, bit, tbit);
-				free_bitmap(tbit);
+				tbit->Free();
 				
 				proc_data[proc_indx] = was_held;
 				return ret;
@@ -767,8 +764,7 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
 				 ;
 			int old_indx = mod_indx;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			
 			char32 title[128] = "Edit Object #%d - %s";
@@ -877,7 +873,7 @@ namespace Venrob::SubscreenEditor
 						running = false;
 						SubEditorData[SED_QUEUED_DELETION] = mod_indx;
 						SubEditorData[SED_HIGHLIGHTED] = 0; //This had to be highlighted to open this menu!
-						free_bitmap(bit);
+						bit->Free();
 						gen_final();
 						return;
 					}
@@ -1020,7 +1016,7 @@ namespace Venrob::SubscreenEditor
 				if(mod_indx!=old_indx) SubEditorData[SED_HIGHLIGHTED] = mod_indx;
 			}
 			
-			free_bitmap(bit);
+			bit->Free();
 			gen_final();
 		} //end editObj
 		//start Main GUI
@@ -1144,8 +1140,7 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
 				 ;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			
 			char32 title[128] = "Theme Editor";
@@ -1299,7 +1294,7 @@ namespace Venrob::SubscreenEditor
 				memcpy(PAL, BCKUPPAL, PAL_SIZE);
 			}
 			
-			free_bitmap(bit);
+			bit->Free();
 			gen_final();
 		}
 		//end
@@ -1315,8 +1310,7 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
 				 ;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			
 			char32 title[128] = "System Settings";
@@ -1392,7 +1386,7 @@ namespace Venrob::SubscreenEditor
 			{
 			}
 			
-			free_bitmap(bit);
+			bit->Free();
 			gen_final();
 		}
 		//end
@@ -1408,8 +1402,7 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
 				 ;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			//
 			untyped settings_arr[NUM_SETTINGS + MODULE_META_SIZE];
@@ -1580,7 +1573,7 @@ namespace Venrob::SubscreenEditor
 			{
 			}
 			
-			free_bitmap(bit);
+			bit->Free();
 			gen_final();
 		}
 		//end
@@ -1598,11 +1591,9 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+(Text->FontHeight(DIA_FONT)/2)
 				 ;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
-			bitmap lastframe = rent_bitmap();
-			generate(lastframe, WIDTH, HEIGHT);
+			bitmap lastframe = create(WIDTH, HEIGHT);
 			lastframe->ClearToColor(0, PAL[COL_NULL]);
 			
 			untyped data[DLG_DATA_SZ];
@@ -1685,8 +1676,8 @@ namespace Venrob::SubscreenEditor
 			
 			bit->Write(0, "_DIALOGUE.png", true);
 			
-			free_bitmap(bit);
-			free_bitmap(lastframe);
+			bit->Free();
+			lastframe->Free();
 			gen_final();	
 		}
 		//end
@@ -1703,8 +1694,7 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
 				 ;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			
 			char32 title[128] = "Color Picker";
@@ -1756,7 +1746,7 @@ namespace Venrob::SubscreenEditor
 				subscr_Waitframe();
 			}
 			
-			free_bitmap(bit);
+			bit->Free();
 			gen_final();
 			if(do_save_changes)
 			{
@@ -1798,8 +1788,7 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
 				 ;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			
 			untyped data[DLG_DATA_SZ];
@@ -1853,7 +1842,7 @@ namespace Venrob::SubscreenEditor
 				subscr_Waitframe();
 			}
 			
-			free_bitmap(bit);
+			bit->Free();
 			gen_final();
 			return ret;
 		}
@@ -1885,8 +1874,7 @@ namespace Venrob::SubscreenEditor
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
 				 ;
-			bitmap bit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			
 			untyped data[DLG_DATA_SZ];
@@ -1936,7 +1924,7 @@ namespace Venrob::SubscreenEditor
 			
 			bit->Write(0, "_DIALOGUE.png", true);
 			
-			free_bitmap(bit);
+			bit->Free();
 			gen_final();
 		}
 		//end
@@ -1989,10 +1977,8 @@ namespace Venrob::SubscreenEditor
 			DEFINE BMP_HEIGHT = (MARGIN_WIDTH * 2) + (UNIT_HEIGHT*NUM_OPTS);
 			DEFINE BTN_HEIGHT = HEIGHT/4;
 			int scrollIndx = Min(selIndx, MAX_SCROLL_INDX);
-			bitmap bit = rent_bitmap(),
-			       listbit = rent_bitmap();
-			generate(bit, WIDTH, HEIGHT);
-			generate(listbit, BMP_WIDTH, BMP_HEIGHT);
+			bitmap bit = create(WIDTH, HEIGHT),
+			       listbit = create(BMP_WIDTH, BMP_HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			listbit->ClearToColor(0, PAL[COL_NULL]);
 			
@@ -2124,20 +2110,19 @@ namespace Venrob::SubscreenEditor
 				draw_dlg(bit, data);
 				if(keyprocp(KEY_R))
 				{
-					bitmap out = rent_bitmap();
-					generate(out, parentDLGData[DLG_DATA_WID], parentDLGData[DLG_DATA_HEI]);
+					bitmap out = create(parentDLGData[DLG_DATA_WID], parentDLGData[DLG_DATA_HEI]);
 					out->ClearToColor(0, PAL[COL_NULL]);
 					moveblit(7, out, parentBit, parentDLGData[DLG_DATA_WID], parentDLGData[DLG_DATA_HEI]);
 					bit->Blit(7, out, 0, 0, WIDTH-1, HEIGHT-1, data[DLG_DATA_XOFFS] - parentDLGData[DLG_DATA_XOFFS], data[DLG_DATA_YOFFS] - parentDLGData[DLG_DATA_YOFFS], WIDTH-1, HEIGHT-1, 0, 0, 0, 0, 0, true);
 					out->Write(7, "_DIALOGUE.png", true);
-					free_bitmap(out);
+					out->Free();
 				}
 				KillButtons();
 				subscr_Waitframe();
 			}
 			
-			free_bitmap(listbit);
-			free_bitmap(bit);
+			listbit->Free();
+			bit->Free();
 			
 			gen_final();
 			return selIndx;

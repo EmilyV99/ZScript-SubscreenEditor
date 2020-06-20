@@ -10,7 +10,6 @@ namespace Venrob::SubscreenEditor
 {
 	using namespace Venrob::Subscreen;
 	using namespace Venrob::Subscreen::Internal;
-	using namespace Venrob::BitmapRental;
 	
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
 	enum

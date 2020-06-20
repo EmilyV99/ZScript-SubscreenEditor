@@ -3,76 +3,24 @@
 #include "std.zh"
 #include "VenrobMisc.zh"
 
-namespace Venrob::BitmapRental //start
-{
-	DEFINE MAX_RENTAL_BITMAPS = 32;
-	untyped Data[MAX_RENTAL_BITMAPS*2];
-	
-	/*
-	 * Reserves a reusable, pre-allocated bitmap and returns it.
-	 * When done with it, be sure to free it with 'free_bitmap()' so that it
-	 *     can be recycled.
-	 * Bitmaps returned are guaranteed to be at least Allocated. They may or may not already contain data.
-	 *     -Using 'bitmap->Create()' to create your own bitmap on that pointer will rectify this.
-	 *     -Note that this is NOT the same as 'Game->CreateBitmap()'!
-	 */
-	bitmap rent_bitmap()
-	{
-		for(int q = 0; q < MAX_RENTAL_BITMAPS*2; q+=2)
-		{
-			unless(Data[q])
-			{
-				Data[q] = true;
-				unless((<bitmap>Data[q+1])->isAllocated()) Data[q+1] = Game->AllocateBitmap();
-				return Data[q+1];
-			}
-		}
-		return NULL;
-	}
-	
-	/*
-	 * Frees a rented bitmap to be recycled.
-	 */
-	void free_bitmap(bitmap bit)
-	{
-		bool found = false;
-		for(int q = 0; q < MAX_RENTAL_BITMAPS*2; q+=2)
-		{
-			unless((<bitmap>Data[q+1])->isAllocated()) Data[q+1] = Game->AllocateBitmap();
-			if(Data[q])
-			{
-				if(Data[q+1] == bit)
-				{
-					Data[q] = false;
-					if(found) //Safeguard in case of accidental duplicate entries. This probably shouldn't happen anyway?
-						Data[q+1] = Game->AllocateBitmap();
-					else
-						found = true;
-				}
-			}
-		}
-	}
-	
-	/*
-	 * Ensures that a fresh stock of allocated bitmaps is available.
-	 * This will automatically free any bitmaps which fail an '->isAllocated()' check.
-	 * This should be called in an 'onLaunch' or 'onSaveLoad' slot script.
-	 */
-	void refresh_bitmaps()
-	{
-		for(int q = 0; q < MAX_RENTAL_BITMAPS*2; q+=2)
-		{
-			unless((<bitmap>Data[q+1])->isAllocated())
-			{
-				Data[q+1] = Game->AllocateBitmap();
-				Data[q] = false;
-			}
-		}
-	}
-} //end
-
 namespace Venrob
 {
+	bitmap create()
+	{
+		return create(256,224); //Default to screen size (including subscreen)
+	}
+	
+	bitmap create(int w, int h)
+	{
+		if(Game->FFRules[qr_OLDCREATEBITMAP_ARGS])
+		{
+			return Game->CreateBitmap(h, w);
+		}
+		else
+		{
+			return Game->CreateBitmap(w, h);
+		}
+	}
 	void generate(bitmap b)
 	{
 		generate(b, 256, 224, 0); //Default to screen size (including subscreen)
