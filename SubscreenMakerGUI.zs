@@ -158,7 +158,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_TEXT_TITLE_BAR] = SYS_BLACK;
 	} //end
 	//end 
-	
+		
 	namespace DIALOG
 	{
 		DEFINE DIA_FONT = FONT_Z3SMALL;
@@ -477,12 +477,15 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1, swatch_color);
 				return swatch_color;
 			}//end
-			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int NUM_VIS_OPTS, bitmap lastframe, int flags)
+			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags)
 			{
+				if(num_opts <= 0) num_opts = SizeOfArray(strings);
+				char32 num_buf[12];
+				itoa(num_buf,indx+1);
 				bool disabled = flags&FLAG_DISABLE;
 				int hei = 2 + 2 + Text->FontHeight(DIA_FONT);
 				frame_rect(bit, x, y, x+wid-1, y+hei-1, 1, disabled ? PAL[COL_BODY_MAIN_MED] : PAL[COL_FIELD_BG]);
-				text(bit, x+2, y+2, TF_NORMAL, strings[indx], disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_FIELD]);
+				text(bit, x+2, y+2, TF_NORMAL, strings[indx] ? strings[indx] : num_buf, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_FIELD]);
 				//
 				DEFINE BTN_HEIGHT = hei, BTN_WIDTH = hei;
 				int bx = x + (wid - BTN_WIDTH);
@@ -492,21 +495,29 @@ namespace Venrob::SubscreenEditor
 				//
 				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x, y, x+wid-1, y+hei-1, dlgdata))
 				{
-					indx = dropdown_open(lastframe, x, y+hei, wid, indx, dlgdata, strings, NUM_VIS_OPTS);
+					indx = dropdown_open(lastframe, x, y+hei, wid, indx, dlgdata, strings, num_opts, NUM_VIS_OPTS);
 				}
 				return indx;
 			}
 			//end
 			//start compounds
-			ProcRet title_bar(bitmap bit, int margin, int barheight, char32 title, untyped dlgdata, char32 descstr) //start
+			ProcRet title_bar(bitmap bit, int margin, int barheight, char32 title, untyped dlgdata, char32 descstr, bool buttons) //start
 			{
 				--barheight;
 				rect(bit, margin, margin, dlgdata[DLG_DATA_WID]-margin-margin, barheight, PAL[COL_TITLE_BAR]);
 				text(bit, margin+margin, margin+((barheight - Text->FontHeight(DIA_FONT))/2), TF_NORMAL, title, PAL[COL_TEXT_TITLE_BAR]);
 				line(bit, margin, barheight, dlgdata[DLG_DATA_WID]-margin, barheight, PAL[COL_BODY_MAIN_DARK]);
 				line(bit, margin, barheight+1, dlgdata[DLG_DATA_WID]-margin, barheight+1, PAL[COL_BODY_MAIN_LIGHT]);
-				i_proc(bit, dlgdata[DLG_DATA_WID]-19, 2, descstr, dlgdata, true);
-				return x_out(bit, dlgdata[DLG_DATA_WID]-margin-1-(barheight-2), margin+1, barheight-3, dlgdata);
+				if(buttons)
+				{
+					i_proc(bit, dlgdata[DLG_DATA_WID]-19, 2, descstr, dlgdata, true);
+					return x_out(bit, dlgdata[DLG_DATA_WID]-margin-1-(barheight-2), margin+1, barheight-3, dlgdata);
+				}
+				else return PROC_NULL;
+			} //end
+			ProcRet title_bar(bitmap bit, int margin, int barheight, char32 title, untyped dlgdata, char32 descstr) //start
+			{
+				return title_bar(bit, margin, barheight, title, dlgdata, descstr, true);
 			} //end
 			ProcRet title_bar(bitmap bit, int margin, int barheight, char32 title, untyped dlgdata) //start
 			{
@@ -1327,6 +1338,8 @@ namespace Venrob::SubscreenEditor
 			
 			bool running = true;
 			bool do_save_changes = false;
+			untyped old_sys_settings[SSET_MAX];
+			memcpy(old_sys_settings, sys_settings, SSET_MAX);
 			//end
 			untyped proc_data[6];
 			while(running)
@@ -1378,12 +1391,9 @@ namespace Venrob::SubscreenEditor
 				subscr_Waitframe();
 			}
 			
-			if(do_save_changes)
+			unless(do_save_changes)
 			{
-				bit->Write(0, "_DIALOGUE.png", true);
-			}
-			else
-			{
+				memcpy(sys_settings, old_sys_settings, SSET_MAX);
 			}
 			
 			bit->Free();
@@ -1623,7 +1633,7 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, "Create Object", data, "Create a new object of a given type, at it's default settings.\nAfter creating the object, it's editing window will open.")==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen"}, 10, lastframe, 0);
+				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen"}, -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)-(BUTTON_WIDTH/2), HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, "Create", data, proc_data, 0, FLAG_DEFAULT))
@@ -1681,6 +1691,155 @@ namespace Venrob::SubscreenEditor
 			gen_final();	
 		}
 		//end
+		//start Main Menu
+		void MainMenu()
+		{
+			//start OLD MENU CODE
+			int editing = 1;
+			Input->DisableKey[KEY_ESC] = editing!=0;
+			while(true)
+			{
+				switch(editing)
+				{
+					case 0:
+						if(Input->Press[CB_START])
+						{
+							runActiveSubscreen();
+						}
+						runPassiveSubscreen();
+						break;
+					case 1:
+						runFauxActiveSubscreen();
+						if(SubEditorData[SED_QUEUED_DELETION])
+						{
+							if(SubEditorData[SED_QUEUED_DELETION]<0) //passive
+							{
+								remove_passive_module(-SubEditorData[SED_QUEUED_DELETION]);
+							}
+							else //active
+							{
+								remove_active_module(SubEditorData[SED_QUEUED_DELETION]);
+							}
+							SubEditorData[SED_QUEUED_DELETION]=0;
+						}
+						KillButtons();
+						break;
+					case 2:
+						runFauxPassiveSubscreen(true);
+						runPreparedSelector(false);
+						ColorScreen(PAL[COL_NULL], true);
+						getSubscreenBitmap(false)->Blit(7, RT_SCREEN, 0, 0, 256, 56, 0, PASSIVE_EDITOR_TOP, 256, 56, 0, 0, 0, 0, 0, true);
+						clearPassive1frame();
+						KillButtons();
+						break;
+				}
+				if(handle_data_pane(editing==1)) continue;
+				if(editing) DIALOG::runGUI(editing==1);
+				if(Input->ReadKey[KEY_P])
+				{
+					++editing;
+					editing %= 3;
+					Input->DisableKey[KEY_ESC] = editing!=0;
+				}
+				subscr_Waitframe();
+			}
+			//end OLD MENU CODE
+			gen_startup();
+			//start setup
+			DEFINE WIDTH = 256
+			     , HEIGHT = 224
+				 , BAR_HEIGHT = 11
+				 , MARGIN_WIDTH = 1
+				 , FRAME_X = MARGIN_WIDTH+2
+				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
+				 ;
+			bitmap bit = create(WIDTH, HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			
+			char32 title[128] = "Main Menu";
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			//
+			null_screen();
+			draw_dlg(bit, data);
+			KillButtons();
+			Waitframe();
+			//
+			center_dlg(bit, data);
+			//end
+			untyped proc_data[6];
+			while(true)
+			{
+				bit->ClearToColor(0, PAL[COL_NULL]);
+				//Deco
+				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
+				//Func
+				title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, "", false);
+				
+				//Dropdowns
+				{
+					//UNFINISHED Add dropdown for active subscreen selector
+					//UNFINISHED Add dropdown for passive subscreen selector
+				}
+				//Buttons
+				{
+					DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+					//Confirm / Reset UNFINISHED remove
+					/*{
+						if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 4))
+						{
+							running = false;
+						}
+						if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 5, FLAG_DEFAULT))
+						{
+							running = false;
+							do_save_changes = true;
+						}
+					}*/
+					//SaveLoad
+					{
+						//UNFINISHED Save (open save dlg; same as MainGUI save)
+						//UNFINISHED Load (open load dlg; same as MainGUI load)
+					}
+					//Choose Buttons
+					{
+						//UNFINISHED Load Active (uses indx from ddown)
+						//UNFINISHED Load Passive (uses indx from ddown)
+						//UNFINISHED New Active (Brand new blank active)
+						//UNFINISHED New Passive (Brand new blank passive)
+						//UNFINISHED Copy Active (New Active copied from indx in ddown)
+						//UNFINISHED Copy Passive (New Passive copied from indx in ddown)
+					}
+					//Mode Buttons
+					{
+						//UNFINISHED Edit Active (move to editing = 1 from old)
+						//UNFINISHED Edit Passive (move to editing = 2 from old)
+						//UNFINISHED Test (move to editing = 0 from old)
+						//UNFINISHED TEXT- explain how to get back to this menu from another mode
+					}
+				}
+				
+				//
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			/* Unreachable
+			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
+			{
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			bit->Free();
+			gen_final();
+			*/
+		}
+		//end Main Menu
 		//Misc Mini-DLGs
 		//start Select Color
 		Color pick_color(Color default_color)
@@ -1929,7 +2088,7 @@ namespace Venrob::SubscreenEditor
 		}
 		//end
 		//start Dropdown
-		int dropdown_open(bitmap parentBit, const int x, int y, const int WIDTH, int selIndx, untyped parentDLGData, char32 strings, int NUM_VIS_OPTS)
+		int dropdown_open(bitmap parentBit, const int x, int y, const int WIDTH, int selIndx, untyped parentDLGData, char32 strings, int NUM_OPTS, int NUM_VIS_OPTS)
 		{
 			DEFINE BKUP_INDX = selIndx;
 			/* Notes:
@@ -1948,7 +2107,6 @@ namespace Venrob::SubscreenEditor
 			DEFINE TXT_VSPACE = 2;
 			DEFINE UNIT_HEIGHT = TXT_VSPACE + Text->FontHeight(DIA_FONT);
 			DEFINE NUM_OPTS_FLIP = 8;
-			DEFINE NUM_OPTS = SizeOfArray(strings);
 			if(NUM_VIS_OPTS < 0) //Fit-to-screen
 			{
 				NUM_VIS_OPTS = Min(Div(224 - (2*MARGIN_WIDTH) - y, UNIT_HEIGHT), NUM_OPTS);
@@ -2015,8 +2173,10 @@ namespace Venrob::SubscreenEditor
 					int ty = MARGIN_WIDTH + 2;
 					for(int q = 0; q < NUM_OPTS; ++q)
 					{
+						int num_buf[12];
+						itoa(num_buf, q+1);
 						if(q==selIndx) rect(listbit, 0, ty-2, 0+BMP_WIDTH-1, ty+UNIT_HEIGHT-2, PAL[COL_HIGHLIGHT]);
-						text(listbit, TXT_X, ty, TF_NORMAL, strings[q], PAL[COL_TEXT_FIELD]);
+						text(listbit, TXT_X, ty, TF_NORMAL, strings[q] ? strings[q] : num_buf, PAL[COL_TEXT_FIELD]);
 						ty += Text->FontHeight(DIA_FONT) + TXT_VSPACE;
 					}
 				}
@@ -2078,7 +2238,6 @@ namespace Venrob::SubscreenEditor
 					}
 					else if(was_clicking)
 					{
-						printf("Clicked on list option!\n");
 						running = false;
 					}
 				}
@@ -2087,19 +2246,16 @@ namespace Venrob::SubscreenEditor
 					was_clicking = false;
 					if(SubEditorData[SED_LCLICKED] && !DLGCursorBox(0, 0, WIDTH-1, HEIGHT-1, data))
 					{
-						printf("Clicked off!\n");
 						selIndx = BKUP_INDX;
 						running = false;
 					}
 				}
 				if(DefaultButtonP())
 				{
-					printf("Enter!\n");
 					running = false;
 				}
 				if(CancelButtonP())
 				{
-					printf("Esc!\n");
 					selIndx = BKUP_INDX;
 					running = false;
 				}
@@ -2114,7 +2270,6 @@ namespace Venrob::SubscreenEditor
 					out->ClearToColor(0, PAL[COL_NULL]);
 					moveblit(7, out, parentBit, parentDLGData[DLG_DATA_WID], parentDLGData[DLG_DATA_HEI]);
 					bit->Blit(7, out, 0, 0, WIDTH-1, HEIGHT-1, data[DLG_DATA_XOFFS] - parentDLGData[DLG_DATA_XOFFS], data[DLG_DATA_YOFFS] - parentDLGData[DLG_DATA_YOFFS], WIDTH-1, HEIGHT-1, 0, 0, 0, 0, 0, true);
-					out->Write(7, "_DIALOGUE.png", true);
 					out->Free();
 				}
 				KillButtons();

@@ -6,11 +6,17 @@
 #include "SubscreenMakerGUI.zs"
 #include "VenrobBitmaps.zh"
 
+/* NOTES
+ * '.z_asub', '.z_psub' for individual subscreens
+ * '.z_sub_proj' for bundle project
+ * '.zs' for script export
+ */
+
 namespace Venrob::SubscreenEditor
 {
 	using namespace Venrob::Subscreen;
 	using namespace Venrob::Subscreen::Internal;
-	
+	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
 	enum
 	{
@@ -33,8 +39,8 @@ namespace Venrob::SubscreenEditor
 		SED_QUEUED_DELETION,
 		SED_GLOBAL_TIMER,
 		SED_JUST_CLONED
-	};
-	
+	}; //end
+	//start System Settings
 	untyped sys_settings[MAX_INT];
 	enum sysSetting
 	{
@@ -42,76 +48,125 @@ namespace Venrob::SubscreenEditor
 		SSET_CURSOR_VER, //if SED_CURSORTILE <= 0, then which packaged cursor style to draw
 		SSET_DELWARN,
 		SSET_MAX
-	};
+	}; //end
 	
 	global script Init //start
 	{
 		void run()
 		{
 			Subscreen::init();
-			//loadClassicPal(PAL);
-			loadClassicDarkPal(PAL);
-			//sys_settings[SSET_CURSORTILE] = 10;
+			//start Init Filesystem
+			file f;
+			f->Create("SubEditor/Instructions.txt");
+			f->WriteString("Files of format '###.z_psub' and '###.z_asub' in this folder"
+			               " represent passive and active subscreen data respectively.\n"
+						   "The number represents it's saved index. These files need not"
+						   " be modified manually, though you can back them up to save "
+						   "your subscreens individually.\n"
+						   "These files are created automatically, and will be overwritten"
+						   " if a project file is loaded.\n"
+						   "A '.z_sub_proj' file stores an entire set of subscreens as"
+						   " a project package. These can be any name, and loaded via the"
+						   " 'Load' option in the script.\n"
+						   "These are NOT created automatically; they are only saved via the"
+						   "'Save' menu.\n"
+						   "'z_sub_proj' files are not usable in a final quest; they only"
+						   " act as a way to save your working files. To export a subscreen"
+						   " set for use in a quest, you will need to use the '.zs' option"
+						   " in the 'Save' menu.\n"
+						   "To use an exported '.zs' file, simply import it as any other script,"
+						   " and assign the dmapdata scripts 'ActiveSub' and 'PassiveSub'.\n"
+						   "Set 'InitD[7]' to the index of the Passive Subscreen, and"
+						   " 'InitD[6]' to the index of the Active Subscreen.\n");
+			f->Close();
+			//end Init Filesystem
+			loadBasicPal(PAL);
+			Game->FFRules[qr_BITMAP_AND_FILESYSTEM_PATHS_ALWAYS_RELATIVE] = true;
 			untyped buf[MAX_MODULE_SIZE];
-			MakeBGColorModule(buf);
-			add_active_module(buf);
-			buf[P1] = DGRAY;
-			add_passive_module(buf);
-			MakePassiveSubscreen(buf);
-			add_active_module(buf);
+			if(FileSystem->FileExists("SubEditor/1.z_asub"))
+			{
+				f->Open("SubEditor/1.z_asub");
+				load_active_file(f);
+				f->Close();
+			}
+			else
+			{
+				MakeBGColorModule(buf);
+				add_active_module(buf);
+				buf[P1] = DGRAY;
+				add_passive_module(buf);
+				MakePassiveSubscreen(buf);
+				add_active_module(buf);
+				//
+				MakeSelectableItemID(buf);
+				buf[P1] = I_CANDLE1;
+				buf[P2] = 0;
+				buf[P3+DIR_UP] = -1;
+				buf[P3+DIR_DOWN] = -1;
+				buf[P3+DIR_LEFT] = 3;
+				buf[P3+DIR_RIGHT] = 1;
+				buf[M_X] = 32;
+				buf[M_Y] = 80;
+				add_active_module(buf);
+				//
+				MakeSelectableItemClass(buf);
+				buf[P1] = IC_SWORD;
+				buf[P2] = 1;
+				buf[P3+DIR_UP] = -1;
+				buf[P3+DIR_DOWN] = -1;
+				buf[P3+DIR_LEFT] = 0;
+				buf[P3+DIR_RIGHT] = 2;
+				buf[M_X] = 48;
+				buf[M_Y] = 80;
+				add_active_module(buf);
+				//
+				MakeSelectableItemClass(buf);
+				buf[P1] = IC_ARROW;
+				buf[P2] = 2;
+				buf[P3+DIR_UP] = -1;
+				buf[P3+DIR_DOWN] = -1;
+				buf[P3+DIR_LEFT] = 1;
+				buf[P3+DIR_RIGHT] = 3;
+				buf[M_X] = 64;
+				buf[M_Y] = 80;
+				add_active_module(buf);
+				//
+				MakeSelectableItemClass(buf);
+				buf[P1] = IC_BRANG;
+				buf[P2] = 3;
+				buf[P3+DIR_UP] = -1;
+				buf[P3+DIR_DOWN] = -1;
+				buf[P3+DIR_LEFT] = 2;
+				buf[P3+DIR_RIGHT] = 0;
+				buf[M_X] = 80;
+				buf[M_Y] = 80;
+				add_active_module(buf);
+				f->Create("SubEditor/1.z_asub");
+				save_active_file(f);
+				f->Close();
+			}
 			//
-			MakeSelectableItemID(buf);
-			buf[P1] = I_CANDLE1;
-			buf[P2] = 0;
-			buf[P3+DIR_UP] = -1;
-			buf[P3+DIR_DOWN] = -1;
-			buf[P3+DIR_LEFT] = 3;
-			buf[P3+DIR_RIGHT] = 1;
-			buf[M_X] = 32;
-			buf[M_Y] = 80;
-			add_active_module(buf);
-			//
-			MakeSelectableItemClass(buf);
-			buf[P1] = IC_SWORD;
-			buf[P2] = 1;
-			buf[P3+DIR_UP] = -1;
-			buf[P3+DIR_DOWN] = -1;
-			buf[P3+DIR_LEFT] = 0;
-			buf[P3+DIR_RIGHT] = 2;
-			buf[M_X] = 48;
-			buf[M_Y] = 80;
-			add_active_module(buf);
-			//
-			MakeSelectableItemClass(buf);
-			buf[P1] = IC_ARROW;
-			buf[P2] = 2;
-			buf[P3+DIR_UP] = -1;
-			buf[P3+DIR_DOWN] = -1;
-			buf[P3+DIR_LEFT] = 1;
-			buf[P3+DIR_RIGHT] = 3;
-			buf[M_X] = 64;
-			buf[M_Y] = 80;
-			add_active_module(buf);
-			//
-			MakeSelectableItemClass(buf);
-			buf[P1] = IC_BRANG;
-			buf[P2] = 3;
-			buf[P3+DIR_UP] = -1;
-			buf[P3+DIR_DOWN] = -1;
-			buf[P3+DIR_LEFT] = 2;
-			buf[P3+DIR_RIGHT] = 0;
-			buf[M_X] = 80;
-			buf[M_Y] = 80;
-			add_active_module(buf);
-			//
-			MakeBButtonItem(buf);
-			buf[M_X] = 128;
-			buf[M_Y] = 24;
-			add_passive_module(buf);
-			MakeAButtonItem(buf);
-			buf[M_X] = 144;
-			buf[M_Y] = 24;
-			add_passive_module(buf);
+			if(FileSystem->FileExists("SubEditor/1.z_psub"))
+			{
+				f->Open("SubEditor/1.z_psub");
+				load_passive_file(f);
+				f->Close();
+			}
+			else
+			{
+				MakeBButtonItem(buf);
+				buf[M_X] = 128;
+				buf[M_Y] = 24;
+				add_passive_module(buf);
+				MakeAButtonItem(buf);
+				buf[M_X] = 144;
+				buf[M_Y] = 24;
+				add_passive_module(buf);
+				f->Create("SubEditor/1.z_psub");
+				save_passive_file(f);
+				f->Close();
+			}
+			f->Free();
 			for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = MAX_COUNTER;
 		}
 	} //end Init
@@ -135,54 +190,7 @@ namespace Venrob::SubscreenEditor
 		{
 			Game->DisableActiveSubscreen = true;
 			TypeAString::setEnterEndsTyping(false); TypeAString::setAllowBackspaceDelete(true); TypeAString::setOverflowWraps(false);
-			int editing = 1;
-			Input->DisableKey[KEY_ESC] = editing!=0;
-			while(true)
-			{
-				switch(editing)
-				{
-					case 0:
-						if(Input->Press[CB_START])
-						{
-							runActiveSubscreen();
-						}
-						runPassiveSubscreen();
-						break;
-					case 1:
-						runFauxActiveSubscreen();
-						if(SubEditorData[SED_QUEUED_DELETION])
-						{
-							if(SubEditorData[SED_QUEUED_DELETION]<0) //passive
-							{
-								remove_passive_module(-SubEditorData[SED_QUEUED_DELETION]);
-							}
-							else //active
-							{
-								remove_active_module(SubEditorData[SED_QUEUED_DELETION]);
-							}
-							SubEditorData[SED_QUEUED_DELETION]=0;
-						}
-						KillButtons();
-						break;
-					case 2:
-						runFauxPassiveSubscreen(true);
-						runPreparedSelector(false);
-						ColorScreen(PAL[COL_NULL], true);
-						getSubscreenBitmap(false)->Blit(7, RT_SCREEN, 0, 0, 256, 56, 0, PASSIVE_EDITOR_TOP, 256, 56, 0, 0, 0, 0, 0, true);
-						clearPassive1frame();
-						KillButtons();
-						break;
-				}
-				if(handle_data_pane(editing==1)) continue;
-				if(editing) DIALOG::runGUI(editing==1);
-				if(Input->ReadKey[KEY_P])
-				{
-					++editing;
-					editing %= 3;
-					Input->DisableKey[KEY_ESC] = editing!=0;
-				}
-				subscr_Waitframe();
-			}
+			MainMenu();
 		}
 	}
 

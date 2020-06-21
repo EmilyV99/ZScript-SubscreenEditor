@@ -29,6 +29,10 @@ namespace Venrob::Subscreen
 	DEFINE SUBSCR_STORAGE_SIZE = MAX_INT;
 	DEFINE MAX_MODULES = ((SUBSCR_STORAGE_SIZE / MAX_MODULE_SIZE)/10000)*10000;
 	DEFINE NUM_SETTINGS = 100;
+	
+	DEFINE VERSION_ASUB = 1;
+	DEFINE VERSION_PSUB = 1;
+	
 	untyped activeData[SUBSCR_STORAGE_SIZE];
 	int activeModules[MAX_MODULES];
 	untyped passiveData[SUBSCR_STORAGE_SIZE];
@@ -155,6 +159,62 @@ namespace Venrob::Subscreen
 		load_passive_settings(NULL);
 	} //end Clearing/Init
 	
+	//start FileIO
+	void load_active_file(file f)
+	{
+		f->Rewind();
+		int v[1];
+		f->ReadInts(v, 1, 0);
+		switch(v)
+		{
+			case 1:
+			{
+				clearActive();
+				until(f->EOF)
+				{
+					untyped buf[MAX_MODULE_SIZE];
+					f->ReadInts(buf, 1, 0);
+					if(f->EOF) break;
+					f->ReadInts(buf, buf[0], 1);
+					add_active_module(buf);
+				}
+				break;
+			}
+		}
+	}
+	void load_passive_file(file f)
+	{
+		f->Rewind();
+		int v[1];
+		f->ReadInts(v, 1, 0);
+		switch(v)
+		{
+			case 1:
+			{
+				clearPassive();
+				until(f->EOF)
+				{
+					untyped buf[MAX_MODULE_SIZE];
+					f->ReadInts(buf, 1, 0);
+					if(f->EOF) break;
+					f->ReadInts(buf, buf[0], 1);
+					add_passive_module(buf);
+				}
+				break;
+			}
+		}
+	}
+	void save_active_file(file f)
+	{
+		f->WriteInts({VERSION_ASUB},1,0);
+		f->WriteInts(activeData,g_arr[SZ_ACTIVE_DATA],0);
+	}
+	void save_passive_file(file f)
+	{
+		f->WriteInts({VERSION_PSUB},1,0);
+		f->WriteInts(passiveData,g_arr[SZ_PASSIVE_DATA],0);
+	}
+	//end FileIO
 	//start Modules
 	/*
 	 * Load a saved data array, replacing the currently loaded active subscreen.
