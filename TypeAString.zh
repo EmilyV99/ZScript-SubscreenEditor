@@ -93,7 +93,18 @@ namespace TypeAString
 		Game->TypingMode = false;
 		__setTvar(TVAR_TYPING_ENDED,1);
 	}
-
+	
+	void addStr(char32 buf)
+	{
+		int ind = __getTvar(TVAR_INDEX);
+		int q = 0;
+		for(; buf[q]; ++q)
+		{
+			keyboardInput[q+ind] = buf[q];
+		}
+		__setTvar(TVAR_INDEX, q+ind);
+	}
+	
 	void handleTyping()
 	{
 		if(__getTvar(TVAR_TYPING_ENDED))__setTvar(TVAR_TYPING_ENDED,0);

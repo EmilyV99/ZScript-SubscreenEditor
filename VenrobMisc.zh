@@ -582,6 +582,15 @@ namespace Venrob
 	}
 	
 	/**
+	 * Colors the entire screen. bool subscrArea determines if the passive
+	 *     subscreen should be included.
+	 */
+	void ColorScreen(int layer, int color, bool subscrArea)
+	{
+		Screen->Rectangle(layer,0,subscrArea?-56:0,255,175,color,1,0,0,0,true,OP_OPAQUE);
+	}
+	
+	/**
 	 * This will work as DrawString, but, it can draw over multiple vertical lines.
 	 * Text over the Max Width, as well as newline characters ('\n'), will break to the next line.
 	 * New params:
