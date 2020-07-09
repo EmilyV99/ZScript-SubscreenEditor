@@ -485,7 +485,7 @@ namespace Venrob::SubscreenEditor
 				bool disabled = flags&FLAG_DISABLE;
 				int hei = 2 + 2 + Text->FontHeight(DIA_FONT);
 				frame_rect(bit, x, y, x+wid-1, y+hei-1, 1, disabled ? PAL[COL_BODY_MAIN_MED] : PAL[COL_FIELD_BG]);
-				text(bit, x+2, y+2, TF_NORMAL, strings[indx] ? strings[indx] : num_buf, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_FIELD]);
+				text(bit, x+2, y+2, TF_NORMAL, strings ? strings[indx] : num_buf, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_FIELD]);
 				//
 				DEFINE BTN_HEIGHT = hei, BTN_WIDTH = hei;
 				int bx = x + (wid - BTN_WIDTH);
@@ -749,7 +749,10 @@ namespace Venrob::SubscreenEditor
 		//ProcData s- for global misc storage for the main GUI screen.
 		untyped main_proc_data[MAX_INT];
 		
-		
+		bool delwarn() //start
+		{
+			return !sys_settings[SSET_DELWARN] || yesno_dlg("Are you sure you want to delete this?");
+		} //end
 		void gen_startup() //start
 		{
 			KillClicks();
@@ -879,7 +882,7 @@ namespace Venrob::SubscreenEditor
 				}
 				if(PROC_CONFIRM==button(bit, FRAME_X+(2*(BUTTON_WIDTH+3)), HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%%77%%Del%ete", data, proc_data, 4, module_arr[M_TYPE]==MODULE_TYPE_BGCOLOR?FLAG_DISABLE:0))
 				{
-					if(!sys_settings[SSET_DELWARN] || yesno_dlg("Are you sure you want to delete this?"))
+					if(delwarn())
 					{
 						running = false;
 						SubEditorData[SED_QUEUED_DELETION] = mod_indx;
@@ -1058,9 +1061,14 @@ namespace Venrob::SubscreenEditor
 			data[DLG_DATA_YOFFS] = yoffs;
 			return isHovering(data);
 		}
-		void runGUI(bool active)
+		enum
 		{
-			if(SubEditorData[SED_ACTIVE_PANE]) return; //No main GUI during dialogs.
+			GUIRET_NULL,
+			GUIRET_SAVE
+		};
+		int runGUI(bool active)
+		{
+			if(SubEditorData[SED_ACTIVE_PANE]) return GUIRET_NULL; //No main GUI during dialogs.
 			if(Input->ReadKey[KEY_TAB])
 			{
 				SubEditorData[SED_GUISTATE] = ((SubEditorData[SED_GUISTATE]+1)%GUISTATE_MAX);
@@ -1082,6 +1090,7 @@ namespace Venrob::SubscreenEditor
 			data[DLG_DATA_WID] = MAIN_GUI_WIDTH;
 			data[DLG_DATA_HEI] = MAIN_GUI_HEIGHT;
 			data[DLG_DATA_YOFFS] = yoffs;
+			int ret = GUIRET_NULL;
 			bitmap bit = getGUIBitmap();
 			{
 				//Deco
@@ -1120,12 +1129,13 @@ namespace Venrob::SubscreenEditor
 				}
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Save", data, main_proc_data, 4))
 				{
-					open_data_pane(DLG_SAVEAS, PANE_T_SYSTEM);
+					ret = GUIRET_SAVE;
+					//open_data_pane(DLG_SAVEAS, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Load", data, main_proc_data, 5))
+				/*if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "", data, main_proc_data, 5))
 				{
-					open_data_pane(DLG_LOAD, PANE_T_SYSTEM);
-				}
+					//open_data_pane(DLG_LOAD, PANE_T_SYSTEM);
+				}*/
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, main_proc_data, 6))
 				{
 					open_data_pane(DLG_SYSTEM, PANE_T_SYSTEM);
@@ -1138,6 +1148,7 @@ namespace Venrob::SubscreenEditor
 			}
 			draw_dlg(bit, data);
 			if(isHovering(data)) clearPreparedSelector();
+			return ret;
 		} //end main GUI
 		//start Themes
 		void editThemes()
@@ -1638,7 +1649,7 @@ namespace Venrob::SubscreenEditor
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)-(BUTTON_WIDTH/2), HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, "Create", data, proc_data, 0, FLAG_DEFAULT))
 				{
-					untyped module_arr[MAX_MODULE_SIZE];
+					untyped module_arr[MODULE_BUF_SIZE];
 					switch(val[indx])
 					{
 						case MODULE_TYPE_SELECTABLE_ITEM_ID:
@@ -1694,6 +1705,7 @@ namespace Venrob::SubscreenEditor
 		//start Main Menu
 		void MainMenu()
 		{
+			/*
 			//start OLD MENU CODE
 			int editing = 1;
 			Input->DisableKey[KEY_ESC] = editing!=0;
@@ -1727,7 +1739,7 @@ namespace Venrob::SubscreenEditor
 					case 2:
 						runFauxPassiveSubscreen(true);
 						runPreparedSelector(false);
-						ColorScreen(PAL[COL_NULL], true);
+						ColorScreen(7, PAL[COL_NULL], true);
 						getSubscreenBitmap(false)->Blit(7, RT_SCREEN, 0, 0, 256, 56, 0, PASSIVE_EDITOR_TOP, 256, 56, 0, 0, 0, 0, 0, true);
 						clearPassive1frame();
 						KillButtons();
@@ -1744,6 +1756,7 @@ namespace Venrob::SubscreenEditor
 				subscr_Waitframe();
 			}
 			//end OLD MENU CODE
+			*/
 			gen_startup();
 			//start setup
 			DEFINE WIDTH = 256
@@ -1752,9 +1765,14 @@ namespace Venrob::SubscreenEditor
 				 , MARGIN_WIDTH = 1
 				 , FRAME_X = MARGIN_WIDTH+2
 				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
+				 , ACOL_X = FRAME_X
+				 , PCOL_X = FRAME_X + (WIDTH/2 - (FRAME_X*2)) + 4
+				 , COL_WID = (WIDTH/2 - (FRAME_X*2))
 				 ;
 			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
+			bitmap lastframe = create(WIDTH, HEIGHT);
+			lastframe->ClearToColor(0, PAL[COL_NULL]);
 			
 			char32 title[128] = "Main Menu";
 			untyped data[DLG_DATA_SZ];
@@ -1768,23 +1786,49 @@ namespace Venrob::SubscreenEditor
 			//
 			center_dlg(bit, data);
 			//end
-			untyped proc_data[6];
+			untyped proc_data[11];
+			int active_indx, passive_indx;
+			int num_active_sub = count_subs(false), num_passive_sub = count_subs(true);
+			printf("Counts: %03d,%03d\n",num_active_sub,num_passive_sub);
+			unless(num_active_sub)
+			{
+				clearActive(true);
+				save_active_file(1);
+				++num_active_sub;
+			}
+			unless(num_passive_sub)
+			{
+				clearPassive(true);
+				save_passive_file(1);
+				++num_passive_sub;
+			}
 			while(true)
 			{
+				lastframe->Clear(0);
+				fullblit(0, lastframe, bit);
 				bit->ClearToColor(0, PAL[COL_NULL]);
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
 				title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, "", false);
 				
+				//Text
+				{
+					text(bit, ACOL_X + COL_WID/2, FRAME_Y, TF_CENTERED, "Active Subscreen", PAL[COL_TEXT_MAIN]);
+					text(bit, PCOL_X + COL_WID/2, FRAME_Y, TF_CENTERED, "Passive Subscreen", PAL[COL_TEXT_MAIN]);
+				}
 				//Dropdowns
 				{
 					//UNFINISHED Add dropdown for active subscreen selector
+					active_indx = dropdown_proc(bit, ACOL_X, FRAME_Y+8, COL_WID, active_indx, data, NULL, num_active_sub, 10, lastframe, 0);
 					//UNFINISHED Add dropdown for passive subscreen selector
+					passive_indx = dropdown_proc(bit, PCOL_X, FRAME_Y+8, COL_WID, passive_indx, data, NULL, num_passive_sub, 10, lastframe, 0);
 				}
 				//Buttons
 				{
 					DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+					DEFINE BUTTON_XOFF = (COL_WID/2) - (BUTTON_WIDTH/2);
+					DEFINE BUTTON_SPACING = 4;
 					//Confirm / Reset UNFINISHED remove
 					/*{
 						if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 4))
@@ -1805,11 +1849,99 @@ namespace Venrob::SubscreenEditor
 					//Choose Buttons
 					{
 						//UNFINISHED Load Active (uses indx from ddown)
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "Load", data, proc_data, 2)) //start
+						{
+							load_active_file(active_indx+1);
+						} //end
 						//UNFINISHED Load Passive (uses indx from ddown)
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "Load", data, proc_data, 3)) //start
+						{
+							load_passive_file(passive_indx+1);
+						} //end
 						//UNFINISHED New Active (Brand new blank active)
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 2), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 4)) //start
+						{
+							clearActive();
+							active_indx = num_active_sub;
+							save_active_file(++num_active_sub);
+						} //end
 						//UNFINISHED New Passive (Brand new blank passive)
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 2), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 5)) //start
+						{
+							clearPassive();
+							passive_indx = num_passive_sub;
+							save_passive_file(++num_passive_sub);
+						} //end
 						//UNFINISHED Copy Active (New Active copied from indx in ddown)
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 3), BUTTON_WIDTH, BUTTON_HEIGHT, "Dupe", data, proc_data, 6)) //start
+						{
+							load_active_file(active_indx+1);
+							active_indx = num_active_sub;
+							save_active_file(++num_active_sub);
+						} //end
 						//UNFINISHED Copy Passive (New Passive copied from indx in ddown)
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 3), BUTTON_WIDTH, BUTTON_HEIGHT, "Dupe", data, proc_data, 7)) //start
+						{
+							load_passive_file(passive_indx+1);
+							passive_indx = num_passive_sub;
+							save_passive_file(++num_passive_sub);
+						} //end
+						//UNFINISHED Delete Active
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 4), BUTTON_WIDTH, BUTTON_HEIGHT, "Delete", data, proc_data, 8)) //start
+						{
+							if(delwarn())
+							{
+								if(delete_active_file(active_indx+1))
+								{
+									char32 buf[] = "Active Subscreen #%i deleted successfully";
+									sprintf(buf, buf, active_indx+1);
+									active_indx = 0;
+									unless(--num_active_sub)
+									{
+										clearActive();
+										save_active_file(1);
+										++num_active_sub;
+									}
+									else load_active_file(1);
+									msg_dlg("Alert", buf);
+								}
+								else
+								{
+									char32 buf[] = "Active Subscreen #%i could not be deleted\nMenu data will be refreshed";
+									sprintf(buf, buf, active_indx+1);
+									err_dlg(buf);
+									return; //Reset menu
+								}
+							}
+						} //end
+						//UNFINISHED Delete Passive
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 4), BUTTON_WIDTH, BUTTON_HEIGHT, "Delete", data, proc_data, 9)) //start
+						{
+							if(delwarn())
+							{
+								if(delete_passive_file(passive_indx+1))
+								{
+									char32 buf[] = "Passive Subscreen #%i deleted successfully";
+									sprintf(buf, buf, passive_indx+1);
+									passive_indx = 0;
+									unless(--num_passive_sub)
+									{
+										clearPassive();
+										save_passive_file(1);
+										++num_passive_sub;
+									}
+									else load_passive_file(1);
+									msg_dlg("Alert", buf);
+								}
+								else
+								{
+									char32 buf[] = "Passive Subscreen #%i could not be deleted\nMenu data will be refreshed";
+									sprintf(buf, buf, passive_indx+1);
+									err_dlg(buf);
+									return; //Reset menu
+								}
+							}
+						} //end
 					}
 					//Mode Buttons
 					{
@@ -1840,6 +1972,17 @@ namespace Venrob::SubscreenEditor
 			*/
 		}
 		//end Main Menu
+		//start SaveLoad
+		void save()
+		{
+			msg_dlg("WIP", "This feature is still under construction. Please wait for an update.");
+			return;
+		}
+		void load()
+		{
+			msg_dlg("WIP", "This feature is still under construction. Please wait for an update.");
+		}
+		//end SaveLoad
 		//Misc Mini-DLGs
 		//start Select Color
 		Color pick_color(Color default_color)
@@ -2019,7 +2162,7 @@ namespace Venrob::SubscreenEditor
 		{
 			msg_dlg(title, msg, descstr, "O%k");
 		}
-		void msg_dlg(char32 title, char32 msg, char32 descstr, char32 oktxt)
+		void msg_dlg(char32 title, char32 msg, char32 descstr, char32 oktxt) //start
 		{
 			gen_startup();
 			
@@ -2085,6 +2228,10 @@ namespace Venrob::SubscreenEditor
 			
 			bit->Free();
 			gen_final();
+		} //end
+		void err_dlg(char32 msg)
+		{
+			msg_dlg("Error", msg, "Something went wrong; maybe a file wasn't found, or an internal error occurred.");
 		}
 		//end
 		//start Dropdown
@@ -2126,12 +2273,13 @@ namespace Venrob::SubscreenEditor
 				}
 			}
 			NUM_VIS_OPTS = Min(NUM_VIS_OPTS, NUM_OPTS);
+			const bool DO_BUTTONS = NUM_VIS_OPTS < NUM_OPTS;
 			DEFINE MAX_SCROLL_INDX = NUM_OPTS-NUM_VIS_OPTS;
 			DEFINE TXT_X = MARGIN_WIDTH+2;
-			DEFINE BTN_WIDTH = 10;
+			DEFINE BTN_WIDTH = DO_BUTTONS ? 10 : 0;
 			DEFINE BMP_WIDTH = WIDTH - BTN_WIDTH;
 			DEFINE BTN_X = BMP_WIDTH;
-			DEFINE HEIGHT = Max((MARGIN_WIDTH * 2) + (UNIT_HEIGHT*NUM_VIS_OPTS)-1, BTN_WIDTH*4);
+			DEFINE HEIGHT = Max((MARGIN_WIDTH * 2) + (UNIT_HEIGHT*NUM_VIS_OPTS)-1, DO_BUTTONS ? BTN_WIDTH*4 : 0);
 			DEFINE BMP_HEIGHT = (MARGIN_WIDTH * 2) + (UNIT_HEIGHT*NUM_OPTS);
 			DEFINE BTN_HEIGHT = HEIGHT/4;
 			int scrollIndx = Min(selIndx, MAX_SCROLL_INDX);
@@ -2165,7 +2313,8 @@ namespace Venrob::SubscreenEditor
 				bit->Clear(0);
 				listbit->Clear(0);
 				ldata[DLG_DATA_YOFFS] = data[DLG_DATA_YOFFS] - (scrollIndx*UNIT_HEIGHT); //update to current scroll
-				rect(bit, 0, 0, WIDTH-1, HEIGHT-1, PAL[COL_FIELD_BG]);
+				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, 1, PAL[COL_FIELD_BG]);
+				//h_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, PAL[COL_BODY_MAIN_DARK]);
 				bool isHoveringList = DLGCursorBox(0, 0, HEIGHT-1, BMP_WIDTH-1, data);
 				int cy = DLGMouseY(ldata);
 				//List options
@@ -2176,7 +2325,7 @@ namespace Venrob::SubscreenEditor
 						int num_buf[12];
 						itoa(num_buf, q+1);
 						if(q==selIndx) rect(listbit, 0, ty-2, 0+BMP_WIDTH-1, ty+UNIT_HEIGHT-2, PAL[COL_HIGHLIGHT]);
-						text(listbit, TXT_X, ty, TF_NORMAL, strings[q] ? strings[q] : num_buf, PAL[COL_TEXT_FIELD]);
+						text(listbit, TXT_X, ty, TF_NORMAL, strings ? strings[q] : num_buf, PAL[COL_TEXT_FIELD]);
 						ty += Text->FontHeight(DIA_FONT) + TXT_VSPACE;
 					}
 				}
@@ -2194,6 +2343,7 @@ namespace Venrob::SubscreenEditor
 					}
 				}
 				//Buttons
+				if(DO_BUTTONS)
 				{
 					int by = 0;
 					if(PROC_CONFIRM==button(bit, BTN_X, by, BTN_WIDTH, BTN_HEIGHT, "", data, proc_data, 0, (scrollIndx <= 0) ? FLAG_DISABLE : 0))
@@ -2234,7 +2384,7 @@ namespace Venrob::SubscreenEditor
 					if(SubEditorData[SED_LCLICKING])
 					{
 						was_clicking = true;
-						selIndx = Div(cy-MARGIN_WIDTH, UNIT_HEIGHT); //Select clicked option
+						selIndx = VBound(Div(cy-MARGIN_WIDTH, UNIT_HEIGHT), 0, NUM_OPTS); //Select clicked option
 					}
 					else if(was_clicking)
 					{

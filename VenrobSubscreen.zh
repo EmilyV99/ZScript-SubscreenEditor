@@ -25,13 +25,11 @@ namespace Venrob::Subscreen
 {
 	//start Constants/vars
 	DEFINE MAX_MODULE_SIZE = 32;
+	DEFINE MODULE_BUF_SIZE = 200;
 	DEFINE MODULE_META_SIZE = P1;
 	DEFINE SUBSCR_STORAGE_SIZE = MAX_INT;
 	DEFINE MAX_MODULES = ((SUBSCR_STORAGE_SIZE / MAX_MODULE_SIZE)/10000)*10000;
 	DEFINE NUM_SETTINGS = 100;
-	
-	DEFINE VERSION_ASUB = 1;
-	DEFINE VERSION_PSUB = 1;
 	
 	untyped activeData[SUBSCR_STORAGE_SIZE];
 	int activeModules[MAX_MODULES];
@@ -141,15 +139,31 @@ namespace Venrob::Subscreen
 	
 	void clearActive()
 	{
+		clearActive(false);
+	}
+	void clearActive(bool defaultSetup)
+	{
 		memset(activeData, 0, SUBSCR_STORAGE_SIZE);
 		memset(activeModules, 0, MAX_MODULES);
 		g_arr[NUM_ACTIVE_MODULES] = 1;
 		g_arr[SZ_ACTIVE_DATA] = NUM_SETTINGS + MODULE_META_SIZE;
 		activeModules[1] = g_arr[SZ_ACTIVE_DATA];
 		load_active_settings(NULL);
+		
+		unless(defaultSetup) return;
+		
+		untyped buf[MODULE_BUF_SIZE];
+		MakeBGColorModule(buf);
+		add_active_module(buf);
+		MakePassiveSubscreen(buf);
+		add_active_module(buf);
 	}
 	
 	void clearPassive()
+	{
+		clearPassive(false);
+	}
+	void clearPassive(bool defaultSetup)
 	{
 		memset(passiveData, 0, SUBSCR_STORAGE_SIZE);
 		memset(passiveModules, 0, MAX_MODULES);
@@ -157,64 +171,13 @@ namespace Venrob::Subscreen
 		g_arr[SZ_PASSIVE_DATA] = NUM_SETTINGS + MODULE_META_SIZE;
 		passiveModules[1] = g_arr[SZ_PASSIVE_DATA];
 		load_passive_settings(NULL);
+		
+		unless(defaultSetup) return;
+		
+		untyped buf[MODULE_BUF_SIZE];
+		MakeBGColorModule(buf);
+		add_passive_module(buf);
 	} //end Clearing/Init
-	
-	//start FileIO
-	void load_active_file(file f)
-	{
-		f->Rewind();
-		int v[1];
-		f->ReadInts(v, 1, 0);
-		switch(v)
-		{
-			case 1:
-			{
-				clearActive();
-				until(f->EOF)
-				{
-					untyped buf[MAX_MODULE_SIZE];
-					f->ReadInts(buf, 1, 0);
-					if(f->EOF) break;
-					f->ReadInts(buf, buf[0], 1);
-					add_active_module(buf);
-				}
-				break;
-			}
-		}
-	}
-	void load_passive_file(file f)
-	{
-		f->Rewind();
-		int v[1];
-		f->ReadInts(v, 1, 0);
-		switch(v)
-		{
-			case 1:
-			{
-				clearPassive();
-				until(f->EOF)
-				{
-					untyped buf[MAX_MODULE_SIZE];
-					f->ReadInts(buf, 1, 0);
-					if(f->EOF) break;
-					f->ReadInts(buf, buf[0], 1);
-					add_passive_module(buf);
-				}
-				break;
-			}
-		}
-	}
-	void save_active_file(file f)
-	{
-		f->WriteInts({VERSION_ASUB},1,0);
-		f->WriteInts(activeData,g_arr[SZ_ACTIVE_DATA],0);
-	}
-	void save_passive_file(file f)
-	{
-		f->WriteInts({VERSION_PSUB},1,0);
-		f->WriteInts(passiveData,g_arr[SZ_PASSIVE_DATA],0);
-	}
-	//end FileIO
 	//start Modules
 	/*
 	 * Load a saved data array, replacing the currently loaded active subscreen.
@@ -232,7 +195,7 @@ namespace Venrob::Subscreen
 		int sz = SizeOfArray(data_arr);
 		for(int index = 0; index < sz && data_arr[index] > 0; index += data_arr[index])
 		{
-			untyped buf[MAX_MODULE_SIZE];
+			untyped buf[MODULE_BUF_SIZE];
 			unless(data_arr[index] < MAX_MODULE_SIZE)
 			{
 				if(DEBUG) error("Subscreen::loadActive() - Module too large! Corrupt/invalid data!");
@@ -265,7 +228,7 @@ namespace Venrob::Subscreen
 		int sz = SizeOfArray(data_arr);
 		for(int index = 0; index < sz && data_arr[index] > 0; index += data_arr[index])
 		{
-			untyped buf[MAX_MODULE_SIZE];
+			untyped buf[MODULE_BUF_SIZE];
 			unless(data_arr[index] < MAX_MODULE_SIZE)
 			{
 				if(DEBUG) error("Subscreen::loadPassive() - Module too large! Corrupt/invalid data!");
@@ -689,7 +652,11 @@ namespace Venrob::Subscreen
 			
 			default:
 			{
-				if(DEBUG) error("validate_module() - Invalid module type encountered (%d)", type);
+				if(DEBUG)
+				{
+					error("validate_module() - Invalid module type encountered (%d)", type);
+					//printarr(module_arr);
+				}
 				return false;
 			}
 		}
@@ -808,7 +775,7 @@ namespace Venrob::Subscreen
 	void cloneModule(int mod_indx, bool active)
 	{
 		if(mod_indx<2) return; //No cloning settings/BGColor
-		untyped buf_arr[MAX_MODULE_SIZE];
+		untyped buf_arr[MODULE_BUF_SIZE];
 		saveModule(buf_arr, mod_indx, active);
 		if(active)
 			add_active_module(buf_arr);
@@ -841,14 +808,14 @@ namespace Venrob::Subscreen
 			runPassiveLogic();
 			for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
 			{
-				untyped buf[MAX_MODULE_SIZE];
+				untyped buf[MODULE_BUF_SIZE];
 				memcpy(buf, 0, activeData, activeModules[q], activeData[activeModules[q]]);
 				if((g_arr[ACTIVE_SELECTED_INDEX]==-1) || (g_arr[ACTIVE_SELECTED_INDEX] == buf[P2] && isSelectable(buf[M_TYPE]) && !canSelect(buf)))
 				{
 					g_arr[ACTIVE_SELECTED_INDEX] = -1;
 					for(int i = 1; i < g_arr[NUM_ACTIVE_MODULES]; ++i)
 					{
-						untyped buf[MAX_MODULE_SIZE];
+						untyped buf[MODULE_BUF_SIZE];
 						memcpy(buf, 0, activeData, activeModules[i], activeData[activeModules[i]]);
 						if(canSelect(buf))
 						{
@@ -901,7 +868,7 @@ namespace Venrob::Subscreen
 		g_arr[PASSIVE_TIMER]%=3600;
 		for(int q = 1; q < g_arr[NUM_PASSIVE_MODULES] ; ++q)
 		{
-			untyped buf[MAX_MODULE_SIZE];
+			untyped buf[MODULE_BUF_SIZE];
 			memcpy(buf, 0, passiveData, passiveModules[q], passiveData[passiveModules[q]]);
 			runModule(q, buf, false);
 		}
@@ -1004,7 +971,7 @@ namespace Venrob::Subscreen
 							g_arr[ACTIVE_SELECTED_INDEX] = module_arr[P3+selectedDir];
 							for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
 							{
-								untyped buf[MAX_MODULE_SIZE];
+								untyped buf[MODULE_BUF_SIZE];
 								memcpy(buf, 0, activeData, activeModules[q], activeData[activeModules[q]]);
 								if(isSelectable(buf[M_TYPE]) && g_arr[ACTIVE_SELECTED_INDEX] == buf[P2])
 								{

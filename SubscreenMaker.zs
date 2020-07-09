@@ -16,6 +16,11 @@ namespace Venrob::SubscreenEditor
 {
 	using namespace Venrob::Subscreen;
 	using namespace Venrob::Subscreen::Internal;
+	char32 FileEncoding[] = "Venrob_Subscreen_FileSystem"; //Do not change this! This is used for validating saved files.
+	
+	DEFINE VERSION_ASUB = 1;
+	DEFINE VERSION_PSUB = 1;
+	DEFINE VERSION_PROJ = 1;
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
 	enum
@@ -50,126 +55,141 @@ namespace Venrob::SubscreenEditor
 		SSET_MAX
 	}; //end
 	
-	global script Init //start
+	void do_init() //start
 	{
-		void run()
+		Subscreen::init();
+		//start Init Filesystem
+		file f;
+		f->Create("SubEditor/Instructions.txt");
+		f->WriteString("Files of format '###.z_psub' and '###.z_asub' in this folder"
+					   " represent passive and active subscreen data respectively.\n"
+					   "The number represents it's saved index. These files need not"
+					   " be modified manually, though you can back them up to save "
+					   "your subscreens individually.\n"
+					   "These files are created automatically, and will be overwritten"
+					   " if a project file is loaded.\n"
+					   "A '.z_sub_proj' file stores an entire set of subscreens as"
+					   " a project package. These can be any name, and loaded via the"
+					   " 'Load' option in the script.\n"
+					   "These are NOT created automatically; they are only saved via the"
+					   "'Save' menu.\n"
+					   "'z_sub_proj' files are not usable in a final quest; they only"
+					   " act as a way to save your working files. To export a subscreen"
+					   " set for use in a quest, you will need to use the '.zs' option"
+					   " in the 'Save' menu.\n"
+					   "To use an exported '.zs' file, simply import it as any other script,"
+					   " and assign the dmapdata scripts 'ActiveSub' and 'PassiveSub'.\n"
+					   "Set 'InitD[7]' to the index of the Passive Subscreen, and"
+					   " 'InitD[6]' to the index of the Active Subscreen.\n");
+		f->Close();
+		//end Init Filesystem
+		loadBasicPal(PAL);
+		Game->FFRules[qr_BITMAP_AND_FILESYSTEM_PATHS_ALWAYS_RELATIVE] = true;
+		untyped buf[MODULE_BUF_SIZE];
+		if(FileSystem->FileExists("SubEditor/tmpfiles/001.z_asub"))
 		{
-			Subscreen::init();
-			//start Init Filesystem
-			file f;
-			f->Create("SubEditor/Instructions.txt");
-			f->WriteString("Files of format '###.z_psub' and '###.z_asub' in this folder"
-			               " represent passive and active subscreen data respectively.\n"
-						   "The number represents it's saved index. These files need not"
-						   " be modified manually, though you can back them up to save "
-						   "your subscreens individually.\n"
-						   "These files are created automatically, and will be overwritten"
-						   " if a project file is loaded.\n"
-						   "A '.z_sub_proj' file stores an entire set of subscreens as"
-						   " a project package. These can be any name, and loaded via the"
-						   " 'Load' option in the script.\n"
-						   "These are NOT created automatically; they are only saved via the"
-						   "'Save' menu.\n"
-						   "'z_sub_proj' files are not usable in a final quest; they only"
-						   " act as a way to save your working files. To export a subscreen"
-						   " set for use in a quest, you will need to use the '.zs' option"
-						   " in the 'Save' menu.\n"
-						   "To use an exported '.zs' file, simply import it as any other script,"
-						   " and assign the dmapdata scripts 'ActiveSub' and 'PassiveSub'.\n"
-						   "Set 'InitD[7]' to the index of the Passive Subscreen, and"
-						   " 'InitD[6]' to the index of the Active Subscreen.\n");
+			f->Open("SubEditor/tmpfiles/001.z_asub");
+			load_active_file(f);
 			f->Close();
-			//end Init Filesystem
-			loadBasicPal(PAL);
-			Game->FFRules[qr_BITMAP_AND_FILESYSTEM_PATHS_ALWAYS_RELATIVE] = true;
-			untyped buf[MAX_MODULE_SIZE];
-			if(FileSystem->FileExists("SubEditor/1.z_asub"))
-			{
-				f->Open("SubEditor/1.z_asub");
-				load_active_file(f);
-				f->Close();
-			}
-			else
-			{
-				MakeBGColorModule(buf);
-				add_active_module(buf);
-				buf[P1] = DGRAY;
-				add_passive_module(buf);
-				MakePassiveSubscreen(buf);
-				add_active_module(buf);
-				//
-				MakeSelectableItemID(buf);
-				buf[P1] = I_CANDLE1;
-				buf[P2] = 0;
-				buf[P3+DIR_UP] = -1;
-				buf[P3+DIR_DOWN] = -1;
-				buf[P3+DIR_LEFT] = 3;
-				buf[P3+DIR_RIGHT] = 1;
-				buf[M_X] = 32;
-				buf[M_Y] = 80;
-				add_active_module(buf);
-				//
-				MakeSelectableItemClass(buf);
-				buf[P1] = IC_SWORD;
-				buf[P2] = 1;
-				buf[P3+DIR_UP] = -1;
-				buf[P3+DIR_DOWN] = -1;
-				buf[P3+DIR_LEFT] = 0;
-				buf[P3+DIR_RIGHT] = 2;
-				buf[M_X] = 48;
-				buf[M_Y] = 80;
-				add_active_module(buf);
-				//
-				MakeSelectableItemClass(buf);
-				buf[P1] = IC_ARROW;
-				buf[P2] = 2;
-				buf[P3+DIR_UP] = -1;
-				buf[P3+DIR_DOWN] = -1;
-				buf[P3+DIR_LEFT] = 1;
-				buf[P3+DIR_RIGHT] = 3;
-				buf[M_X] = 64;
-				buf[M_Y] = 80;
-				add_active_module(buf);
-				//
-				MakeSelectableItemClass(buf);
-				buf[P1] = IC_BRANG;
-				buf[P2] = 3;
-				buf[P3+DIR_UP] = -1;
-				buf[P3+DIR_DOWN] = -1;
-				buf[P3+DIR_LEFT] = 2;
-				buf[P3+DIR_RIGHT] = 0;
-				buf[M_X] = 80;
-				buf[M_Y] = 80;
-				add_active_module(buf);
-				f->Create("SubEditor/1.z_asub");
-				save_active_file(f);
-				f->Close();
-			}
-			//
-			if(FileSystem->FileExists("SubEditor/1.z_psub"))
-			{
-				f->Open("SubEditor/1.z_psub");
-				load_passive_file(f);
-				f->Close();
-			}
-			else
-			{
-				MakeBButtonItem(buf);
-				buf[M_X] = 128;
-				buf[M_Y] = 24;
-				add_passive_module(buf);
-				MakeAButtonItem(buf);
-				buf[M_X] = 144;
-				buf[M_Y] = 24;
-				add_passive_module(buf);
-				f->Create("SubEditor/1.z_psub");
-				save_passive_file(f);
-				f->Close();
-			}
-			f->Free();
-			for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = MAX_COUNTER;
 		}
+		else
+		{
+			MakeBGColorModule(buf);
+			add_active_module(buf);
+			buf[P1] = DGRAY;
+			add_passive_module(buf);
+			MakePassiveSubscreen(buf);
+			add_active_module(buf);
+			//
+			MakeSelectableItemID(buf);
+			buf[P1] = I_CANDLE1;
+			buf[P2] = 0;
+			buf[P3+DIR_UP] = -1;
+			buf[P3+DIR_DOWN] = -1;
+			buf[P3+DIR_LEFT] = 3;
+			buf[P3+DIR_RIGHT] = 1;
+			buf[M_X] = 32;
+			buf[M_Y] = 80;
+			add_active_module(buf);
+			//
+			MakeSelectableItemClass(buf);
+			buf[P1] = IC_SWORD;
+			buf[P2] = 1;
+			buf[P3+DIR_UP] = -1;
+			buf[P3+DIR_DOWN] = -1;
+			buf[P3+DIR_LEFT] = 0;
+			buf[P3+DIR_RIGHT] = 2;
+			buf[M_X] = 48;
+			buf[M_Y] = 80;
+			add_active_module(buf);
+			//
+			MakeSelectableItemClass(buf);
+			buf[P1] = IC_ARROW;
+			buf[P2] = 2;
+			buf[P3+DIR_UP] = -1;
+			buf[P3+DIR_DOWN] = -1;
+			buf[P3+DIR_LEFT] = 1;
+			buf[P3+DIR_RIGHT] = 3;
+			buf[M_X] = 64;
+			buf[M_Y] = 80;
+			add_active_module(buf);
+			//
+			MakeSelectableItemClass(buf);
+			buf[P1] = IC_BRANG;
+			buf[P2] = 3;
+			buf[P3+DIR_UP] = -1;
+			buf[P3+DIR_DOWN] = -1;
+			buf[P3+DIR_LEFT] = 2;
+			buf[P3+DIR_RIGHT] = 0;
+			buf[M_X] = 80;
+			buf[M_Y] = 80;
+			add_active_module(buf);
+			f->Create("SubEditor/tmpfiles/001.z_asub");
+			save_active_file(f);
+			f->Close();
+		}
+		//
+		if(FileSystem->FileExists("SubEditor/tmpfiles/001.z_psub"))
+		{
+			f->Open("SubEditor/tmpfiles/001.z_psub");
+			load_passive_file(f);
+			f->Close();
+		}
+		else
+		{
+			MakeBButtonItem(buf);
+			buf[M_X] = 128;
+			buf[M_Y] = 24;
+			add_passive_module(buf);
+			MakeAButtonItem(buf);
+			buf[M_X] = 144;
+			buf[M_Y] = 24;
+			add_passive_module(buf);
+			f->Create("SubEditor/tmpfiles/001.z_psub");
+			save_passive_file(f);
+			f->Close();
+		}
+		f->Free();
+		for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = MAX_COUNTER;
 	} //end Init
+	
+	int count_subs(bool passive) //start
+	{
+		int ret;
+		char32 format[] = "SubEditor/tmpfiles/%s.z_#sub";
+		format[24] = passive ? 'p' : 'a';
+		while(ret < 999)
+		{
+			char32 numbuf[4];
+			sprintf(numbuf, "%03d", ret+1);
+			char32 path[256];
+			sprintf(path, format, numbuf);
+			if(FileSystem->FileExists(path))
+				++ret;
+			else break;
+		}
+		return ret;
+	} //end
 	
 	global script onF6 //start
 	{
@@ -189,17 +209,27 @@ namespace Venrob::SubscreenEditor
 		void run()
 		{
 			Game->DisableActiveSubscreen = true;
+			Game->ClickToFreezeEnabled = false;
+			setRules();
+			do_init();
 			TypeAString::setEnterEndsTyping(false); TypeAString::setAllowBackspaceDelete(true); TypeAString::setOverflowWraps(false);
-			MainMenu();
+			while(true)
+				DIALOG::MainMenu(); //Constantly call the main menu
 		}
 	}
-
+	
+	void setRules() //start
+	{
+		Game->FFRules[qr_OLD_PRINTF_ARGS] = false;
+		Game->FFRules[qr_BITMAP_AND_FILESYSTEM_PATHS_ALWAYS_RELATIVE] = true;
+	} //end
+	//start Misc
 	void runFauxActiveSubscreen()
 	{
 		runFauxPassiveSubscreen(false);
 		for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
 		{
-			untyped buf[MAX_MODULE_SIZE];
+			untyped buf[MODULE_BUF_SIZE];
 			saveModule(buf, q, true);
 			runFauxModule(q, buf, true, true);
 		}
@@ -215,7 +245,7 @@ namespace Venrob::SubscreenEditor
 		g_arr[PASSIVE_TIMER]%=3600;
 		for(int q = 1; q < g_arr[NUM_PASSIVE_MODULES] ; ++q)
 		{
-			untyped buf[MAX_MODULE_SIZE];
+			untyped buf[MODULE_BUF_SIZE];
 			saveModule(buf, q, false);
 			runFauxModule(q, buf, false, interactive);
 		}
@@ -376,7 +406,7 @@ namespace Venrob::SubscreenEditor
 		{
 			if(DIALOG::keyproc(KEY_DEL) || DIALOG::keyproc(KEY_DEL_PAD))
 			{
-				if(mod_indx>1 && (!sys_settings[SSET_DELWARN] || DIALOG::yesno_dlg("Are you sure you want to delete this?")))
+				if(mod_indx>1 && DIALOG::delwarn())
 				{
 					SubEditorData[SED_QUEUED_DELETION] = mod_indx;
 					SubEditorData[SED_HIGHLIGHTED] = 0;
@@ -436,7 +466,7 @@ namespace Venrob::SubscreenEditor
 		int pane = SubEditorData[SED_ACTIVE_PANE];
 		unless(pane) return false;
 		int panetype = SubEditorData[SED_PANE_MENU_TYPE];
-		untyped module_arr[MAX_MODULE_SIZE];
+		untyped module_arr[MODULE_BUF_SIZE];
 		close_data_pane(); //here, so that the pane can open another from inside.
 		switch(panetype)
 		{
@@ -455,8 +485,10 @@ namespace Venrob::SubscreenEditor
 				{
 					//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNFINISHED DIALOGUES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 					case DLG_LOAD:
+						DIALOG::load();
+						break;
 					case DLG_SAVEAS:
-						DIALOG::msg_dlg("WIP", "This feature is still under construction. Please wait for an update.");
+						DIALOG::save();
 						break;
 						
 					case DLG_NEWOBJ:
@@ -507,7 +539,7 @@ namespace Venrob::SubscreenEditor
 	{
 		SubEditorData[SED_LASTMOUSE_X] = Input->Mouse[MOUSE_X];
 		SubEditorData[SED_LASTMOUSE_Y] = Input->Mouse[MOUSE_Y];
-		if(sys_settings[SSET_CURSORTILE])
+		if(sys_settings[SSET_CURSORTILE] > 0)
 		{
 			Screen->FastTile(7, Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y], sys_settings[SSET_CURSORTILE], 0, OP_OPAQUE);
 		}
@@ -684,4 +716,365 @@ namespace Venrob::SubscreenEditor
 		unless((<bitmap>SubEditorData[SED_GUI_BMP])->isValid()) generate((<bitmap>SubEditorData[SED_GUI_BMP]), DIALOG::MAIN_GUI_WIDTH, DIALOG::MAIN_GUI_HEIGHT);
 		return (<bitmap>SubEditorData[SED_GUI_BMP]);
 	}
+	//end Misc
+	
+	//start FileIO
+	enum file_type_id
+	{
+		FTID_NULL,
+		FTID_INDIV_ACTIVE,
+		FTID_INDIV_PASSIVE,
+		FTID_PROJECT,
+		FTID_CLOSING_SIG,
+		FTID_MAX
+	};
+	//start Signature
+	/**
+	 * Validates a file is signed with a given string and type ID.
+	 */
+	bool validate_file_signature(file f, char32 encoding, int type_id)
+	{
+		char32 buf[256];
+		int len = strlen(encoding)+1;
+		f->ReadChars(buf, len, 0); //Read encoding string
+		unless(strcmp(encoding,buf)) //Valid encoding
+		{
+			int id[1];
+			reposFile(f);
+			f->ReadInts(id, 1, 0);
+			if(type_id == id[0]) //Valid type
+				return true;
+			printf("Valid encoding; invalid type '%d'\n", id[0]);
+			return false; //Invalid type
+		}
+		else //Invalid encoding
+		{
+			printf("Invalid encoding: '%s'\n", buf);
+			return false;
+		}
+	}
+	/**
+	 * Signs a file with a given string and type ID.
+	 */
+	void sign_file(file f, char32 encoding, int type_id)
+	{
+		f->WriteString(encoding);
+		f->WriteInts({type_id}, 1, 0);
+	}
+	//end Signature
+	//start Indiv Subscreens
+	void get_filename(char32 buf, int indx, bool passive) //start
+	{
+		sprintf(buf, "SubEditor/tmpfiles/%03d.z_%csub", indx, passive ? 'p' : 'a');
+	} //end
+	bool load_active_file(int indx) //start
+	{
+		printf("Attempted to load afile %d\n", indx);
+		if(indx <= 0 || indx > 999) return false;
+		char32 path[256];
+		get_filename(path, indx, false);
+		file f;
+		if(f->Open(path))
+		{
+			bool b = load_active_file(f);
+			f->Free();
+			return b;
+		}
+		f->Free();
+		return false;
+	} //end
+	bool load_active_file(file f) //start
+	{
+		unless(validate_file_signature(f, FileEncoding, FTID_INDIV_ACTIVE))
+		{
+			DIALOG::err_dlg("Invalid file signature found! Attempted to open invalid/corrupt file!");
+			return false;
+		}
+		int v[2];
+		reposFile(f);
+		f->ReadInts(v, 2, 0);
+		switch(v[0])
+		{
+			case 1:
+			{
+				clearActive();
+				for(int q = 0; q < v[1]; ++q)
+				{
+					untyped buf[MODULE_BUF_SIZE];
+					int cnt;
+					cnt += f->ReadInts(buf, 1, 0);
+					if(f->EOF) break;
+					cnt += f->ReadInts(buf, buf[0]-1, 1);
+					add_active_module(buf);
+					if(f->EOF) break;
+				}
+				return true;
+			}
+			default:
+				DIALOG::err_dlg("The file attempted to be loaded has invalid/corrupt data.\n"
+				        "It may have been saved in a newer version of the subscreen header,"
+						" in which case you must update to load it.");
+				return false;
+		}
+	} //end
+	bool load_passive_file(int indx) //start
+	{
+		printf("Attempted to load pfile %d\n", indx);
+		if(indx <= 0 || indx > 999) return false;
+		char32 path[256];
+		get_filename(path, indx, true);
+		file f;
+		if(f->Open(path))
+		{
+			bool b = load_passive_file(f);
+			f->Free();
+			return b;
+		}
+		f->Free();
+		return false;
+	} //end
+	bool load_passive_file(file f) //start
+	{
+		unless(validate_file_signature(f, FileEncoding, FTID_INDIV_PASSIVE))
+		{
+			DIALOG::err_dlg("Invalid file signature found! Attempted to open invalid/corrupt file!");
+			return false;
+		}
+		int v[2];
+		reposFile(f);
+		f->ReadInts(v, 2, 0);
+		switch(v[0])
+		{
+			case 1:
+			{
+				clearPassive();
+				for(int q = 0; q < v[1]; ++q)
+				{
+					untyped buf[MODULE_BUF_SIZE];
+					f->ReadInts(buf, 1, 0);
+					if(f->EOF) break;
+					f->ReadInts(buf, buf[0]-1, 1);
+					add_passive_module(buf);
+					if(f->EOF) break;
+				}
+				return true;
+			}
+			default:
+				DIALOG::err_dlg("The file attempted to be loaded has invalid/corrupt data.\n"
+				        "It may have been saved in a newer version of the subscreen header,"
+						" in which case you must update to load it.");
+				return false;
+		}
+	} //end
+	void save_active_file(int indx) //start
+	{
+		if(indx <= 0 || indx > 999) return;
+		char32 path[256];
+		get_filename(path, indx, false);
+		file f;
+		if(f->Create(path))
+		{
+			save_active_file(f);
+		}
+		f->Free();
+	} //end
+	void save_active_file(file f) //start
+	{
+		sign_file(f, FileEncoding, FTID_INDIV_ACTIVE);
+		f->WriteInts({VERSION_ASUB, g_arr[NUM_ACTIVE_MODULES]},2,0);
+		f->WriteInts(activeData,g_arr[SZ_ACTIVE_DATA],0);
+	} //end
+	void save_passive_file(int indx) //start
+	{
+		if(indx <= 0 || indx > 999) return;
+		char32 path[256];
+		get_filename(path, indx, true);
+		file f;
+		if(f->Create(path))
+		{
+			save_passive_file(f);
+		}
+		f->Free();
+	} //end
+	void save_passive_file(file f) //start
+	{
+		sign_file(f, FileEncoding, FTID_INDIV_PASSIVE);
+		f->WriteInts({VERSION_PSUB, g_arr[NUM_PASSIVE_MODULES]},2,0);
+		f->WriteInts(passiveData,g_arr[SZ_PASSIVE_DATA],0);
+	} //end
+	bool delete_active_file(int indx) //start
+	{
+		if(indx <= 0 || indx > 999) return false;
+		int cnt = count_subs(false);
+		if(indx > cnt) return false;
+		for(int q = indx+1; q <= cnt; ++q)
+		{
+			load_active_file(q);
+			save_active_file(q-1);
+		}
+		char32 path[256];
+		get_filename(path, indx, false);
+		file f;
+		if(f->Open(path))
+		{
+			f->Remove();
+			f->Free();
+			return true;
+		}
+		f->Free();
+		return false;
+	} //end
+	bool delete_passive_file(int indx) //start
+	{
+		if(indx <= 0 || indx > 999) return false;
+		int cnt = count_subs(true);
+		if(indx > cnt) return false;
+		for(int q = indx+1; q <= cnt; ++q)
+		{
+			load_passive_file(q);
+			save_passive_file(q-1);
+		}
+		char32 path[256];
+		get_filename(path, indx, true);
+		file f;
+		if(f->Open(path))
+		{
+			f->Remove();
+			f->Free();
+			return true;
+		}
+		f->Free();
+		return false;
+	} //end
+	//end Indiv Subscreens
+	//start Nuke Indiv Subscreens
+	void nuke_files()
+	{
+		nuke_active_files();
+		nuke_passive_files();
+	}
+	void nuke_active_files()
+	{
+		for(int q = 1; q < 1000; ++q)
+		{
+			char32 buf[256];
+			get_filename(buf, q, false);
+			file f;
+			if(f->Open(buf))
+				f->Remove();
+			f->Free();
+		}
+	}
+	void nuke_passive_files()
+	{
+		for(int q = 1; q < 1000; ++q)
+		{
+			char32 buf[256];
+			get_filename(buf, q, true);
+			file f;
+			if(f->Open(buf))
+				f->Remove();
+			f->Free();
+		}
+	}
+	//end Nuke Indiv Subscreens
+	//start Project Files
+	bool save_project_file(file proj)
+	{
+		int num_active = count_subs(false), num_passive = count_subs(true);
+		bool erred = false;
+		sign_file(proj, FileEncoding, FTID_PROJECT);
+		proj->WriteInts({VERSION_PROJ, num_active, num_passive},3,0);
+		for(int q = 1; q <= num_active; ++q)
+		{
+			unless(load_active_file(q))
+			{
+				char32 buf[256];
+				sprintf(buf, "Error occurred loading Active file %i",q);
+				DIALOG::err_dlg(buf);
+				erred = true;
+				continue;
+			}
+			save_active_file(proj);
+		}
+		for(int q = 1; q <= num_passive; ++q)
+		{
+			unless(load_passive_file(q))
+			{
+				char32 buf[256];
+				sprintf(buf, "Error occurred loading Passive file %i",q);
+				DIALOG::err_dlg(buf);
+				erred = true;
+				continue;
+			}
+			save_passive_file(proj);
+		}
+		sign_file(proj, FileEncoding, FTID_CLOSING_SIG);
+		if(erred)
+		{
+			DIALOG::err_dlg("One or more errors occurred; project file output failed.");
+			proj->Remove();
+			return false;
+		}
+		return true;
+	}
+	bool load_project_file(file proj)
+	{
+		bool erred = false;
+		if(validate_file_signature(proj, FileEncoding, FTID_PROJECT))
+		{
+			int v[3];
+			reposFile(proj);
+			proj->ReadInts(v, 3, 0);
+			switch(v[0])
+			{
+				case 1:
+				{
+					nuke_files(); //Delete all pre-existing temp files; to overwrite with loaded ones
+					for(int q = 1; q <= v[1]; ++q)
+					{
+						unless(load_active_file(proj))
+						{
+							char32 buf[256];
+							sprintf(buf, "Error occurred loading Active subscreen %i",q);
+							DIALOG::err_dlg(buf);
+							erred = true;
+							continue;
+						}
+						save_active_file(q);
+					}
+					for(int q = 1; q <= v[2]; ++q)
+					{
+						unless(load_passive_file(proj))
+						{
+							char32 buf[256];
+							sprintf(buf, "Error occurred loading Passive subscreen %i",q);
+							DIALOG::err_dlg(buf);
+							erred = true;
+							continue;
+						}
+						save_passive_file(q);
+					}
+					if(erred)
+					{
+						DIALOG::err_dlg("One or more errors occurred; project file load failed.");
+						return false;
+					}
+					return true;
+				}
+				default:
+					DIALOG::err_dlg("The file attempted to be loaded has invalid/corrupt data.\n"
+							"It may have been saved in a newer version of the subscreen header,"
+							" in which case you must update to load it.");
+					return false;
+			}
+		}
+		else return false;
+	}
+	//end Project Files
+	void reposFile(file f)
+	{
+		f->Seek(f->Pos, false);
+	}
+	//end FileIO
 }
