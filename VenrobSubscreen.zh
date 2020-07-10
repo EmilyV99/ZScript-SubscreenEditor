@@ -118,6 +118,16 @@ namespace Venrob::Subscreen
 		FLAG_ABTN = FLAG1,
 		FLAG_BBTN = FLAG2
 	};
+	enum //Minimap
+	{
+		MMFLAG_COMP_ON_BOSS = FLAG1, //instead of triforce
+		MMFLAG_SHOW_EXPLORED_ROOMS_OW = FLAG2,
+		MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON = FLAG3,
+		MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR = FLAG4,
+		MMFLAG_COMPASS_BLINK_DOESNT_STOP = FLAG5,
+		MMFLAG_IGNORE_DMAP_BGTILE = FLAG6,
+		MMFLAG_LARGE_PLAYER_COMPASS_MARKERS = FLAG7
+	};
 	enum //A_STTNG_FLAGS1
 	{
 		FLAG_ITEMS_USE_HITBOX_FOR_SELECTOR = FLAG1
@@ -653,10 +663,10 @@ namespace Venrob::Subscreen
 			
 			case MODULE_TYPE_MINIMAP:
 			{
-				if(module_arr[M_SIZE]!=P8+1)
+				if(module_arr[M_SIZE]!=P7+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_MINIMAP (%d) must have argument size (7) in format {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, FLAGS, BLINKRATE}; argument size %d found", MODULE_TYPE_MINIMAP, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_MINIMAP (%d) must have argument size (7) in format {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, TILE}; argument size %d found", MODULE_TYPE_MINIMAP, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
 				if(module_arr[P1] < 0 || module_arr[P1] > 0xFF || (module_arr[P1]%1))
@@ -675,9 +685,9 @@ namespace Venrob::Subscreen
 					if(DEBUG)
 					{
 						if(module_arr[P2]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P2]);
 						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P2]);
 					}
 					return false;
 				}
@@ -686,9 +696,9 @@ namespace Venrob::Subscreen
 					if(DEBUG)
 					{
 						if(module_arr[P3]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P3]);
 						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P3]);
 					}
 					return false;
 				}
@@ -697,9 +707,9 @@ namespace Venrob::Subscreen
 					if(DEBUG)
 					{
 						if(module_arr[P4]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P4]);
 						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P4]);
 					}
 					return false;
 				}
@@ -708,20 +718,20 @@ namespace Venrob::Subscreen
 					if(DEBUG)
 					{
 						if(module_arr[P5]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P5]);
 						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P5]);
 					}
 					return false;
 				}
-				if(module_arr[P7] < 1 || module_arr[P7] > 18 || (module_arr[P5]%1))
+				if(module_arr[P6] < 1 || module_arr[P6] > 9 || (module_arr[P6]%1))
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P7]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 7 (BLINKRATE) must be an integer between (1) and (18), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						if(module_arr[P6]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P6]);
 						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 7 (BLINKRATE) must be an integer between (1) and (18), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+							error("MODULE_TYPE_MINIMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P6]);
 					}
 					return false;
 				}
@@ -822,19 +832,8 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_ABUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_BBUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_PASSIVESUBSCREEN, //FORMAT: {META...}
-		MODULE_TYPE_MINIMAP, //FORMAT: {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, FLAGS, BLINKRATE, BGTILE}
+		MODULE_TYPE_MINIMAP, //FORMAT: {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, TILE}
 		MODULE_TYPE_MAX
-	};
-	
-	enum minimapFlag
-	{
-		MMFLAG_COMP_ON_BOSS = 000000000000000001b, //instead of triforce
-		MMFLAG_SHOW_EXPLORED_ROOMS_OW = 000000000000000010b,
-		MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON = 000000000000000100b,
-		MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR = 000000000000001000b,
-		MMFLAG_COMPASS_BLINK_DOESNT_STOP = 000000000000010000b,
-		MMFLAG_IGNORE_DMAP_BGTILE = 000000000000100000b,
-		MMFLAG_LARGE_PLAYER_COMPASS_MARKERS = 000000000001000000b
 	};
 	
 	//start Running
@@ -1125,18 +1124,19 @@ namespace Venrob::Subscreen
 		bool showExplore;
 		int ow = dm->Type & (11b);
 		bool hasCompass = Game->LItems[Game->GetCurLevel()] & LI_COMPASS;
-		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[P8] * MMFLAG_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
+		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[M_FLAGS1] & MMFLAG_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
+		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P6]-1);
 		switch(ow)
 		{
 			case DMAP_BSOVERWORLD:
 			case DMAP_OVERWORLD:
-				showExplore = (module_arr[P6] & MMFLAG_SHOW_EXPLORED_ROOMS_OW);
+				showExplore = (module_arr[M_FLAGS1] & MMFLAG_SHOW_EXPLORED_ROOMS_OW);
 				break;
 			case DMAP_DUNGEON:
-				showExplore = (module_arr[P6] & MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON);
+				showExplore = (module_arr[M_FLAGS1] & MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON);
 				break;
 			case DMAP_CAVE:
-				showExplore = (module_arr[P6] & MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR);
+				showExplore = (module_arr[M_FLAGS1] & MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR);
 				break;
 		}
 		if(ow == DMAP_OVERWORLD)
@@ -1147,7 +1147,7 @@ namespace Venrob::Subscreen
 				int y = orig_y + 8 + (4*Div(q, 0x010));
 				int c = 0;
 				if(hasCompass && q == dm->Compass &&
-				   (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P7]-1) || (deadCompass && !(module_arr[P6] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
+				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
 				{
 					c = deadCompass ? module_arr[P5] : module_arr[P4];
 				}
@@ -1169,7 +1169,7 @@ namespace Venrob::Subscreen
 		{
 			bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
 			int offs = Game->DMapOffset[Game->GetCurDMap()];
-			bool largeMarkers = module_arr[P6] & MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+			bool largeMarkers = module_arr[M_FLAGS1] & MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
 			
 			int lim = Max(offs - 8, 0);
 			
@@ -1186,7 +1186,7 @@ namespace Venrob::Subscreen
 				int y = orig_y + 8 + (4*Div(q, 0x010));
 				
 				if(hasCompass && q+offs == dm->Compass &&
-				   (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P7]-1) || (deadCompass && !(module_arr[P6] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
+				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
 				{
 					c = deadCompass ? module_arr[P5] : module_arr[P4];
 				}
@@ -1307,8 +1307,8 @@ namespace Venrob::Subscreen
 		buf_arr[M_SIZE] = P7+1;
 		buf_arr[M_TYPE] = MODULE_TYPE_MINIMAP;
 		
-		buf_arr[P6] = MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON | MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
-		buf_arr[P7] = 6;
+		buf_arr[M_FLAGS1] = MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON | MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+		buf_arr[P6] = 6;
 	}
 	//end Constructors
 	

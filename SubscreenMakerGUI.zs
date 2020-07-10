@@ -1007,68 +1007,69 @@ namespace Venrob::SubscreenEditor
 						
 						char32 buf1[] = "Comp. Blink Rate:";
 						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf7, 2, false, data, 0, 0, 1, 17, buf1);
+						module_arr[P6] = VBound(atoi(argbuf7), 9, 1);
 						
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[P6]&MMFLAG_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[M_FLAGS1]&MMFLAG_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[P6]~=MMFLAG_COMP_ON_BOSS;
+								module_arr[M_FLAGS1]~=MMFLAG_COMP_ON_BOSS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[P6]|=MMFLAG_COMP_ON_BOSS;
+								module_arr[M_FLAGS1]|=MMFLAG_COMP_ON_BOSS;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[P6]&MMFLAG_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[M_FLAGS1]&MMFLAG_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[P6]~=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
+								module_arr[M_FLAGS1]~=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[P6]|=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
+								module_arr[M_FLAGS1]|=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[P6]&MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[M_FLAGS1]&MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[P6]~=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								module_arr[M_FLAGS1]~=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[P6]|=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								module_arr[M_FLAGS1]|=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[P6]&MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[M_FLAGS1]&MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[P6]~=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								module_arr[M_FLAGS1]~=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[P6]|=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								module_arr[M_FLAGS1]|=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[P6]&MMFLAG_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[M_FLAGS1]&MMFLAG_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[P6]~=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
+								module_arr[M_FLAGS1]~=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[P6]|=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
+								module_arr[M_FLAGS1]|=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[P6]&MMFLAG_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[M_FLAGS1]&MMFLAG_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[P6]~=MMFLAG_IGNORE_DMAP_BGTILE;
+								module_arr[M_FLAGS1]~=MMFLAG_IGNORE_DMAP_BGTILE;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[P6]|=MMFLAG_IGNORE_DMAP_BGTILE;
+								module_arr[M_FLAGS1]|=MMFLAG_IGNORE_DMAP_BGTILE;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[P6]&MMFLAG_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[M_FLAGS1]&MMFLAG_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[P6]~=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								module_arr[M_FLAGS1]~=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[P6]|=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								module_arr[M_FLAGS1]|=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 						}
 						DEFINE MMY = HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT-48-4;
@@ -1132,10 +1133,6 @@ namespace Venrob::SubscreenEditor
 						module_arr[P6] = VBound(atoi(argbuf6), MAX_MODULES, -1);
 						break;
 					}
-					case MODULE_TYPE_MINIMAP:
-					{
-						module_arr[P7] = VBound(atoi(argbuf7), 18, 1);
-					}
 				}
 				if(active)
 				{
@@ -1186,7 +1183,7 @@ namespace Venrob::SubscreenEditor
 		enum
 		{
 			GUIRET_NULL,
-			GUIRET_SAVE
+			GUIRET_EXIT
 		};
 		int runGUI(bool active)
 		{
@@ -1265,6 +1262,10 @@ namespace Venrob::SubscreenEditor
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Themes", data, main_proc_data, 7))
 				{
 					open_data_pane(DLG_THEMES, PANE_T_SYSTEM);
+				}
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "Exit", data, main_proc_data, 8))
+				{
+					ret = GUIRET_EXIT;
 				}
 				//end BUTTONS
 			}
@@ -1929,6 +1930,7 @@ namespace Venrob::SubscreenEditor
 				++num_passive_sub;
 			}
 			Input->DisableKey[KEY_ESC] = true;
+			disableKeys(true);
 			while(true)
 			{
 				lastframe->Clear(0);
@@ -2061,15 +2063,20 @@ namespace Venrob::SubscreenEditor
 					}
 					//Mode Buttons
 					{
-						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, proc_data, 10))
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + (BUTTON_WIDTH + 5)*0, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, proc_data, 10))
 						{
 							open_data_pane(DLG_SYSTEM, PANE_T_SYSTEM);
 						}
-						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + BUTTON_WIDTH + 5, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%Themes", data, proc_data, 11))
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + (BUTTON_WIDTH + 5)*1, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%Themes", data, proc_data, 11))
 						{
 							open_data_pane(DLG_THEMES, PANE_T_SYSTEM);
 						}
-						//UNFINISHED Test (move to editing = 0 from old)
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + (BUTTON_WIDTH + 5)*2, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "T%est", data, proc_data, 12))
+						{
+							load_active_file(active_indx+1);
+							load_passive_file(passive_indx+1);
+							runEditor(0);
+						}
 						//UNFINISHED TEXT- explain how to get back to this menu from another mode
 					}
 				}
@@ -2093,8 +2100,10 @@ namespace Venrob::SubscreenEditor
 			gen_final();
 			*/
 		} //end
-		bool runEditor(int mode)
+		bool runEditor(int mode) //start
 		{
+			unless(mode)
+				disableKeys(false);
 			while(true)
 			{
 				switch(mode)
@@ -2132,8 +2141,9 @@ namespace Venrob::SubscreenEditor
 						break;
 				}
 				if(handle_data_pane(mode==1)) continue;
-				if(mode) DIALOG::runGUI(mode==1);
-				if(Input->ReadKey[KEY_ESC])
+				int gret = GUIRET_NULL;
+				if(mode) gret = DIALOG::runGUI(mode==1);
+				if(Input->ReadKey[KEY_ESC] || gret == GUIRET_EXIT)
 				{
 					if(mode)
 					{
@@ -2141,10 +2151,19 @@ namespace Venrob::SubscreenEditor
 						if(r == PROC_CONFIRM) return true;
 						if(r == PROC_DENY) return false;
 					}
-					else return true;
+					else
+					{
+						disableKeys(true);
+						return true;
+					}
 				}
 				subscr_Waitframe();
 			}
+		} //end
+		void disableKeys(bool dis)
+		{
+			Input->DisableKey[KEY_ESC] = true;
+			Input->DisableKey[KEY_F1] = dis;
 		}
 		//end Main Menu
 		//start SaveLoad
@@ -2712,6 +2731,10 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_PASSIVESUBSCREEN:
 				{
 					strcat(buf, "This module will draw the current scripted passive subscreen to the active subscreen.\n\nNote that this does NOT include the engine subscreen graphics."); break;
+				}
+				case MODULE_TYPE_MINIMAP:
+				{
+					strcat(buf, "Displays the minimap of the current DMap, with various settings."); break;
 				}
 			}
 		} //end
