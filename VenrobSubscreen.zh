@@ -2,6 +2,7 @@
 #option BINARY_32BIT off
 #option HEADER_GUARD on
 #include "std.zh"
+#include "std_zh/dmapgrid.zh"
 
 /*
 DEV NOTES
@@ -650,6 +651,83 @@ namespace Venrob::Subscreen
 			case MODULE_TYPE_PASSIVESUBSCREEN:
 				return true;
 			
+			case MODULE_TYPE_MINIMAP:
+			{
+				if(module_arr[M_SIZE]!=P8+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_MINIMAP (%d) must have argument size (7) in format {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, FLAGS, BLINKRATE}; argument size %d found", MODULE_TYPE_MINIMAP, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > 0xFF || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P1]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 1 (POSCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 1 (POSCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 0xFF || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P2]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || module_arr[P3] > 0xFF || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P3]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] > 0xFF || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P4]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P5] < 0 || module_arr[P5] > 0xFF || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P5]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P7] < 1 || module_arr[P7] > 18 || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P7]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 7 (BLINKRATE) must be an integer between (1) and (18), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 7 (BLINKRATE) must be an integer between (1) and (18), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+					}
+					return false;
+				}
+				return true;
+			}
+			
 			default:
 			{
 				if(DEBUG)
@@ -706,7 +784,7 @@ namespace Venrob::Subscreen
 		load_default_settings(settings, false);
 		if(IsValidArray(settings_arr))
 			memcpy(settings, 0, settings_arr, 0, Min(NUM_SETTINGS, SizeOfArray(settings_arr)-1));
-		memcpy(passiveData, START_SETTINGS, settings, 0, NUM_SETTINGS);
+		memcpy(passiveData, START_SETTINGS, settings, START_SETTINGS, NUM_SETTINGS);
 		passiveData[M_SIZE] = NUM_SETTINGS + MODULE_META_SIZE;
 		passiveData[M_TYPE] = MODULE_TYPE_SETTINGS;
 	}
@@ -744,7 +822,19 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_ABUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_BBUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_PASSIVESUBSCREEN, //FORMAT: {META...}
+		MODULE_TYPE_MINIMAP, //FORMAT: {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, FLAGS, BLINKRATE, BGTILE}
 		MODULE_TYPE_MAX
+	};
+	
+	enum minimapFlag
+	{
+		MMFLAG_COMP_ON_BOSS = 000000000000000001b, //instead of triforce
+		MMFLAG_SHOW_EXPLORED_ROOMS_OW = 000000000000000010b,
+		MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON = 000000000000000100b,
+		MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR = 000000000000001000b,
+		MMFLAG_COMPASS_BLINK_DOESNT_STOP = 000000000000010000b,
+		MMFLAG_IGNORE_DMAP_BGTILE = 000000000000100000b,
+		MMFLAG_LARGE_PLAYER_COMPASS_MARKERS = 000000000001000000b
 	};
 	
 	//start Running
@@ -847,7 +937,7 @@ namespace Venrob::Subscreen
 	void activetimers()
 	{
 		++g_arr[ACTIVE_TIMER];
-		g_arr[ACTIVE_TIMER]%=3600;
+		g_arr[ACTIVE_TIMER] %= 100000000000000000b;
 		for(int q = INPUT_TIMERS; q < INPUT_TIMERS+18; ++q)
 		{
 			++g_arr[q];
@@ -865,7 +955,7 @@ namespace Venrob::Subscreen
 	void runPassiveLogic()
 	{
 		++g_arr[PASSIVE_TIMER];
-		g_arr[PASSIVE_TIMER]%=3600;
+		g_arr[PASSIVE_TIMER] %= 100000000000000000b;
 		for(int q = 1; q < g_arr[NUM_PASSIVE_MODULES] ; ++q)
 		{
 			untyped buf[MODULE_BUF_SIZE];
@@ -893,7 +983,7 @@ namespace Venrob::Subscreen
 		bitmap bit = getSubscreenBitmap(active);
 		switch(module_arr[M_TYPE])
 		{
-			case MODULE_TYPE_BGCOLOR:
+			case MODULE_TYPE_BGCOLOR: //start
 			{
 				if(module_arr[P1])
 				{
@@ -903,9 +993,9 @@ namespace Venrob::Subscreen
 						bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 56, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_ABUTTONITEM:
+			case MODULE_TYPE_ABUTTONITEM: //start
 			{
 				if(Hero->ItemA)
 				{
@@ -914,9 +1004,9 @@ namespace Venrob::Subscreen
 					bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				}
 				break;
-			}
+			} //end
 				
-			case MODULE_TYPE_BBUTTONITEM:
+			case MODULE_TYPE_BBUTTONITEM: //start
 			{
 				if(Hero->ItemB)
 				{
@@ -926,9 +1016,9 @@ namespace Venrob::Subscreen
 					bit->DrawTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, 1, 1, id->CSet, 16, 16, 0, 0, 0, 0, true, OP_OPAQUE);
 				}
 				break;
-			}
+			} //end
 			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+			case MODULE_TYPE_SELECTABLE_ITEM_CLASS: //start
 			{
 				unless(active) break; //Not allowed on passive
 				int itmid = ((module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_CLASS)?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
@@ -1008,18 +1098,135 @@ namespace Venrob::Subscreen
 					DrawSelector(module_arr[M_LAYER], module_arr[M_X] + (hit ? id->HitXOffset : id->DrawXOffset), module_arr[M_Y] + (hit ? id->HitYOffset : id->DrawYOffset), (hit ? id->HitWidth : id->TileWidth*16), (hit ? id->HitHeight : id->TileHeight*16), true);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_PASSIVESUBSCREEN:
+			case MODULE_TYPE_PASSIVESUBSCREEN: //start
 			{
 				bit->BlitTo(module_arr[M_LAYER], getSubscreenBitmap(false), 0, 0, 256, 56, module_arr[M_X], module_arr[M_Y], 256, 56, 0, 0, 0, 0, 0, true);
 				break;
-			}
+			} //end
 			
+			case MODULE_TYPE_MINIMAP: //start
+			{
+				minimap(module_arr,bit,active);
+			} //end
 			//case :
 		}
 		return EVENT_NONE;
-	}//end Running
+	}
+	void minimap(untyped module_arr, bitmap bit, bool active)
+	{
+		minimap(module_arr, bit, active, module_arr[M_X], module_arr[M_Y]);
+	}
+	void minimap(untyped module_arr, bitmap bit, bool active, int orig_x, int orig_y)
+	{
+		dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
+		int curscr = Game->GetCurDMapScreen();
+		bool showExplore;
+		int ow = dm->Type & (11b);
+		bool hasCompass = Game->LItems[Game->GetCurLevel()] & LI_COMPASS;
+		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[P8] * MMFLAG_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
+		switch(ow)
+		{
+			case DMAP_BSOVERWORLD:
+			case DMAP_OVERWORLD:
+				showExplore = (module_arr[P6] & MMFLAG_SHOW_EXPLORED_ROOMS_OW);
+				break;
+			case DMAP_DUNGEON:
+				showExplore = (module_arr[P6] & MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON);
+				break;
+			case DMAP_CAVE:
+				showExplore = (module_arr[P6] & MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR);
+				break;
+		}
+		if(ow == DMAP_OVERWORLD)
+		{
+			for(int q = 0; q < 128; ++q)
+			{
+				int x = orig_x + 9 + (4*(q%0x010));
+				int y = orig_y + 8 + (4*Div(q, 0x010));
+				int c = 0;
+				if(hasCompass && q == dm->Compass &&
+				   (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P7]-1) || (deadCompass && !(module_arr[P6] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
+				{
+					c = deadCompass ? module_arr[P5] : module_arr[P4];
+				}
+				else if(q == curscr)
+					c = module_arr[P1];
+				else if(showExplore)
+				{
+					mapdata m = Game->LoadMapData(Game->GetCurMap(),q);
+					if(m->State[ST_VISITED])
+					{
+						c = module_arr[P2];
+					}
+				}
+				
+				if(c) bit->Rectangle(module_arr[M_LAYER], x, y, x+2, y+2, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+			}
+		}
+		else
+		{
+			bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
+			int offs = Game->DMapOffset[Game->GetCurDMap()];
+			bool largeMarkers = module_arr[P6] & MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+			
+			int lim = Max(offs - 8, 0);
+			
+			for(int q = 0; q < 128; ++q)
+			{			
+				if(q % 0x10 >= 8 - lim)
+				{
+					continue;
+				}
+				
+				int c = 0;
+				int sm_c = 0;
+				int x = orig_x + 8 + (8*(q%0x010));
+				int y = orig_y + 8 + (4*Div(q, 0x010));
+				
+				if(hasCompass && q+offs == dm->Compass &&
+				   (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P7]-1) || (deadCompass && !(module_arr[P6] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
+				{
+					c = deadCompass ? module_arr[P5] : module_arr[P4];
+				}
+				else if(q == curscr)
+				{
+					c = module_arr[P1];
+				}
+				
+				unless(largeMarkers)
+				{
+					if(c)
+					{
+						sm_c = c;
+						c = 0;
+					}
+				}
+				unless(c)
+				{
+					mapdata m = Game->LoadMapData(Game->GetCurMap(),q+offs);
+					if(showExplore && m->State[ST_VISITED])
+					{
+						c = module_arr[P2];
+					}
+					else if(ow != DMAP_BSOVERWORLD && hasMap && dmapinfo::VisibleOnDungeonMap(q))
+					{
+						c = module_arr[P3];
+					}
+				}
+				if(c)
+				{
+					bit->Rectangle(module_arr[M_LAYER], x, y, x+6, y+2, c, 1, 0, 0, 0, true, OP_OPAQUE);
+				}
+				if(sm_c)
+				{
+					bit->Rectangle(module_arr[M_LAYER], x+2, y, x+4, y+2, sm_c, 1, 0, 0, 0, true, OP_OPAQUE);
+				}
+			}
+		}
+	}
+	//end Running
 	//start Constructors
 	void MakeModule(untyped buf_arr)
 	{
@@ -1092,6 +1299,16 @@ namespace Venrob::Subscreen
 		buf_arr[M_X] = 0;
 		buf_arr[M_SIZE] = MODULE_META_SIZE;
 		buf_arr[M_TYPE] = MODULE_TYPE_PASSIVESUBSCREEN;
+	}
+	
+	void MakeMinimap(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P7+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_MINIMAP;
+		
+		buf_arr[P6] = MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON | MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+		buf_arr[P7] = 6;
 	}
 	//end Constructors
 	

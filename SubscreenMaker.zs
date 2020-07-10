@@ -21,6 +21,7 @@ namespace Venrob::SubscreenEditor
 	DEFINE VERSION_ASUB = 1;
 	DEFINE VERSION_PSUB = 1;
 	DEFINE VERSION_PROJ = 1;
+	DEFINE VERSION_SSET = 1;
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
 	enum
@@ -83,9 +84,9 @@ namespace Venrob::SubscreenEditor
 					   " 'InitD[6]' to the index of the Active Subscreen.\n");
 		f->Close();
 		//end Init Filesystem
-		loadBasicPal(PAL);
-		Game->FFRules[qr_BITMAP_AND_FILESYSTEM_PATHS_ALWAYS_RELATIVE] = true;
+		
 		untyped buf[MODULE_BUF_SIZE];
+		//start Init ASub
 		if(FileSystem->FileExists("SubEditor/tmpfiles/001.z_asub"))
 		{
 			f->Open("SubEditor/tmpfiles/001.z_asub");
@@ -147,8 +148,8 @@ namespace Venrob::SubscreenEditor
 			f->Create("SubEditor/tmpfiles/001.z_asub");
 			save_active_file(f);
 			f->Close();
-		}
-		//
+		} //end
+		//start Init PSub
 		if(FileSystem->FileExists("SubEditor/tmpfiles/001.z_psub"))
 		{
 			f->Open("SubEditor/tmpfiles/001.z_psub");
@@ -169,6 +170,8 @@ namespace Venrob::SubscreenEditor
 			save_passive_file(f);
 			f->Close();
 		}
+		//end
+		loadSysSettings();
 		f->Free();
 		for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = MAX_COUNTER;
 	} //end Init
@@ -195,11 +198,25 @@ namespace Venrob::SubscreenEditor
 	{
 		void run()
 		{
-			if(!DEBUG && DIALOG::yesno_dlg("Exit Game","Would you like to save+exit, or just exit?","Save","Quit"))
+			using namespace Venrob::SubscreenEditor::DIALOG;
+			if(!DEBUG)
 			{
-				Game->SaveAndQuit();
+				ProcRet r = yesno_dlg("Exit Game","Would you like to save first, or just exit?","Save","Quit");
+				if(r == PROC_CANCEL) return;
+				if(r == PROC_CONFIRM)
+				{
+					//UNFINISHED Call save dialog
+				}
 			}
 			Game->End();
+		}
+	} //end
+	
+	global script onExit //start
+	{
+		void run()
+		{
+			saveSysSettings();
 		}
 	} //end
 	
@@ -338,6 +355,16 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 255, 55, mod_indx, active, true);
 				}
 				break;
+			}
+			
+			case MODULE_TYPE_MINIMAP:
+			{
+				if(interactive) handleDragging(module_arr, mod_indx, active);
+				minimap(module_arr, bit, active);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 5*16-1, 3*16-1, mod_indx, active, true);
+				}
 			}
 			
 			//case :
@@ -726,6 +753,7 @@ namespace Venrob::SubscreenEditor
 		FTID_INDIV_PASSIVE,
 		FTID_PROJECT,
 		FTID_CLOSING_SIG,
+		FTID_SYS_SETTING,
 		FTID_MAX
 	};
 	//start Signature
@@ -1072,6 +1100,49 @@ namespace Venrob::SubscreenEditor
 		else return false;
 	}
 	//end Project Files
+	//start System Settings
+	void saveSysSettings()
+	{
+		file f;
+		if(f->Create("SubEditor/SysSettings"))
+		{
+			sign_file(f, FileEncoding, FTID_SYS_SETTING);
+			f->WriteInts({VERSION_SSET, SSET_MAX, PAL_SIZE}, 3, 0);
+			f->WriteInts(sys_settings, SSET_MAX, 0);
+			f->WriteInts(PAL, PAL_SIZE, 0);
+		}
+	}
+	
+	void loadSysSettings()
+	{
+		file f;
+		if(f->Open("SubEditor/SysSettings"))
+		{
+			if(validate_file_signature(f, FileEncoding, FTID_SYS_SETTING))
+			{
+				reposFile(f);
+				int v[3];
+				f->ReadInts(v, 3, 0);
+				switch(v[0])
+				{
+					case 1:
+						if(f->EOF) break;
+						f->ReadInts(sys_settings, v[1], 0);
+						if(f->EOF) break;
+						f->ReadInts(PAL, v[2], 0);
+						return;
+				}
+			}
+			if(DEBUG) error("Failed to load system settings...");
+		}
+		else //Default settings
+		{
+			loadClassicPal(PAL);
+			sys_settings[SSET_DELWARN] = true;
+		}
+		f->Free();
+	}
+	//end System Settings
 	void reposFile(file f)
 	{
 		f->Seek(f->Pos, false);

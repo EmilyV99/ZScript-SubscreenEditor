@@ -6,9 +6,10 @@
 namespace Venrob::SubscreenEditor
 {
 	//start Palette
-	enum Color //Based on Classic set!
+	enum Color
 	{
 		TRANS = 0x00,
+		//System UI colors; these don't change
 		WHITE = 0xEF,
 		BLACK = 0xE0,
 		DGRAY = 0xEC,
@@ -18,7 +19,6 @@ namespace Venrob::SubscreenEditor
 		BLUE = 0xE7,
 		MBLUE = 0xE8,
 		LBLUE = 0xE9,
-		//System UI colors; these don't change
 		SYS_BLACK = 0xF1,
 		SYS_DGRAY = 0xF2,
 		SYS_GRAY = 0xF3,
@@ -106,7 +106,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_BODY_MAIN_MED] = LGRAY;
 		Palette[COL_BODY_MAIN_DARK] = DGRAY;
 		Palette[COL_FIELD_BG] = WHITE;
-		Palette[COL_CURSOR] = WHITE;
+		Palette[COL_CURSOR] = GRAY;
 		Palette[COL_HIGHLIGHT] = BLUE;
 		Palette[COL_TITLE_BAR] = GRAY;
 		Palette[COL_NULL] = BLACK;
@@ -136,7 +136,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_BODY_MAIN_MED] = SYS_LGRAY;
 		Palette[COL_BODY_MAIN_DARK] = SYS_DGRAY;
 		Palette[COL_FIELD_BG] = SYS_WHITE;
-		Palette[COL_CURSOR] = SYS_WHITE;
+		Palette[COL_CURSOR] = SYS_GRAY;
 		Palette[COL_HIGHLIGHT] = SYS_BLUE;
 		Palette[COL_TITLE_BAR] = SYS_GRAY;
 		Palette[COL_NULL] = SYS_BLACK;
@@ -151,7 +151,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_BODY_MAIN_MED] = SYS_DGRAY;
 		Palette[COL_BODY_MAIN_DARK] = SYS_BLACK;
 		Palette[COL_FIELD_BG] = SYS_BLACK;
-		Palette[COL_CURSOR] = SYS_BLACK;
+		Palette[COL_CURSOR] = SYS_WHITE;
 		Palette[COL_HIGHLIGHT] = SYS_BLUE;
 		Palette[COL_TITLE_BAR] = SYS_GRAY;
 		Palette[COL_NULL] = SYS_BLACK;
@@ -584,6 +584,16 @@ namespace Venrob::SubscreenEditor
 				i_proc(bit, x + Text->StringWidth(title, DIA_FONT) + len + 3, y, (flags&FLAG_DISABLE ? "" : desc_str), dlgdata);
 				return titled_checkbox(bit, x, y, len, checked, dlgdata, flags, title);
 			} //end
+			ProcRet r_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, int flags, char32 title) //start
+			{
+				text(bit, x, y+((len-1-Text->FontHeight(DIA_FONT))/2)+1, TF_NORMAL, title, (flags&FLAG_DISABLE ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
+				return checkbox(bit, x+Text->StringWidth(title,DIA_FONT), y, len, checked, dlgdata, flags);
+			} //end
+			ProcRet r_desc_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, int flags, char32 title, char32 desc_str) //start
+			{
+				i_proc(bit, x + Text->StringWidth(title, DIA_FONT) + len + 3, y, (flags&FLAG_DISABLE ? "" : desc_str), dlgdata);
+				return r_titled_checkbox(bit, x, y, len, checked, dlgdata, flags, title);
+			} //end
 			void titled_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, TypeAString::TMode tm, untyped dlgdata, int tf_indx, int flags, char32 title) //start
 			{
 				text(bit, x-2, y+2, TF_RIGHT, title, (flags&FLAG_DISABLE) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
@@ -751,7 +761,7 @@ namespace Venrob::SubscreenEditor
 		
 		bool delwarn() //start
 		{
-			return !sys_settings[SSET_DELWARN] || yesno_dlg("Are you sure you want to delete this?");
+			return !sys_settings[SSET_DELWARN] || yesno_dlg("Are you sure you want to delete this?") == PROC_CONFIRM;
 		} //end
 		void gen_startup() //start
 		{
@@ -827,8 +837,14 @@ namespace Venrob::SubscreenEditor
 			bool do_save_changes = false;
 			//end
 			untyped proc_data[MAX_INT];
+			int LItem = Game->LItems[Game->GetCurLevel()];
+			Game->LItems[Game->GetCurLevel()] = LI_COMPASS | LI_MAP;
+			int prev = 0;
 			while(running)
 			{
+				++g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER];
+				g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] %= 100000000000000000b;
+				
 				bit->ClearToColor(0, PAL[COL_NULL]);
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
@@ -871,6 +887,7 @@ namespace Venrob::SubscreenEditor
 					printf("/Debug Printout (%d)\n", mod_indx);
 				} //end
 				DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+				//start For all objects
 				if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 2))
 				{
 					running = false;
@@ -934,19 +951,19 @@ namespace Venrob::SubscreenEditor
 					default:
 						titled_inc_text_field(bit, tfx, FRAME_Y, POSBOX_WID, buf_pos, 2, false, data, 4, 0, 2, active?g_arr[NUM_ACTIVE_MODULES]-1:g_arr[NUM_PASSIVE_MODULES]-1, "Pos:");
 				}
-				
-				switch(module_arr[M_TYPE])
+				//end
+				switch(module_arr[M_TYPE]) //start
 				{
-					case MODULE_TYPE_BGCOLOR:
+					case MODULE_TYPE_BGCOLOR: //start
 					{
 						char32 buf[] = "Color:";
 						text(bit, FRAME_X, FRAME_Y+12+5, TF_NORMAL, buf, PAL[COL_TEXT_MAIN]);
 						module_arr[P1] = pal_swatch(bit, FRAME_X+Text->StringWidth(buf, DIA_FONT), FRAME_Y+12, 16, 16, module_arr[P1], data);
 						break;
-					}
+					} //end
 					
 					case MODULE_TYPE_SELECTABLE_ITEM_ID:
-					case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+					case MODULE_TYPE_SELECTABLE_ITEM_CLASS: //start
 					{
 						bool class = module_arr[M_TYPE] == MODULE_TYPE_SELECTABLE_ITEM_CLASS;
 						char32 buf[16];
@@ -965,7 +982,7 @@ namespace Venrob::SubscreenEditor
 						titled_inc_text_field(bit, FIELD_X-(FIELD_WID*2), FRAME_Y+12+(10*2), FIELD_WID, argbuf5, 3, true, data, 9, 0, -1, MAX_MODULES, "Dirs:");
 						inc_text_field(bit, FIELD_X, FRAME_Y+12+(10*2), FIELD_WID, argbuf6, 3, true, data, 10, 0, -1, MAX_MODULES);
 						break;
-					}
+					} //end
 					
 					case MODULE_TYPE_ABUTTONITEM:
 					case MODULE_TYPE_BBUTTONITEM:
@@ -974,12 +991,113 @@ namespace Venrob::SubscreenEditor
 						break;
 					}
 					
+					case MODULE_TYPE_MINIMAP: //start
+					{
+						DEFINE TEXT_OFFSET = WIDTH - FRAME_X - 20;
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*0), TF_RIGHT, "Current Color:", PAL[COL_TEXT_MAIN]);
+						module_arr[P1] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, module_arr[P1], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*1), TF_RIGHT, "Explored Color:", PAL[COL_TEXT_MAIN]);
+						module_arr[P2] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, module_arr[P2], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Unexplored Color:", PAL[COL_TEXT_MAIN]);
+						module_arr[P3] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, module_arr[P3], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*3), TF_RIGHT, "Compass Color:", PAL[COL_TEXT_MAIN]);
+						module_arr[P4] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*3), 16, 16, module_arr[P4], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*4), TF_RIGHT, "Compass Dead Color:", PAL[COL_TEXT_MAIN]);
+						module_arr[P5] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*4), 16, 16, module_arr[P5], data);
+						
+						char32 buf1[] = "Comp. Blink Rate:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf7, 2, false, data, 0, 0, 1, 17, buf1);
+						
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[P6]&MMFLAG_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[P6]~=MMFLAG_COMP_ON_BOSS;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[P6]|=MMFLAG_COMP_ON_BOSS;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[P6]&MMFLAG_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[P6]~=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[P6]|=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[P6]&MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[P6]~=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[P6]|=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[P6]&MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[P6]~=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[P6]|=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[P6]&MMFLAG_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[P6]~=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[P6]|=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[P6]&MMFLAG_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[P6]~=MMFLAG_IGNORE_DMAP_BGTILE;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[P6]|=MMFLAG_IGNORE_DMAP_BGTILE;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[P6]&MMFLAG_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[P6]~=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[P6]|=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								break;
+						}
+						DEFINE MMY = HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT-48-4;
+						DEFINE MMX = WIDTH - FRAME_X - 80 - 2;
+						frame_rect(bit, MMX-1, MMY-1, MMX+81, MMY+49, 1);
+						text(bit, MMX - 3, MMY, TF_RIGHT, "Preview:", PAL[COL_TEXT_MAIN]);
+						char32 buf[] = "Defeated";
+						switch(r_titled_checkbox(bit, MMX - 10 - Text->StringWidth(buf, DIA_FONT), MMY + 8, 7, prev&1b, data, 0, buf))
+						{
+							case PROC_UPDATED_FALSE:
+								prev~=1b;
+								break;
+							case PROC_UPDATED_TRUE:
+								prev|=1b;
+								break;
+						}
+						if(prev&1b)
+							Game->LItems[Game->GetCurLevel()] |= LI_BOSS | LI_TRIFORCE;
+						minimap(module_arr, bit, active, MMX, MMY);
+						Game->LItems[Game->GetCurLevel()] ~= LI_BOSS | LI_TRIFORCE;
+						break;
+					} //end
+					
 					default:
 					{
 						text(bit, WIDTH/2, ((HEIGHT-(Text->FontHeight(DIA_FONT)*((1*3)+(0.5*2))))/2), TF_CENTERED, "WIP UNDER CONSTRUCTION", PAL[COL_TEXT_MAIN], 1);
 						break;
 					}
-				}
+				} //end
 				
 				//
 				null_screen();
@@ -994,7 +1112,7 @@ namespace Venrob::SubscreenEditor
 				KillButtons();
 				subscr_Waitframe();
 			}
-			
+			Game->LItems[Game->GetCurLevel()] = LItem;
 			if(do_save_changes)
 			{
 				bit->Write(0, "_DIALOGUE.png", true);
@@ -1013,6 +1131,10 @@ namespace Venrob::SubscreenEditor
 						module_arr[P5] = VBound(atoi(argbuf5), MAX_MODULES, -1);
 						module_arr[P6] = VBound(atoi(argbuf6), MAX_MODULES, -1);
 						break;
+					}
+					case MODULE_TYPE_MINIMAP:
+					{
+						module_arr[P7] = VBound(atoi(argbuf7), 18, 1);
 					}
 				}
 				if(active)
@@ -1127,11 +1249,11 @@ namespace Venrob::SubscreenEditor
 				{
 					open_data_pane(DLG_OPTIONS, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Save", data, main_proc_data, 4))
+				/*if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Save", data, main_proc_data, 4))
 				{
 					ret = GUIRET_SAVE;
 					//open_data_pane(DLG_SAVEAS, PANE_T_SYSTEM);
-				}
+				}*/
 				/*if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "", data, main_proc_data, 5))
 				{
 					//open_data_pane(DLG_LOAD, PANE_T_SYSTEM);
@@ -1140,7 +1262,7 @@ namespace Venrob::SubscreenEditor
 				{
 					open_data_pane(DLG_SYSTEM, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Themes", data, main_proc_data, 7))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Themes", data, main_proc_data, 7))
 				{
 					open_data_pane(DLG_THEMES, PANE_T_SYSTEM);
 				}
@@ -1632,7 +1754,7 @@ namespace Venrob::SubscreenEditor
 			//end
 			untyped proc_data[1];
 			int indx;
-			int val[] = {2,3,4,5,6};
+			int val[] = {2,3,4,5,6,7};
 			while(running)
 			{
 				lastframe->Clear(0);
@@ -1644,7 +1766,7 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, "Create Object", data, "Create a new object of a given type, at it's default settings.\nAfter creating the object, it's editing window will open.")==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen"}, -1/*Auto*/, 10, lastframe, 0);
+				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap"}, -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)-(BUTTON_WIDTH/2), HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, "Create", data, proc_data, 0, FLAG_DEFAULT))
@@ -1667,6 +1789,10 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_BBUTTONITEM:
 						{
 							MakeBButtonItem(module_arr); break;
+						}
+						case MODULE_TYPE_MINIMAP:
+						{
+							MakeMinimap(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -1703,7 +1829,7 @@ namespace Venrob::SubscreenEditor
 		}
 		//end
 		//start Main Menu
-		void MainMenu()
+		void MainMenu() //start
 		{
 			/*
 			//start OLD MENU CODE
@@ -1786,7 +1912,7 @@ namespace Venrob::SubscreenEditor
 			//
 			center_dlg(bit, data);
 			//end
-			untyped proc_data[11];
+			untyped proc_data[100];
 			int active_indx, passive_indx;
 			int num_active_sub = count_subs(false), num_passive_sub = count_subs(true);
 			printf("Counts: %03d,%03d\n",num_active_sub,num_passive_sub);
@@ -1802,11 +1928,15 @@ namespace Venrob::SubscreenEditor
 				save_passive_file(1);
 				++num_passive_sub;
 			}
+			Input->DisableKey[KEY_ESC] = true;
 			while(true)
 			{
 				lastframe->Clear(0);
 				fullblit(0, lastframe, bit);
 				bit->ClearToColor(0, PAL[COL_NULL]);
+				
+				handle_data_pane(true);
+				
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
@@ -1829,18 +1959,6 @@ namespace Venrob::SubscreenEditor
 					DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
 					DEFINE BUTTON_XOFF = (COL_WID/2) - (BUTTON_WIDTH/2);
 					DEFINE BUTTON_SPACING = 4;
-					//Confirm / Reset UNFINISHED remove
-					/*{
-						if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 4))
-						{
-							running = false;
-						}
-						if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 5, FLAG_DEFAULT))
-						{
-							running = false;
-							do_save_changes = true;
-						}
-					}*/
 					//SaveLoad
 					{
 						//UNFINISHED Save (open save dlg; same as MainGUI save)
@@ -1848,46 +1966,31 @@ namespace Venrob::SubscreenEditor
 					}
 					//Choose Buttons
 					{
-						//UNFINISHED Load Active (uses indx from ddown)
-						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "Load", data, proc_data, 2)) //start
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 2)) //start
 						{
-							load_active_file(active_indx+1);
-						} //end
-						//UNFINISHED Load Passive (uses indx from ddown)
-						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "Load", data, proc_data, 3)) //start
-						{
-							load_passive_file(passive_indx+1);
-						} //end
-						//UNFINISHED New Active (Brand new blank active)
-						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 2), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 4)) //start
-						{
-							clearActive();
+							clearActive(true);
 							active_indx = num_active_sub;
 							save_active_file(++num_active_sub);
 						} //end
-						//UNFINISHED New Passive (Brand new blank passive)
-						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 2), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 5)) //start
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 3)) //start
 						{
-							clearPassive();
+							clearPassive(true);
 							passive_indx = num_passive_sub;
 							save_passive_file(++num_passive_sub);
 						} //end
-						//UNFINISHED Copy Active (New Active copied from indx in ddown)
-						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 3), BUTTON_WIDTH, BUTTON_HEIGHT, "Dupe", data, proc_data, 6)) //start
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 2), BUTTON_WIDTH, BUTTON_HEIGHT, "Dupe", data, proc_data, 4)) //start
 						{
 							load_active_file(active_indx+1);
 							active_indx = num_active_sub;
 							save_active_file(++num_active_sub);
 						} //end
-						//UNFINISHED Copy Passive (New Passive copied from indx in ddown)
-						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 3), BUTTON_WIDTH, BUTTON_HEIGHT, "Dupe", data, proc_data, 7)) //start
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 2), BUTTON_WIDTH, BUTTON_HEIGHT, "Dupe", data, proc_data, 5)) //start
 						{
 							load_passive_file(passive_indx+1);
 							passive_indx = num_passive_sub;
 							save_passive_file(++num_passive_sub);
 						} //end
-						//UNFINISHED Delete Active
-						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 4), BUTTON_WIDTH, BUTTON_HEIGHT, "Delete", data, proc_data, 8)) //start
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 3), BUTTON_WIDTH, BUTTON_HEIGHT, "Delete", data, proc_data, 6)) //start
 						{
 							if(delwarn())
 							{
@@ -1914,8 +2017,7 @@ namespace Venrob::SubscreenEditor
 								}
 							}
 						} //end
-						//UNFINISHED Delete Passive
-						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 4), BUTTON_WIDTH, BUTTON_HEIGHT, "Delete", data, proc_data, 9)) //start
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 3), BUTTON_WIDTH, BUTTON_HEIGHT, "Delete", data, proc_data, 7)) //start
 						{
 							if(delwarn())
 							{
@@ -1942,11 +2044,31 @@ namespace Venrob::SubscreenEditor
 								}
 							}
 						} //end
+						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 4), BUTTON_WIDTH, BUTTON_HEIGHT, "Edit", data, proc_data, 8)) //start
+						{
+							load_active_file(active_indx+1);
+							if(runEditor(1))
+								save_active_file(active_indx+1);
+							else load_active_file(active_indx+1);
+						} //end
+						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 4), BUTTON_WIDTH, BUTTON_HEIGHT, "Edit", data, proc_data, 9)) //start
+						{
+							load_passive_file(passive_indx+1);
+							if(runEditor(2))
+								save_passive_file(passive_indx+1);
+							else load_passive_file(passive_indx+1);
+						} //end
 					}
 					//Mode Buttons
 					{
-						//UNFINISHED Edit Active (move to editing = 1 from old)
-						//UNFINISHED Edit Passive (move to editing = 2 from old)
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, proc_data, 10))
+						{
+							open_data_pane(DLG_SYSTEM, PANE_T_SYSTEM);
+						}
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + BUTTON_WIDTH + 5, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%Themes", data, proc_data, 11))
+						{
+							open_data_pane(DLG_THEMES, PANE_T_SYSTEM);
+						}
 						//UNFINISHED Test (move to editing = 0 from old)
 						//UNFINISHED TEXT- explain how to get back to this menu from another mode
 					}
@@ -1970,6 +2092,59 @@ namespace Venrob::SubscreenEditor
 			bit->Free();
 			gen_final();
 			*/
+		} //end
+		bool runEditor(int mode)
+		{
+			while(true)
+			{
+				switch(mode)
+				{
+					case 0:
+						if(Input->Press[CB_START])
+						{
+							runActiveSubscreen();
+						}
+						runPassiveSubscreen();
+						break;
+					case 1:
+						runFauxActiveSubscreen();
+						if(SubEditorData[SED_QUEUED_DELETION])
+						{
+							if(SubEditorData[SED_QUEUED_DELETION]<0) //passive
+							{
+								remove_passive_module(-SubEditorData[SED_QUEUED_DELETION]);
+							}
+							else //active
+							{
+								remove_active_module(SubEditorData[SED_QUEUED_DELETION]);
+							}
+							SubEditorData[SED_QUEUED_DELETION]=0;
+						}
+						KillButtons();
+						break;
+					case 2:
+						runFauxPassiveSubscreen(true);
+						runPreparedSelector(false);
+						ColorScreen(7, PAL[COL_NULL], true);
+						getSubscreenBitmap(false)->Blit(7, RT_SCREEN, 0, 0, 256, 56, 0, PASSIVE_EDITOR_TOP, 256, 56, 0, 0, 0, 0, 0, true);
+						clearPassive1frame();
+						KillButtons();
+						break;
+				}
+				if(handle_data_pane(mode==1)) continue;
+				if(mode) DIALOG::runGUI(mode==1);
+				if(Input->ReadKey[KEY_ESC])
+				{
+					if(mode)
+					{
+						ProcRet r = yesno_dlg("Exiting Edit Mode", "Would you like to save your changes?" ,"Save", "Revert");
+						if(r == PROC_CONFIRM) return true;
+						if(r == PROC_DENY) return false;
+					}
+					else return true;
+				}
+				subscr_Waitframe();
+			}
 		}
 		//end Main Menu
 		//start SaveLoad
@@ -2061,23 +2236,23 @@ namespace Venrob::SubscreenEditor
 		}
 		//end
 		//start YesNo
-		bool yesno_dlg(char32 msg)
+		ProcRet yesno_dlg(char32 msg)
 		{
-			yesno_dlg("", msg, "%Yes", "%No");
+			return yesno_dlg("", msg, "%Yes", "%No");
 		}
-		bool yesno_dlg(char32 title, char32 msg)
+		ProcRet yesno_dlg(char32 title, char32 msg)
 		{
-			yesno_dlg(title, msg, "", "%Yes", "%No");
+			return yesno_dlg(title, msg, "", "%Yes", "%No");
 		}
-		bool yesno_dlg(char32 title, char32 msg, char32 descstr)
+		ProcRet yesno_dlg(char32 title, char32 msg, char32 descstr)
 		{
-			yesno_dlg(title, msg, descstr, "%Yes", "%No");
+			return yesno_dlg(title, msg, descstr, "%Yes", "%No");
 		}
-		bool yesno_dlg(char32 title, char32 msg, char32 yestxt, char32 notxt)
+		ProcRet yesno_dlg(char32 title, char32 msg, char32 yestxt, char32 notxt)
 		{
-			yesno_dlg(title, msg, "", yestxt, notxt);
+			return yesno_dlg(title, msg, "", yestxt, notxt);
 		}
-		bool yesno_dlg(char32 title, char32 msg, char32 descstr, char32 yestxt, char32 notxt)
+		ProcRet yesno_dlg(char32 title, char32 msg, char32 descstr, char32 yestxt, char32 notxt)
 		{
 			gen_startup();
 			//start setup
@@ -2104,30 +2279,30 @@ namespace Venrob::SubscreenEditor
 			//
 			center_dlg(bit, data);
 			
-			bool running = true;
-			bool ret = false;
+			ProcRet ret = PROC_NULL;
 			//end
 			untyped proc_data[2];
-			while(running)
+			until(ret)
 			{
 				bit->ClearToColor(0, PAL[COL_NULL]);
 				//Deco
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
 				//Func
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, descstr)==PROC_CANCEL || CancelButtonP())
-					running = false;
+				{
+					ret = PROC_CANCEL;
+				}
 				
 				text(bit, WIDTH/2, BAR_HEIGHT + 5, TF_CENTERED, msg, PAL[COL_TEXT_MAIN], TXTWID);
 				
 				DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)-6-BUTTON_WIDTH, HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, yestxt, data, proc_data, 0, FLAG_DEFAULT))
 				{
-					running = false;
-					ret = true;
+					ret = PROC_CONFIRM;
 				}
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)+6, HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, notxt, data, proc_data, 1))
 				{
-					running = false;
+					ret = PROC_DENY;
 				}
 				
 				//
@@ -2315,7 +2490,7 @@ namespace Venrob::SubscreenEditor
 				ldata[DLG_DATA_YOFFS] = data[DLG_DATA_YOFFS] - (scrollIndx*UNIT_HEIGHT); //update to current scroll
 				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, 1, PAL[COL_FIELD_BG]);
 				//h_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, PAL[COL_BODY_MAIN_DARK]);
-				bool isHoveringList = DLGCursorBox(0, 0, HEIGHT-1, BMP_WIDTH-1, data);
+				bool isHoveringList = DLGCursorBox(0, 0, BMP_WIDTH-1, HEIGHT-1, data);
 				int cy = DLGMouseY(ldata);
 				//List options
 				{
@@ -2384,7 +2559,7 @@ namespace Venrob::SubscreenEditor
 					if(SubEditorData[SED_LCLICKING])
 					{
 						was_clicking = true;
-						selIndx = VBound(Div(cy-MARGIN_WIDTH, UNIT_HEIGHT), 0, NUM_OPTS); //Select clicked option
+						selIndx = VBound(Div(cy-MARGIN_WIDTH, UNIT_HEIGHT), NUM_OPTS, 0); //Select clicked option
 					}
 					else if(was_clicking)
 					{
@@ -2462,6 +2637,7 @@ namespace Venrob::SubscreenEditor
 			PROC_NULL,
 			PROC_CANCEL,
 			PROC_CONFIRM,
+			PROC_DENY,
 			PROC_UPDATED_TRUE,
 			PROC_UPDATED_FALSE
 		};
@@ -2497,6 +2673,10 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_PASSIVESUBSCREEN:
 				{
 					strcat(buf, "Passive Subscreen"); break;
+				}
+				case MODULE_TYPE_MINIMAP:
+				{
+					strcat(buf, "Minimap"); break;
 				}
 			}
 		} //end
