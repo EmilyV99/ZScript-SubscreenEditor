@@ -32,6 +32,10 @@ namespace Venrob::Subscreen
 	DEFINE MAX_MODULES = ((SUBSCR_STORAGE_SIZE / MAX_MODULE_SIZE)/10000)*10000;
 	DEFINE NUM_SETTINGS = 100;
 	
+	
+	DEFINE MAX_TILE = 214499;
+	DEFINE NUM_TILES = MAX_TILE+1;
+	
 	untyped activeData[SUBSCR_STORAGE_SIZE];
 	int activeModules[MAX_MODULES];
 	untyped passiveData[SUBSCR_STORAGE_SIZE];
@@ -663,10 +667,10 @@ namespace Venrob::Subscreen
 			
 			case MODULE_TYPE_MINIMAP:
 			{
-				if(module_arr[M_SIZE]!=P7+1)
+				if(module_arr[M_SIZE]!=P10+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_MINIMAP (%d) must have argument size (7) in format {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, TILE}; argument size %d found", MODULE_TYPE_MINIMAP, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_MINIMAP (%d) must have argument size (10) in format {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, 16x8TILE, 16x8CSET, 8x8TILE, 8x8CSET}; argument size %d found", MODULE_TYPE_MINIMAP, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
 				if(module_arr[P1] < 0 || module_arr[P1] > 0xFF || (module_arr[P1]%1))
@@ -732,6 +736,50 @@ namespace Venrob::Subscreen
 							error("MODULE_TYPE_MINIMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P6]);
 						else
 							error("MODULE_TYPE_MINIMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P6]);
+					}
+					return false;
+				}
+				if(module_arr[P7] < 0 || module_arr[P7] > MAX_TILE || (module_arr[P7]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P7]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 7 (16x8TILE) must be an integer between (0) and (%d), inclusive; found %f", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P7]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 7 (16x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P7]);
+					}
+					return false;
+				}
+				if(module_arr[P8] < 0 || module_arr[P8] > 11 || (module_arr[P8]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P8]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 8 (16x8CSET) must be an integer between (0) and (11), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P8]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 8 (16x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P8]);
+					}
+					return false;
+				}
+				if(module_arr[P9] < 0 || module_arr[P9] > MAX_TILE || (module_arr[P9]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P9]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 9 (8x8TILE) must be an integer between (0) and (%d), inclusive; found %f", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P9]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 9 (8x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P9]);
+					}
+					return false;
+				}
+				if(module_arr[P10] < 0 || module_arr[P10] > 11 || (module_arr[P10]%1))
+				{
+					if(DEBUG)
+					{
+						if(module_arr[P10]%1)
+							error("MODULE_TYPE_MINIMAP (%d) argument 10 (8x8CSET) must be an integer between (0) and (11), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P10]);
+						else
+							error("MODULE_TYPE_MINIMAP (%d) argument 10 (8x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P10]);
 					}
 					return false;
 				}
@@ -1123,6 +1171,19 @@ namespace Venrob::Subscreen
 		int curscr = Game->GetCurDMapScreen();
 		bool showExplore;
 		int ow = dm->Type & (11b);
+		int mtile = (ow == DMAP_OVERWORLD ? module_arr[P7] : module_arr[P9]);
+		int mcs = (ow == DMAP_OVERWORLD ? module_arr[P8] : module_arr[P10]);
+		bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
+		unless(module_arr[M_FLAGS1] & MMFLAG_IGNORE_DMAP_BGTILE)
+		{
+			if(dm->MiniMapTile[hasMap ? 1 : 0])
+			{
+				mtile = dm->MiniMapTile[hasMap ? 1 : 0];
+				mcs = dm->MiniMapCSet[hasMap ? 1 : 0];
+				//printf("without (%d,%d) - with (%d,%d)\n",dm->MiniMapTile[0],dm->MiniMapCSet[0],dm->MiniMapTile[1],dm->MiniMapCSet[1]);
+			}
+		}
+		if(mtile) bit->DrawTile(module_arr[M_LAYER], orig_x, orig_y, mtile, 5, 3, mcs, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
 		bool hasCompass = Game->LItems[Game->GetCurLevel()] & LI_COMPASS;
 		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[M_FLAGS1] & MMFLAG_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
 		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P6]-1);
@@ -1167,7 +1228,6 @@ namespace Venrob::Subscreen
 		}
 		else
 		{
-			bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
 			int offs = Game->DMapOffset[Game->GetCurDMap()];
 			bool largeMarkers = module_arr[M_FLAGS1] & MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
 			
@@ -1304,7 +1364,7 @@ namespace Venrob::Subscreen
 	void MakeMinimap(untyped buf_arr)
 	{
 		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = P7+1;
+		buf_arr[M_SIZE] = P10+1;
 		buf_arr[M_TYPE] = MODULE_TYPE_MINIMAP;
 		
 		buf_arr[M_FLAGS1] = MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON | MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;

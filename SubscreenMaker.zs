@@ -23,7 +23,7 @@ namespace Venrob::SubscreenEditor
 	DEFINE VERSION_PROJ = 1;
 	DEFINE VERSION_SSET = 1;
 	//start SubEditorData
-	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
+	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
 	enum
 	{
 		SED_HIGHLIGHTED,
@@ -37,6 +37,7 @@ namespace Venrob::SubscreenEditor
 		SED_RCLICKING,
 		SED_MCLICKING,
 		SED_DEFAULTBTN,
+		SED_DEFAULTBTN2,
 		SED_CANCELBTN,
 		SED_LASTMOUSE_X,
 		SED_LASTMOUSE_Y,
@@ -435,7 +436,7 @@ namespace Venrob::SubscreenEditor
 			{
 				if(mod_indx>1 && DIALOG::delwarn())
 				{
-					SubEditorData[SED_QUEUED_DELETION] = mod_indx;
+					SubEditorData[SED_QUEUED_DELETION] = active ? mod_indx : -mod_indx;
 					SubEditorData[SED_HIGHLIGHTED] = 0;
 					if(isDragging) SubEditorData[SED_DRAGGING] = 0;
 				}

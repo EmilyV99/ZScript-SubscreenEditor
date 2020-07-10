@@ -477,6 +477,16 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1, swatch_color);
 				return swatch_color;
 			}//end
+			void tile_swatch(bitmap bit, int x, int y, int wid, int hei, int arr, untyped dlgdata) //start
+			{
+				int x2 = x+wid-1, y2 = y+hei-1;
+				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x, y, x2, y2, dlgdata))
+				{
+					pick_tile(arr);
+				}
+				frame_rect(bit, x, y, x2, y2, 1);
+				tile(bit, x+1, y+1, arr[0], arr[1]);
+			}//end
 			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags)
 			{
 				if(num_opts <= 0) num_opts = SizeOfArray(strings);
@@ -721,11 +731,11 @@ namespace Venrob::SubscreenEditor
 		}
 		bool DefaultButton()
 		{
-			return KeyInput(SubEditorData[SED_DEFAULTBTN]);
+			return KeyInput(SubEditorData[SED_DEFAULTBTN]) || KeyInput(SubEditorData[SED_DEFAULTBTN2]);
 		}
 		bool DefaultButtonP()
 		{
-			return KeyPressed(SubEditorData[SED_DEFAULTBTN]);
+			return KeyPressed(SubEditorData[SED_DEFAULTBTN]) || KeyPressed(SubEditorData[SED_DEFAULTBTN2]);
 		}
 		bool CancelButton()
 		{
@@ -1006,8 +1016,8 @@ namespace Venrob::SubscreenEditor
 						module_arr[P5] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*4), 16, 16, module_arr[P5], data);
 						
 						char32 buf1[] = "Comp. Blink Rate:";
-						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf7, 2, false, data, 0, 0, 1, 17, buf1);
-						module_arr[P6] = VBound(atoi(argbuf7), 9, 1);
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf6, 2, false, data, 0, 0, 1, 9, buf1);
+						module_arr[P6] = VBound(atoi(argbuf6), 9, 1);
 						
 						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[M_FLAGS1]&MMFLAG_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
 						{
@@ -1086,6 +1096,19 @@ namespace Venrob::SubscreenEditor
 								prev|=1b;
 								break;
 						}
+						char32 bufm16[] = "16x8 Tile";
+						char32 bufm8[] = " 8x8 Tile";
+						int tilearr[2] = {module_arr[P7], module_arr[P8]};
+						text(bit, FRAME_X, FRAME_Y + 25 + (10 * 7) + 4, TF_NORMAL, bufm16, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7), 18, 18, tilearr, data);
+						module_arr[P7] = tilearr[0];
+						module_arr[P8] = tilearr[1];
+						tilearr[0] = module_arr[P9];
+						tilearr[1] = module_arr[P10];
+						text(bit, FRAME_X+ Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20 + 4, TF_RIGHT, bufm8, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20, 18, 18, tilearr, data);
+						module_arr[P9] = tilearr[0];
+						module_arr[P10] = tilearr[1];
 						if(prev&1b)
 							Game->LItems[Game->GetCurLevel()] |= LI_BOSS | LI_TRIFORCE;
 						minimap(module_arr, bit, active, MMX, MMY);
@@ -2003,7 +2026,7 @@ namespace Venrob::SubscreenEditor
 									active_indx = 0;
 									unless(--num_active_sub)
 									{
-										clearActive();
+										clearActive(true);
 										save_active_file(1);
 										++num_active_sub;
 									}
@@ -2030,7 +2053,7 @@ namespace Venrob::SubscreenEditor
 									passive_indx = 0;
 									unless(--num_passive_sub)
 									{
-										clearPassive();
+										clearPassive(true);
 										save_passive_file(1);
 										++num_passive_sub;
 									}
@@ -2117,18 +2140,6 @@ namespace Venrob::SubscreenEditor
 						break;
 					case 1:
 						runFauxActiveSubscreen();
-						if(SubEditorData[SED_QUEUED_DELETION])
-						{
-							if(SubEditorData[SED_QUEUED_DELETION]<0) //passive
-							{
-								remove_passive_module(-SubEditorData[SED_QUEUED_DELETION]);
-							}
-							else //active
-							{
-								remove_active_module(SubEditorData[SED_QUEUED_DELETION]);
-							}
-							SubEditorData[SED_QUEUED_DELETION]=0;
-						}
 						KillButtons();
 						break;
 					case 2:
@@ -2139,6 +2150,18 @@ namespace Venrob::SubscreenEditor
 						clearPassive1frame();
 						KillButtons();
 						break;
+				}
+				if(SubEditorData[SED_QUEUED_DELETION])
+				{
+					if(SubEditorData[SED_QUEUED_DELETION]<0) //passive
+					{
+						remove_passive_module(-SubEditorData[SED_QUEUED_DELETION]);
+					}
+					else //active
+					{
+						remove_active_module(SubEditorData[SED_QUEUED_DELETION]);
+					}
+					SubEditorData[SED_QUEUED_DELETION]=0;
 				}
 				if(handle_data_pane(mode==1)) continue;
 				int gret = GUIRET_NULL;
@@ -2157,13 +2180,15 @@ namespace Venrob::SubscreenEditor
 						return true;
 					}
 				}
-				subscr_Waitframe();
+				if(mode) subscr_Waitframe();
+				else Waitframe();
 			}
 		} //end
 		void disableKeys(bool dis)
 		{
 			Input->DisableKey[KEY_ESC] = true;
 			Input->DisableKey[KEY_F1] = dis;
+			Game->ClickToFreezeEnabled = !dis;
 		}
 		//end Main Menu
 		//start SaveLoad
@@ -2254,6 +2279,235 @@ namespace Venrob::SubscreenEditor
 			}
 		}
 		//end
+		//start Select Tile
+		DEFINE TL_PER_ROW = 16;
+		DEFINE TL_PER_COL = 13;
+		DEFINE TL_PER_PAGE = TL_PER_ROW * TL_PER_COL;
+		DEFINE E_TILE_PER_ROW = 20;
+		DEFINE E_TILE_PER_COL = 13;
+		DEFINE E_TILE_PER_PAGE = E_TILE_PER_ROW * E_TILE_PER_COL;
+		void pick_tile(int arr) //start
+		{
+			gen_startup();
+			//start Setup
+			DEFINE WIDTH = 256, HEIGHT = 224;
+			bitmap bit = create(WIDTH, HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			char32 titlefmt[] = "Tile Picker - Page %d (Engine Page %d) - Tile %d, CS %d";
+			int tl = arr[0];
+			int cs = arr[1];
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			//
+			null_screen();
+			draw_dlg(bit, data);
+			KillButtons();
+			Waitframe();
+			//
+			center_dlg(bit, data);
+			
+			bool running = true;
+			//end Setup
+			
+			int clk, iclk;
+			int mz = Input->Mouse[MOUSE_Z];
+			while(running)
+			{
+				clk = (clk+1) % 3600;
+				iclk = (iclk+1) % 3600;
+				bit->ClearToColor(0, PAL[COL_NULL]);
+				//
+				if(keyprocp(KEY_EQUALS) || keyprocp(KEY_PLUS_PAD))
+				{
+					cs = (cs+1) % 12;
+				}
+				else if(keyprocp(KEY_MINUS) || keyprocp(KEY_MINUS_PAD))
+				{
+					if(--cs < 0) cs = 11;
+				}
+				bool ki = !(iclk%60);
+				if(SubEditorData[SED_LCLICKING])
+				{
+					int mx = DLGMouseX(data), my = DLGMouseY(data);
+					tl = (tl - (tl % TL_PER_PAGE)) + Div(mx,16) + Div(my-8,16) * TL_PER_ROW;
+				}
+				if(Input->Press[CB_DOWN] || (ki && Input->Button[CB_DOWN]))
+					tl += TL_PER_ROW;
+				else if(Input->Press[CB_UP] || (ki && Input->Button[CB_UP]))
+					tl -= TL_PER_ROW;
+				else if(Input->Press[CB_RIGHT] || (ki && Input->Button[CB_RIGHT]))
+					++tl;
+				else if(Input->Press[CB_LEFT] || (ki && Input->Button[CB_LEFT]))
+					--tl;
+				else if(keyprocp(KEY_PGDN) || Input->Mouse[MOUSE_Z] < mz)
+					tl += TL_PER_PAGE;
+				else if(keyprocp(KEY_PGUP) || Input->Mouse[MOUSE_Z] >	 mz)
+					tl -= TL_PER_PAGE;
+				else if(keyprocp(KEY_P))
+				{
+					tl = jumpPage(tl);
+				}
+				mz = Input->Mouse[MOUSE_Z];
+				if(Input->Press[CB_UP] || Input->Press[CB_DOWN] || Input->Press[CB_RIGHT] || Input->Press[CB_LEFT])
+					iclk = 0;
+				if(tl < 0) tl += NUM_TILES;
+				else tl %= NUM_TILES;
+				
+				if(DefaultButtonP())
+				{
+					arr[0] = tl;
+					arr[1] = cs;
+					running = false;
+				}
+				//
+				int pg = Div(tl, TL_PER_PAGE);
+				int pgtl = pg*TL_PER_PAGE;
+				//
+				char32 title[128];
+				sprintf(title, titlefmt, pg, Div(tl, E_TILE_PER_PAGE), tl, cs);
+				if(title_bar(bit, 0, 8, title, data, "", false)==PROC_CANCEL || CancelButtonP())
+				{
+					running = false;
+				}
+				//
+				for(int q = 0; q < TL_PER_PAGE && q+pgtl < MAX_TILE; ++q)
+				{
+					bit->FastTile(7, (q % TL_PER_ROW) * 16, 8 + Div(q, TL_PER_ROW) * 16, pgtl+q, cs, OP_OPAQUE);
+				}
+				/*unless(pgtl + TL_PER_PAGE > MAX_TILE)
+					bit->DrawTile(7, 0, 8, pgtl, TL_PER_ROW, TL_PER_COL, cs, -1, -1, 0, 0, 0, 0, false, OP_OPAQUE);
+				else //Last page can't fit all the tiles
+				{
+					bit->Rectangle(7, 0, 8, 255, 224, PAL[COL_HIGHLIGHT], 1, 0, 0, 0, true, OP_OPAQUE);
+					bit->DrawTile(7, 0, 8, pgtl, TL_PER_ROW, 3, cs, -1, -1, 0, 0, 0, 0, false, OP_OPAQUE);
+					bit->DrawTile(7, 0, 8 + (3*16), pgtl + (3*TL_PER_ROW), 4, 1, cs, -1, -1, 0, 0, 0, 0, false, OP_OPAQUE);
+				}*/
+				//
+				if(clk & 32)
+				{
+					int pos = tl % TL_PER_PAGE;
+					int x1 = (pos % TL_PER_ROW) * 16, y1 = 8 + Div(pos,TL_PER_ROW) * 16;
+					bit->Rectangle(7, x1, y1, x1+15, y1+15, PAL[COL_CURSOR], 1, 0, 0, 0, false, OP_OPAQUE);
+				}
+				//
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
+			{
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			bit->Free();
+			gen_final();
+		} //end
+		
+		int jumpPage(int cur_tl)
+		{
+			gen_startup();
+			//start setup
+			DEFINE MARGIN_WIDTH = 1
+			     , WIDTH = 162
+				 , TXTWID = WIDTH - ((MARGIN_WIDTH+1)*2)
+				 , BAR_HEIGHT = 11
+			     , HEIGHT = BAR_HEIGHT+47
+				 , FRAME_X = MARGIN_WIDTH+2
+				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
+				 ;
+			DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+			bitmap bit = create(WIDTH, HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			//
+			null_screen();
+			draw_dlg(bit, data);
+			KillButtons();
+			Waitframe();
+			//
+			center_dlg(bit, data);
+			
+			bool running = true;
+			//end
+			untyped proc_data[2];
+			bool engine_page = false;
+			char32 pgbuf[16] = "0";
+			DEFINE MAX_PAGE = Div(MAX_TILE, TL_PER_PAGE);
+			DEFINE MAX_E_PAGE = Div(MAX_TILE, E_TILE_PER_PAGE);
+			while(running)
+			{
+				bit->ClearToColor(0, PAL[COL_NULL]);
+				//Deco
+				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
+				//Func
+				if(title_bar(bit, 0, BAR_HEIGHT, "Jump to Page", data, "")==PROC_CANCEL || CancelButtonP())
+				{
+					running = false;
+				}
+				//
+				char32 buf[] = "Engine Page Number";
+				switch(titled_checkbox(bit, FRAME_X, FRAME_Y, 7, engine_page, data, 0, buf))
+				{
+					case PROC_UPDATED_FALSE:
+						engine_page = false;
+						break;
+					case PROC_UPDATED_TRUE:
+						engine_page = true;
+						break;
+				}
+				//
+				char32 buf1[] = "Page:";
+				titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12, 28, pgbuf, 3, false, data, 0, 0, 0, engine_page ? MAX_E_PAGE : MAX_PAGE, buf1);
+				//
+				if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 0))
+				{
+					running = false;
+				}
+				if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Confirm", data, proc_data, 1, FLAG_DEFAULT))
+				{
+					running = false;
+					int pg = atoi(pgbuf);
+					if(engine_page)
+					{
+						int etl = pg*E_TILE_PER_PAGE;
+						cur_tl = (cur_tl % TL_PER_PAGE) + (etl - (etl % TL_PER_PAGE));
+					}
+					else
+					{
+						cur_tl = (cur_tl % TL_PER_PAGE) + (pg*TL_PER_PAGE);
+					}
+					if(cur_tl > MAX_TILE)
+						cur_tl = MAX_TILE;
+				}
+				
+				
+				//
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
+			{
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			bit->Free();
+			gen_final();
+			return cur_tl;
+		}
+		//end Select Tile
 		//start YesNo
 		ProcRet yesno_dlg(char32 msg)
 		{
