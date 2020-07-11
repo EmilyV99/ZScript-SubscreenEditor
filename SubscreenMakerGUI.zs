@@ -2312,8 +2312,10 @@ namespace Venrob::SubscreenEditor
 			
 			int clk, iclk;
 			int mz = Input->Mouse[MOUSE_Z];
+			bool controls = true;
 			while(running)
 			{
+				if(keyprocp(KEY_TAB)) controls = !controls;
 				clk = (clk+1) % 3600;
 				iclk = (iclk+1) % 3600;
 				bit->ClearToColor(0, PAL[COL_NULL]);
@@ -2327,6 +2329,7 @@ namespace Venrob::SubscreenEditor
 					if(--cs < 0) cs = 11;
 				}
 				bool ki = !(iclk%60);
+				
 				if(SubEditorData[SED_LCLICKING])
 				{
 					int mx = DLGMouseX(data), my = DLGMouseY(data);
@@ -2342,7 +2345,7 @@ namespace Venrob::SubscreenEditor
 					--tl;
 				else if(keyprocp(KEY_PGDN) || Input->Mouse[MOUSE_Z] < mz)
 					tl += TL_PER_PAGE;
-				else if(keyprocp(KEY_PGUP) || Input->Mouse[MOUSE_Z] >	 mz)
+				else if(keyprocp(KEY_PGUP) || Input->Mouse[MOUSE_Z] > mz)
 					tl -= TL_PER_PAGE;
 				else if(keyprocp(KEY_P))
 				{
@@ -2373,7 +2376,7 @@ namespace Venrob::SubscreenEditor
 				//
 				for(int q = 0; q < TL_PER_PAGE && q+pgtl < MAX_TILE; ++q)
 				{
-					bit->FastTile(7, (q % TL_PER_ROW) * 16, 8 + Div(q, TL_PER_ROW) * 16, pgtl+q, cs, OP_OPAQUE);
+					bit->FastTile(0, (q % TL_PER_ROW) * 16, 8 + Div(q, TL_PER_ROW) * 16, pgtl+q, cs, OP_OPAQUE);
 				}
 				/*unless(pgtl + TL_PER_PAGE > MAX_TILE)
 					bit->DrawTile(7, 0, 8, pgtl, TL_PER_ROW, TL_PER_COL, cs, -1, -1, 0, 0, 0, 0, false, OP_OPAQUE);
@@ -2384,11 +2387,21 @@ namespace Venrob::SubscreenEditor
 					bit->DrawTile(7, 0, 8 + (3*16), pgtl + (3*TL_PER_ROW), 4, 1, cs, -1, -1, 0, 0, 0, 0, false, OP_OPAQUE);
 				}*/
 				//
-				if(clk & 32)
+				if(clk & 1100000b)
 				{
 					int pos = tl % TL_PER_PAGE;
 					int x1 = (pos % TL_PER_ROW) * 16, y1 = 8 + Div(pos,TL_PER_ROW) * 16;
-					bit->Rectangle(7, x1, y1, x1+15, y1+15, PAL[COL_CURSOR], 1, 0, 0, 0, false, OP_OPAQUE);
+					bit->Rectangle(0, x1, y1, x1+15, y1+15, PAL[COL_CURSOR], 1, 0, 0, 0, false, OP_OPAQUE);
+				}
+				if(controls)
+				{
+					frame_rect(bit, 0, HEIGHT-49, WIDTH-1, HEIGHT-1, 1);
+					text(bit, WIDTH/2, HEIGHT-46, TF_CENTERED,
+					     "Controls:\nTab: Toggle Controls | P: Jump to Page\n"
+					     "PGUP / PGDN and Mousewheel: Change Page\n"
+					     "Dirs: Move Cursor | Click: Move Cursor\n"
+					     "+/-: Change CSet | Enter: Confirm | ESC: Cancel"
+					     , PAL[COL_TEXT_MAIN], 200);
 				}
 				//
 				null_screen();
@@ -2408,7 +2421,7 @@ namespace Venrob::SubscreenEditor
 			gen_final();
 		} //end
 		
-		int jumpPage(int cur_tl)
+		int jumpPage(int cur_tl) //start
 		{
 			gen_startup();
 			//start setup
@@ -2506,7 +2519,7 @@ namespace Venrob::SubscreenEditor
 			bit->Free();
 			gen_final();
 			return cur_tl;
-		}
+		} //end
 		//end Select Tile
 		//start YesNo
 		ProcRet yesno_dlg(char32 msg)
