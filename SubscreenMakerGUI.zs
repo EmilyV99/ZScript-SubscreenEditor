@@ -164,7 +164,6 @@ namespace Venrob::SubscreenEditor
 		DEFINE DIA_FONT = FONT_Z3SMALL;
 		DEFINE DIA_CLOSING_DELAY = 4;
 		DEFINE GEN_BUTTON_WIDTH = 48, GEN_BUTTON_HEIGHT = 12;
-		using namespace Venrob::SubscreenEditor::DIALOG::PARTS;
 		namespace PARTS //start Individual procs
 		{
 			//Deco type procs: purely visual
@@ -300,17 +299,24 @@ namespace Venrob::SubscreenEditor
 			{
 				bit->FastTile(0, x, y, tile, cset, OP_OPAQUE);
 			} //end
+			void tilebl(bitmap bit, int x, int y, int tile, int cset, int wid, int hei) //start
+			{
+				bit->DrawTile(0, x, y, tile, wid, hei, cset, -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
+			} //end
 			void combo(bitmap bit, int x, int y, int combo, int cset) //start
 			{
 				bit->FastCombo(0, x, y, combo, cset, OP_OPAQUE);
 			} //end
 			void minitile(bitmap bit, int x, int y, int tile, int cset, int corner) //start
 			{
-				bitmap sub = create(16, 16);
-				sub->Clear(0);
-				tile(sub, 0, 0, tile, cset);
-				sub->Blit(0, bit, (corner&01b)?8:0, (corner&10b)?8:0, 8, 8, x, y, 8, 8, 0, 0, 0, 0, 0, true);
-				sub->Free();
+				unless(<bitmap>(g_arr[MINITILE_BITMAP])->isValid())
+				{
+					<bitmap>(g_arr[MINITILE_BITMAP])->Free();
+					g_arr[MINITILE_BITMAP] = Game->CreateBitmap(16,16);
+				}
+				<bitmap>(g_arr[MINITILE_BITMAP])->Clear(0);
+				tile(g_arr[MINITILE_BITMAP], 0, 0, tile, cset);
+				<bitmap>(g_arr[MINITILE_BITMAP])->Blit(0, bit, (corner&01b)?8:0, (corner&10b)?8:0, 8, 8, x, y, 8, 8, 0, 0, 0, 0, 0, true);
 			} //end
 			void itm(bitmap bit, int x, int y, int id) //start
 			{
@@ -790,8 +796,8 @@ namespace Venrob::SubscreenEditor
 		{
 			gen_startup();
 			//start setup
-			DEFINE WIDTH = 256-32
-			     , HEIGHT = 224-32
+			DEFINE WIDTH = 256//-32
+			     , HEIGHT = 224//-32
 				 , BAR_HEIGHT = 11
 				 , MARGIN_WIDTH = 1
 				 , FRAME_X = MARGIN_WIDTH+2
@@ -897,6 +903,7 @@ namespace Venrob::SubscreenEditor
 					printf("/Debug Printout (%d)\n", mod_indx);
 				} //end
 				DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+				DEFINE ABOVE_BOTTOM_Y = HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT-4;
 				//start For all objects
 				if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 2))
 				{
@@ -1016,73 +1023,73 @@ namespace Venrob::SubscreenEditor
 						module_arr[P5] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*4), 16, 16, module_arr[P5], data);
 						
 						char32 buf1[] = "Comp. Blink Rate:";
-						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf6, 2, false, data, 0, 0, 1, 9, buf1);
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf6, 2, false, data, 5, 0, 1, 9, buf1);
 						module_arr[P6] = VBound(atoi(argbuf6), 9, 1);
 						
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[M_FLAGS1]&MMFLAG_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[M_FLAGS1]&FLAG_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=MMFLAG_COMP_ON_BOSS;
+								module_arr[M_FLAGS1]~=FLAG_COMP_ON_BOSS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=MMFLAG_COMP_ON_BOSS;
+								module_arr[M_FLAGS1]|=FLAG_COMP_ON_BOSS;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[M_FLAGS1]&MMFLAG_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[M_FLAGS1]&FLAG_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
+								module_arr[M_FLAGS1]~=FLAG_SHOW_EXPLORED_ROOMS_OW;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=MMFLAG_SHOW_EXPLORED_ROOMS_OW;
+								module_arr[M_FLAGS1]|=FLAG_SHOW_EXPLORED_ROOMS_OW;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[M_FLAGS1]&MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[M_FLAGS1]&FLAG_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								module_arr[M_FLAGS1]~=FLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								module_arr[M_FLAGS1]|=FLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[M_FLAGS1]&MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[M_FLAGS1]&FLAG_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								module_arr[M_FLAGS1]~=FLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								module_arr[M_FLAGS1]|=FLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[M_FLAGS1]&MMFLAG_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[M_FLAGS1]&FLAG_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
+								module_arr[M_FLAGS1]~=FLAG_COMPASS_BLINK_DOESNT_STOP;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=MMFLAG_COMPASS_BLINK_DOESNT_STOP;
+								module_arr[M_FLAGS1]|=FLAG_COMPASS_BLINK_DOESNT_STOP;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[M_FLAGS1]&MMFLAG_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[M_FLAGS1]&FLAG_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=MMFLAG_IGNORE_DMAP_BGTILE;
+								module_arr[M_FLAGS1]~=FLAG_IGNORE_DMAP_BGTILE;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=MMFLAG_IGNORE_DMAP_BGTILE;
+								module_arr[M_FLAGS1]|=FLAG_IGNORE_DMAP_BGTILE;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[M_FLAGS1]&MMFLAG_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[M_FLAGS1]&FLAG_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								module_arr[M_FLAGS1]~=FLAG_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								module_arr[M_FLAGS1]|=FLAG_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 						}
-						DEFINE MMY = HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT-48-4;
+						DEFINE MMY = ABOVE_BOTTOM_Y-48;
 						DEFINE MMX = WIDTH - FRAME_X - 80 - 2;
 						frame_rect(bit, MMX-1, MMY-1, MMX+81, MMY+49, 1);
 						text(bit, MMX - 3, MMY, TF_RIGHT, "Preview:", PAL[COL_TEXT_MAIN]);
@@ -1116,6 +1123,80 @@ namespace Venrob::SubscreenEditor
 						break;
 					} //end
 					
+					case MODULE_TYPE_TILEBLOCK: //start
+					{
+						char32 buftl[] = "Tile:";
+						int tlarr[2] = {module_arr[P1], module_arr[P2]};
+						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 18, 18, tlarr, data);
+						module_arr[P1] = tlarr[0];
+						module_arr[P2] = tlarr[1];
+						
+						char32 buf1[] = "Wid:";
+						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, 0, 0, 1, 16, buf1);
+						module_arr[P3] = VBound(atoi(argbuf3), 16, 1);
+						char32 buf2[] = "Hei:";
+						titled_inc_text_field(bit, FRAME_X+59+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+19, 28, argbuf4, 2, false, data, 1, 0, 1, 14, buf2);
+						module_arr[P4] = VBound(atoi(argbuf4), 14, 1);
+						
+						DEFINE PREVWID = module_arr[P3] * 16;
+						DEFINE PREVHEI = VBound(module_arr[P4] * 16, 16*9, 0);
+						DEFINE PREVY = ABOVE_BOTTOM_Y-PREVHEI;
+						frame_rect(bit, (WIDTH/2)-(PREVWID/2), PREVY-1, (WIDTH/2)+(PREVWID/2), PREVY+PREVHEI, 1);
+						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview (Shows max 16x9):", PAL[COL_TEXT_MAIN]);
+						tilebl(bit, (WIDTH/2)-(PREVWID/2)+1, PREVY, module_arr[P1], module_arr[P2], PREVWID/16, PREVHEI/16);
+						break;
+					} //end
+					
+					case MODULE_TYPE_HEARTROW: //start
+					{
+						char32 buf1[] = "Heart Count:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39, 28, argbuf4, 2, false, data, 6, 0, 0, MAX_INT, buf1);
+						module_arr[P4] = VBound(atoi(argbuf4), 32, 1);
+						char32 buf2[] = "Spacing:";
+						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39, 28, argbuf5, 2, false, data, 7, 0, buf2);
+						module_arr[P5] = atoi(argbuf5);
+						
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53, 7, module_arr[M_FLAGS1]&FLAG_RTOLHEARTS, data, 0, "Right to Left", "This row of hearts fills from right to left, instead of left to right."))
+						{
+							case PROC_UPDATED_FALSE:
+								module_arr[M_FLAGS1]~=FLAG_RTOLHEARTS;
+								break;
+							case PROC_UPDATED_TRUE:
+								module_arr[M_FLAGS1]|=FLAG_RTOLHEARTS;
+								break;
+						}
+					} //end
+					//fallthrough
+					case MODULE_TYPE_HEART: //start
+					{
+						char32 buftl[] = "Tile:";
+						int tlarr[2] = {module_arr[P1], module_arr[P2]};
+						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 18, 18, tlarr, data);
+						module_arr[P1] = tlarr[0];
+						module_arr[P2] = tlarr[1];
+						
+						char32 buf3[] = "Heart Num:";
+						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, 5, 0, 0, MAX_INT, buf3);
+						module_arr[P3] = Max(atoi(argbuf3), 0);
+						//start Preview
+						DEFINE PREVIEW_WID = 17*8;
+						DEFINE PREVIEW_X = (WIDTH/2) - (PREVIEW_WID/2) + 1;
+						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-8;
+						frame_rect(bit, (WIDTH/2) - (PREVIEW_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_WID/2), ABOVE_BOTTOM_Y, 1);
+						for(int tl = 0; tl < 4; ++tl)
+						{
+							for(int crn = 0; crn < 4; ++crn)
+							{
+								minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y, module_arr[P1]+tl+1, module_arr[P2], crn);
+							}
+						}
+						minitile(bit, PREVIEW_X + 16*8, PREVIEW_Y, module_arr[P1], module_arr[P2], 0);
+						text(bit, WIDTH/2, PREVIEW_Y-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
+						//end Preview
+						break;
+					} //end
 					default:
 					{
 						text(bit, WIDTH/2, ((HEIGHT-(Text->FontHeight(DIA_FONT)*((1*3)+(0.5*2))))/2), TF_CENTERED, "WIP UNDER CONSTRUCTION", PAL[COL_TEXT_MAIN], 1);
@@ -1778,7 +1859,7 @@ namespace Venrob::SubscreenEditor
 			//end
 			untyped proc_data[1];
 			int indx;
-			int val[] = {2,3,4,5,6,7};
+			int val[] = {2,3,4,5,6,7,8,9,10};
 			while(running)
 			{
 				lastframe->Clear(0);
@@ -1790,7 +1871,7 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, "Create Object", data, "Create a new object of a given type, at it's default settings.\nAfter creating the object, it's editing window will open.")==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap"}, -1/*Auto*/, 10, lastframe, 0);
+				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row"}, -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)-(BUTTON_WIDTH/2), HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, "Create", data, proc_data, 0, FLAG_DEFAULT))
@@ -1817,6 +1898,18 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_MINIMAP:
 						{
 							MakeMinimap(module_arr); break;
+						}
+						case MODULE_TYPE_TILEBLOCK:
+						{
+							MakeTileBlock(module_arr); break;
+						}
+						case MODULE_TYPE_HEART:
+						{
+							MakeHeart(module_arr); break;
+						}
+						case MODULE_TYPE_HEARTROW:
+						{
+							MakeHeartRow(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -2313,6 +2406,20 @@ namespace Venrob::SubscreenEditor
 			int clk, iclk;
 			int mz = Input->Mouse[MOUSE_Z];
 			bool controls = true;
+			bitmap blnk = create(256, 208);
+			blnk->ClearToColor(0, COL_NULL);
+			blnk->Rectangle(0, 1, 1, 14, 14, PAL[COL_CURSOR], 1, 0, 0, 0, false, OP_OPAQUE);
+			blnk->Line(0, 1, 1, 14, 14, PAL[COL_CURSOR], 1, 0, 0, 0, OP_OPAQUE);
+			blnk->Line(0, 1, 14, 14, 1, PAL[COL_CURSOR], 1, 0, 0, 0, OP_OPAQUE);
+			for(int tx = 1; tx < 16; ++tx)
+			{
+				blnk->Blit(0, blnk, 0, 0, 16, 16, tx*16, 0, 16, 16, 0, 0, 0, BITDX_NORMAL, 0, false);
+			}
+			for(int ty = 1; ty < 13; ++ty)
+			{
+				blnk->Blit(0, blnk, 0, 0, 256, 16, 0, ty*16, 256, 16, 0, 0, 0, BITDX_NORMAL, 0, false);
+			}
+			
 			while(running)
 			{
 				if(keyprocp(KEY_TAB)) controls = !controls;
@@ -2374,9 +2481,11 @@ namespace Venrob::SubscreenEditor
 					running = false;
 				}
 				//
+				blnk->Blit(0, bit, 0, 0, 256, 208, 0, 8, 256, 208, 0, 0, 0, BITDX_NORMAL, 0, false);
 				for(int q = 0; q < TL_PER_PAGE && q+pgtl < MAX_TILE; ++q)
 				{
-					bit->FastTile(0, (q % TL_PER_ROW) * 16, 8 + Div(q, TL_PER_ROW) * 16, pgtl+q, cs, OP_OPAQUE);
+					unless(Graphics->IsBlankTile[q+pgtl])
+						bit->DrawTile(0, (q % TL_PER_ROW) * 16, 8 + Div(q, TL_PER_ROW) * 16, pgtl+q, 1, 1, cs, -1, -1, 0, 0, 0, 0, false, OP_OPAQUE);
 				}
 				/*unless(pgtl + TL_PER_PAGE > MAX_TILE)
 					bit->DrawTile(7, 0, 8, pgtl, TL_PER_ROW, TL_PER_COL, cs, -1, -1, 0, 0, 0, 0, false, OP_OPAQUE);
@@ -2964,6 +3073,18 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Minimap"); break;
 				}
+				case MODULE_TYPE_TILEBLOCK:
+				{
+					strcat(buf, "Tile Block"); break;
+				}
+				case MODULE_TYPE_HEART:
+				{
+					strcat(buf, "Heart"); break;
+				}
+				case MODULE_TYPE_HEARTROW:
+				{
+					strcat(buf, "Heart Row"); break;
+				}
 			}
 		} //end
 		
@@ -3002,6 +3123,18 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_MINIMAP:
 				{
 					strcat(buf, "Displays the minimap of the current DMap, with various settings."); break;
+				}
+				case MODULE_TYPE_TILEBLOCK:
+				{
+					strcat(buf, "Draws a block of tiles to the screen."); break;
+				}
+				case MODULE_TYPE_HEART:
+				{
+					strcat(buf, "A single heart container."); break;
+				}
+				case MODULE_TYPE_HEARTROW:
+				{
+					strcat(buf, "A row of heart containers."); break;
 				}
 			}
 		} //end

@@ -79,6 +79,7 @@ namespace Venrob::Subscreen
 		INDEX_SELECTION_COOLDOWN,
 		ACTIVE_BITMAP,
 		PASSIVE_BITMAP,
+		MINITILE_BITMAP,
 		ACTIVE_1FRAME_FLAGS_1,
 		PASSIVE_1FRAME_FLAGS_1,
 		SHARED_1FRAME_FLAGS_1,
@@ -90,7 +91,7 @@ namespace Venrob::Subscreen
 	enum //For parameters for modules.
 	{
 		//Meta
-		M_SIZE, M_META_SIZE, M_TYPE, M_PANEL, M_LAYER, M_X, M_Y, M_FLAGS1,
+		M_SIZE, M_META_SIZE, M_TYPE, M_VER, M_PANEL, M_LAYER, M_X, M_Y, M_FLAGS1,
 		//Parameters
 		P1, P2, P3, P4, P5, P6, P7, P8, P9, P10
 	};
@@ -124,13 +125,17 @@ namespace Venrob::Subscreen
 	};
 	enum //Minimap
 	{
-		MMFLAG_COMP_ON_BOSS = FLAG1, //instead of triforce
-		MMFLAG_SHOW_EXPLORED_ROOMS_OW = FLAG2,
-		MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON = FLAG3,
-		MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR = FLAG4,
-		MMFLAG_COMPASS_BLINK_DOESNT_STOP = FLAG5,
-		MMFLAG_IGNORE_DMAP_BGTILE = FLAG6,
-		MMFLAG_LARGE_PLAYER_COMPASS_MARKERS = FLAG7
+		FLAG_COMP_ON_BOSS = FLAG1, //instead of triforce
+		FLAG_SHOW_EXPLORED_ROOMS_OW = FLAG2,
+		FLAG_SHOW_EXPLORED_ROOMS_DUNGEON = FLAG3,
+		FLAG_SHOW_EXPLORED_ROOMS_INTERIOR = FLAG4,
+		FLAG_COMPASS_BLINK_DOESNT_STOP = FLAG5,
+		FLAG_IGNORE_DMAP_BGTILE = FLAG6,
+		FLAG_LARGE_PLAYER_COMPASS_MARKERS = FLAG7
+	};
+	enum //Heart Row
+	{
+		FLAG_RTOLHEARTS = FLAG1
 	};
 	enum //A_STTNG_FLAGS1
 	{
@@ -471,9 +476,23 @@ namespace Venrob::Subscreen
 	bool validate_active_module(untyped module_arr)
 	{
 		moduleType type = module_arr[M_TYPE];
+		if(module_arr[M_META_SIZE] < MODULE_META_SIZE) //Versioning!
+		{
+			switch(module_arr[M_META_SIZE])
+			{
+				case 8:
+					for(int q = P10; q > M_VER; --q)
+					{
+						module_arr[q] = module_arr[q-1];
+					}
+					module_arr[M_VER] = 1;
+					++module_arr[M_META_SIZE];
+					++module_arr[M_SIZE];
+			}
+		}
 		switch(type)
 		{
-			case MODULE_TYPE_BGCOLOR:
+			case MODULE_TYPE_BGCOLOR: //start
 			{
 				if(module_arr[M_SIZE]!=P1+1)
 				{
@@ -491,17 +510,14 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P1]%1)
-							error("MODULE_TYPE_BGCOLOR (%d) argument 1 (COLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_BGCOLOR, module_arr[P1]);
-						else
-							error("MODULE_TYPE_BGCOLOR (%d) argument 1 (COLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_BGCOLOR, module_arr[P1]);
+						error("MODULE_TYPE_BGCOLOR (%d) argument 1 (COLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_BGCOLOR, module_arr[P1]);
 					}
 					return false;
 				}
 				return true;
-			}
+			} //end
 			
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
+			case MODULE_TYPE_SELECTABLE_ITEM_ID: //start
 			{
 				if(module_arr[M_SIZE]!=P6+1)
 				{
@@ -513,10 +529,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P1]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 1 (ITEMID) must be an integer between (0) and (%d), inclusive; found %f", MODULE_TYPE_SELECTABLE_ITEM_ID, MAX_ITEMDATA, module_arr[P1]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 1 (ITEMID) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, MAX_ITEMDATA, module_arr[P1]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 1 (ITEMID) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, MAX_ITEMDATA, module_arr[P1]);
 					}
 					return false;
 				}
@@ -524,10 +537,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P2]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 2 (POS) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P2]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P2]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P2]);
 					}
 					return false;
 				}
@@ -535,10 +545,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P3]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 3 (UP) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P3]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P3]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P3]);
 					}
 					return false;
 				}
@@ -546,10 +553,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P4]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 4 (DOWN) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P4]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P4]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P4]);
 					}
 					return false;
 				}
@@ -557,10 +561,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P5]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 5 (LEFT) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P5]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P5]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P5]);
 					}
 					return false;
 				}
@@ -568,17 +569,14 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P6]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 6 (RIGHT) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P6]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P6]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P6]);
 					}
 					return false;
 				}
 				return true;
-			}
+			} //end
 			
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+			case MODULE_TYPE_SELECTABLE_ITEM_CLASS: //start
 			{
 				if(module_arr[M_SIZE]!=P6+1)
 				{
@@ -590,10 +588,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P1]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 1 (ITEMCLASS) must be a positive integer; found %f", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P1]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 1 (ITEMCLASS) must be a positive integer; found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P1]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 1 (ITEMCLASS) must be a positive integer; found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P1]);
 					}
 					return false;
 				}
@@ -601,10 +596,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P2]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 2 (POS) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P2]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P2]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P2]);
 					}
 					return false;
 				}
@@ -612,10 +604,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P3]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 3 (UP) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P3]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P3]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P3]);
 					}
 					return false;
 				}
@@ -623,10 +612,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P4]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 4 (DOWN) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P4]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P4]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P4]);
 					}
 					return false;
 				}
@@ -634,10 +620,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P5]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 5 (LEFT) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P5]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P5]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P5]);
 					}
 					return false;
 				}
@@ -645,15 +628,12 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P6]%1)
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 6 (RIGHT) must be an integer (>= -1); found %f", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P6]);
-						else
-							error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P6]);
+						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P6]);
 					}
 					return false;
 				}
 				return true;
-			}
+			} //end
 			
 			case MODULE_TYPE_SETTINGS:
 			{
@@ -665,7 +645,7 @@ namespace Venrob::Subscreen
 			case MODULE_TYPE_PASSIVESUBSCREEN:
 				return true;
 			
-			case MODULE_TYPE_MINIMAP:
+			case MODULE_TYPE_MINIMAP: //start
 			{
 				if(module_arr[M_SIZE]!=P10+1)
 				{
@@ -677,10 +657,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P1]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 1 (POSCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P1]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 1 (POSCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 1 (POSCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P1]);
 					}
 					return false;
 				}
@@ -688,10 +665,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P2]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P2]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P2]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P2]);
 					}
 					return false;
 				}
@@ -699,10 +673,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P3]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P3]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P3]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P3]);
 					}
 					return false;
 				}
@@ -710,10 +681,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P4]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P4]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P4]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P4]);
 					}
 					return false;
 				}
@@ -721,10 +689,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P5]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P5]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P5]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P5]);
 					}
 					return false;
 				}
@@ -732,10 +697,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P6]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P6]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P6]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P6]);
 					}
 					return false;
 				}
@@ -743,10 +705,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P7]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 7 (16x8TILE) must be an integer between (0) and (%d), inclusive; found %f", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P7]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 7 (16x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P7]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 7 (16x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P7]);
 					}
 					return false;
 				}
@@ -754,10 +713,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P8]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 8 (16x8CSET) must be an integer between (0) and (11), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P8]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 8 (16x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P8]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 8 (16x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P8]);
 					}
 					return false;
 				}
@@ -765,10 +721,7 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P9]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 9 (8x8TILE) must be an integer between (0) and (%d), inclusive; found %f", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P9]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 9 (8x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P9]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 9 (8x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MINIMAP, MAX_TILE, module_arr[P9]);
 					}
 					return false;
 				}
@@ -776,15 +729,140 @@ namespace Venrob::Subscreen
 				{
 					if(DEBUG)
 					{
-						if(module_arr[P10]%1)
-							error("MODULE_TYPE_MINIMAP (%d) argument 10 (8x8CSET) must be an integer between (0) and (11), inclusive; found %f", MODULE_TYPE_MINIMAP, module_arr[P10]);
-						else
-							error("MODULE_TYPE_MINIMAP (%d) argument 10 (8x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P10]);
+						error("MODULE_TYPE_MINIMAP (%d) argument 10 (8x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MINIMAP, module_arr[P10]);
 					}
 					return false;
 				}
 				return true;
-			}
+			} //end
+			
+			case MODULE_TYPE_TILEBLOCK: //start
+			{
+				if(module_arr[M_SIZE]!=P4+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_TILEBLOCK (%d) must have argument size (4) in format {META..., TILE, CSET, WID, HEI}; argument size %d found", MODULE_TYPE_TILEBLOCK, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_TILEBLOCK (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_TILEBLOCK, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_TILEBLOCK (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_TILEBLOCK, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 1 || module_arr[P3] > 16 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_TILEBLOCK (%d) argument 3 (WID) must be an integer between (1) and (16), inclusive; found %d", MODULE_TYPE_TILEBLOCK, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 1 || module_arr[P4] > 14 || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_TILEBLOCK (%d) argument 4 (HEI) must be an integer between (1) and (14), inclusive; found %d", MODULE_TYPE_TILEBLOCK, module_arr[P4]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			
+			case MODULE_TYPE_HEART: //start
+			{
+				if(module_arr[M_SIZE]!=P3+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_HEART (%d) must have argument size (3) in format //FORMAT: {META..., TILE, CSET, CONTAINER_NUM}; argument size %d found", MODULE_TYPE_HEART, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEART (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_HEART, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEART (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_HEART, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEART (%d) argument 3 (CONTAINER_NUM) must be an integer above (0); found %d", MODULE_TYPE_HEART, module_arr[P3]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_HEARTROW: //start
+			{
+				if(module_arr[M_SIZE]!=P5+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_HEARTROW (%d) must have argument size (3) in format //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}; argument size %d found", MODULE_TYPE_HEARTROW, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEARTROW (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_HEARTROW, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEARTROW (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_HEARTROW, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEARTROW (%d) argument 3 (CONTAINER_NUM) must be an integer above (0); found %d", MODULE_TYPE_HEARTROW, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 1 || module_arr[P4] > 32 || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEARTROW (%d) argument 4 (COUNT) must be an integer between (1) and (32), inclusive; found %d", MODULE_TYPE_HEARTROW, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4]%1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_HEARTROW (%d) argument 5 (SPACING) must be an integer; found %d", MODULE_TYPE_HEARTROW, module_arr[P3]);
+					}
+					return false;
+				}
+				return true;
+			} //end
 			
 			default:
 			{
@@ -880,9 +958,24 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_ABUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_BBUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_PASSIVESUBSCREEN, //FORMAT: {META...}
-		MODULE_TYPE_MINIMAP, //FORMAT: {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, TILE}
+		MODULE_TYPE_MINIMAP, //FORMAT: {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, 16x8TILE, 16x8CSET, 8x8TILE, 8x8CSET}
+		MODULE_TYPE_TILEBLOCK, //FORMAT: {META..., TILE, CSET, WID, HEI}
+		MODULE_TYPE_HEART, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM}
+		MODULE_TYPE_HEARTROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}
 		MODULE_TYPE_MAX
 	};
+	DEFINE META_VER = 1;
+	DEFINE MVER_SETTINGS = 1;
+	DEFINE MVER_BGCOLOR = 1;
+	DEFINE MVER_SELECTABLE_ITEM_ID = 1;
+	DEFINE MVER_SELECTABLE_ITEM_CLASS = 1;
+	DEFINE MVER_ABUTTONITEM = 1;
+	DEFINE MVER_BBUTTONITEM = 1;
+	DEFINE MVER_PASSIVESUBSCREEN = 1;
+	DEFINE MVER_MINIMAP = 1;
+	DEFINE MVER_TILEBLOCK = 1;
+	DEFINE MVER_HEART = 1;
+	DEFINE MVER_HEARTROW = 1;
 	
 	//start Running
 	hero script subscreenRunner
@@ -1047,7 +1140,12 @@ namespace Venrob::Subscreen
 				if(Hero->ItemA)
 				{
 					itemdata id = Game->LoadItemData(Hero->ItemA);
-					int frm = Div(g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
+					unless(id->ASpeed) id->ASpeed = 1;
+					unless(id->AFrames) id->AFrames = 1;
+					int frm = 0;
+					int temp = (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % ((id->ASpeed * id->AFrames) + (id->ASpeed * id->Delay))) - (id->Delay * id->ASpeed);
+					if(temp >= 0)
+						frm = Floor(temp / id->ASpeed);
 					bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				}
 				break;
@@ -1058,8 +1156,12 @@ namespace Venrob::Subscreen
 				if(Hero->ItemB)
 				{
 					itemdata id = Game->LoadItemData(Hero->ItemB);
-					int frm = Div(g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
-					//bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
+					unless(id->ASpeed) id->ASpeed = 1;
+					unless(id->AFrames) id->AFrames = 1;
+					int frm = 0;
+					int temp = (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % ((id->ASpeed * id->AFrames) + (id->ASpeed * id->Delay))) - (id->Delay * id->ASpeed);
+					if(temp >= 0)
+						frm = Floor(temp / id->ASpeed);
 					bit->DrawTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, 1, 1, id->CSet, 16, 16, 0, 0, 0, 0, true, OP_OPAQUE);
 				}
 				break;
@@ -1072,7 +1174,12 @@ namespace Venrob::Subscreen
 				if(itmid < 0 || !Hero->Item[itmid]) break;
 				
 				itemdata id = Game->LoadItemData(itmid);
-				int frm = Div(g_arr[ACTIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
+				unless(id->ASpeed) id->ASpeed = 1;
+				unless(id->AFrames) id->AFrames = 1;
+				int frm = 0;
+				int temp = (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % ((id->ASpeed * id->AFrames) + (id->ASpeed * id->Delay))) - (id->Delay * id->ASpeed);
+				if(temp >= 0)
+					frm = Floor(temp / id->ASpeed);
 				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				if(g_arr[ACTIVE_SELECTED_INDEX] == module_arr[P2])
 				{
@@ -1157,10 +1264,155 @@ namespace Venrob::Subscreen
 			{
 				minimap(module_arr,bit,active);
 			} //end
+			
+			case MODULE_TYPE_TILEBLOCK: //start
+			{
+				bit->DrawTile(0,  module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P3], module_arr[P4], module_arr[P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
+				break;
+			} //end
+			
+			
+			case MODULE_TYPE_HEART: //start
+			{
+				heart(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+				break;
+			} //end
+			
+			case MODULE_TYPE_HEARTROW: //start
+			{
+				if(module_arr[M_FLAGS1] & FLAG_RTOLHEARTS)
+					invheartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				else
+					heartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				break;
+			} //end
 			//case :
 		}
 		return EVENT_NONE;
 	}
+	//end Running
+	//start Constructors
+	void MakeModule(untyped buf_arr)
+	{
+		memset(buf_arr, 0, SizeOfArray(buf_arr));
+		buf_arr[M_META_SIZE] = MODULE_META_SIZE;
+	}
+	
+	void MakeBGColorModule(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P1+1;
+		buf_arr[M_X] = 0;
+		buf_arr[M_Y] = 0;
+		buf_arr[M_LAYER] = 0;
+		buf_arr[M_TYPE] = MODULE_TYPE_BGCOLOR;
+		buf_arr[M_VER] = MVER_BGCOLOR;
+		
+		buf_arr[P1] = 0x0F; //Default BG color
+	}
+	
+	void MakeSelectableItemID(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P6+1;
+		buf_arr[M_LAYER] = 0;
+		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_ID;
+		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_ABTN:0) | FLAG_BBTN;
+		buf_arr[M_VER] = MVER_SELECTABLE_ITEM_ID;
+		
+		buf_arr[P1] = I_RUPEE1;
+		buf_arr[P2] = -1;
+		buf_arr[P3] = -1;
+		buf_arr[P4] = -1;
+		buf_arr[P5] = -1;
+		buf_arr[P6] = -1;
+	}
+	
+	void MakeSelectableItemClass(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P6+1;
+		buf_arr[M_LAYER] = 0;
+		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_CLASS;
+		buf_arr[M_FLAGS1] = FLAG_BBTN;
+		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_ABTN:0) | FLAG_BBTN;
+		buf_arr[M_VER] = MVER_SELECTABLE_ITEM_CLASS;
+		
+		buf_arr[P1] = 0;
+		buf_arr[P2] = -1;
+		buf_arr[P3] = -1;
+		buf_arr[P4] = -1;
+		buf_arr[P5] = -1;
+		buf_arr[P6] = -1;
+	}
+	
+	void MakeAButtonItem(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = MODULE_META_SIZE;
+		buf_arr[M_TYPE] = MODULE_TYPE_ABUTTONITEM;
+		buf_arr[M_VER] = MVER_ABUTTONITEM;
+	}
+	
+	void MakeBButtonItem(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = MODULE_META_SIZE;
+		buf_arr[M_TYPE] = MODULE_TYPE_BBUTTONITEM;
+		buf_arr[M_VER] = MVER_BBUTTONITEM;
+	}
+	
+	void MakePassiveSubscreen(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_X] = 0;
+		buf_arr[M_SIZE] = MODULE_META_SIZE;
+		buf_arr[M_TYPE] = MODULE_TYPE_PASSIVESUBSCREEN;
+		buf_arr[M_VER] = MVER_PASSIVESUBSCREEN;
+	}
+	
+	void MakeMinimap(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P10+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_MINIMAP;
+		buf_arr[M_VER] = MVER_MINIMAP;
+		
+		buf_arr[M_FLAGS1] = FLAG_SHOW_EXPLORED_ROOMS_DUNGEON | FLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+		buf_arr[P6] = 6;
+	}
+	
+	void MakeTileBlock(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P4+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_TILEBLOCK;
+		buf_arr[M_VER] = MVER_TILEBLOCK;
+		
+		buf_arr[P3] = 1;
+		buf_arr[P4] = 1;
+	}
+	
+	void MakeHeart(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P3+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_HEART;
+		buf_arr[M_VER] = MVER_HEART;
+	}
+	
+	void MakeHeartRow(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P5+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_HEARTROW;
+		buf_arr[M_VER] = MVER_HEARTROW;
+		
+		buf_arr[P4] = 10;
+	}
+	//end Constructors
+	//start Handler Functions
+	//start Minimap
 	void minimap(untyped module_arr, bitmap bit, bool active)
 	{
 		minimap(module_arr, bit, active, module_arr[M_X], module_arr[M_Y]);
@@ -1174,7 +1426,7 @@ namespace Venrob::Subscreen
 		int mtile = (ow == DMAP_OVERWORLD ? module_arr[P7] : module_arr[P9]);
 		int mcs = (ow == DMAP_OVERWORLD ? module_arr[P8] : module_arr[P10]);
 		bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
-		unless(module_arr[M_FLAGS1] & MMFLAG_IGNORE_DMAP_BGTILE)
+		unless(module_arr[M_FLAGS1] & FLAG_IGNORE_DMAP_BGTILE)
 		{
 			if(dm->MiniMapTile[hasMap ? 1 : 0])
 			{
@@ -1185,19 +1437,19 @@ namespace Venrob::Subscreen
 		}
 		if(mtile) bit->DrawTile(module_arr[M_LAYER], orig_x, orig_y, mtile, 5, 3, mcs, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
 		bool hasCompass = Game->LItems[Game->GetCurLevel()] & LI_COMPASS;
-		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[M_FLAGS1] & MMFLAG_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
+		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[M_FLAGS1] & FLAG_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
 		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P6]-1);
 		switch(ow)
 		{
 			case DMAP_BSOVERWORLD:
 			case DMAP_OVERWORLD:
-				showExplore = (module_arr[M_FLAGS1] & MMFLAG_SHOW_EXPLORED_ROOMS_OW);
+				showExplore = (module_arr[M_FLAGS1] & FLAG_SHOW_EXPLORED_ROOMS_OW);
 				break;
 			case DMAP_DUNGEON:
-				showExplore = (module_arr[M_FLAGS1] & MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON);
+				showExplore = (module_arr[M_FLAGS1] & FLAG_SHOW_EXPLORED_ROOMS_DUNGEON);
 				break;
 			case DMAP_CAVE:
-				showExplore = (module_arr[M_FLAGS1] & MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR);
+				showExplore = (module_arr[M_FLAGS1] & FLAG_SHOW_EXPLORED_ROOMS_INTERIOR);
 				break;
 		}
 		if(ow == DMAP_OVERWORLD)
@@ -1208,7 +1460,7 @@ namespace Venrob::Subscreen
 				int y = orig_y + 8 + (4*Div(q, 0x010));
 				int c = 0;
 				if(hasCompass && q == dm->Compass &&
-				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
+				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & FLAG_COMPASS_BLINK_DOESNT_STOP))))
 				{
 					c = deadCompass ? module_arr[P5] : module_arr[P4];
 				}
@@ -1229,7 +1481,7 @@ namespace Venrob::Subscreen
 		else
 		{
 			int offs = Game->DMapOffset[Game->GetCurDMap()];
-			bool largeMarkers = module_arr[M_FLAGS1] & MMFLAG_LARGE_PLAYER_COMPASS_MARKERS;
+			bool largeMarkers = module_arr[M_FLAGS1] & FLAG_LARGE_PLAYER_COMPASS_MARKERS;
 			
 			int lim = Max(offs - 8, 0);
 			
@@ -1246,7 +1498,7 @@ namespace Venrob::Subscreen
 				int y = orig_y + 8 + (4*Div(q, 0x010));
 				
 				if(hasCompass && q+offs == dm->Compass &&
-				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & MMFLAG_COMPASS_BLINK_DOESNT_STOP))))
+				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & FLAG_COMPASS_BLINK_DOESNT_STOP))))
 				{
 					c = deadCompass ? module_arr[P5] : module_arr[P4];
 				}
@@ -1285,94 +1537,38 @@ namespace Venrob::Subscreen
 				}
 			}
 		}
-	}
-	//end Running
-	//start Constructors
-	void MakeModule(untyped buf_arr)
+	} //end Minimap
+	//start Life Bar
+	void heartrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing)
 	{
-		memset(buf_arr, 0, SizeOfArray(buf_arr));
-		buf_arr[M_META_SIZE] = MODULE_META_SIZE;
+		for(int q = 0; q < count; ++q)
+			heart(bit, layer, x + (q*(8+spacing)), y, num+q, baseTile, cset);
 	}
-	
-	void MakeBGColorModule(untyped buf_arr)
+	void invheartrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing)
 	{
-		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = P1+1;
-		buf_arr[M_X] = 0;
-		buf_arr[M_Y] = 0;
-		buf_arr[M_LAYER] = 0;
-		buf_arr[M_TYPE] = MODULE_TYPE_BGCOLOR;
-		
-		buf_arr[P1] = 0x0F; //Default BG color
+		for(int q = count-1; q >= 0; --q)
+			heart(bit, layer, x + (q*(8+spacing)), y, num+(count-q-1), baseTile, cset);
 	}
-	
-	void MakeSelectableItemID(untyped buf_arr)
+	void heart(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset) //start
 	{
-		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = P6+1;
-		buf_arr[M_LAYER] = 0;
-		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_ID;
-		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_ABTN:0) | FLAG_BBTN;
-		
-		buf_arr[P1] = I_RUPEE1;
-		buf_arr[P2] = -1;
-		buf_arr[P3] = -1;
-		buf_arr[P4] = -1;
-		buf_arr[P5] = -1;
-		buf_arr[P6] = -1;
-	}
-	
-	void MakeSelectableItemClass(untyped buf_arr)
-	{
-		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = P6+1;
-		buf_arr[M_LAYER] = 0;
-		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_CLASS;
-		buf_arr[M_FLAGS1] = FLAG_BBTN;
-		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_ABTN:0) | FLAG_BBTN;
-		
-		buf_arr[P1] = 0;
-		buf_arr[P2] = -1;
-		buf_arr[P3] = -1;
-		buf_arr[P4] = -1;
-		buf_arr[P5] = -1;
-		buf_arr[P6] = -1;
-	}
-	
-	void MakeAButtonItem(untyped buf_arr)
-	{
-		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_TYPE] = MODULE_TYPE_ABUTTONITEM;
-	}
-	
-	void MakeBButtonItem(untyped buf_arr)
-	{
-		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_TYPE] = MODULE_TYPE_BBUTTONITEM;
-	}
-	
-	void MakePassiveSubscreen(untyped buf_arr)
-	{
-		MakeModule(buf_arr);
-		buf_arr[M_X] = 0;
-		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_TYPE] = MODULE_TYPE_PASSIVESUBSCREEN;
-	}
-	
-	void MakeMinimap(untyped buf_arr)
-	{
-		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = P10+1;
-		buf_arr[M_TYPE] = MODULE_TYPE_MINIMAP;
-		
-		buf_arr[M_FLAGS1] = MMFLAG_SHOW_EXPLORED_ROOMS_DUNGEON | MMFLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
-		buf_arr[P6] = 6;
-	}
-	//end Constructors
-	
+		if(Game->MCounter[CR_LIFE] < (num*HP_PER_HEART+1)) return;
+		if(Game->Counter[CR_LIFE] >= (num+1)*HP_PER_HEART)
+		{
+			minitile(bit, layer, x, y, baseTile, cset, 0);
+		}
+		else if(Game->Counter[CR_LIFE] < (num*HP_PER_HEART+1))
+		{
+			minitile(bit, layer, x, y, baseTile+1, cset, 0);
+		}
+		else
+		{
+			minitile(bit, layer, x, y, baseTile+1+Div(Game->Counter[CR_LIFE] % HP_PER_HEART, HP_PER_HEART/4), cset, Game->Counter[CR_LIFE] % (HP_PER_HEART/4));
+		}
+	} //end
+	//end Life Bar
+	//end Handler Functions
 	//start Misc
+	//start Selector
 	void PrepareSelector(int layer, int x, int y, int wid, int hei, bool active, int selection_style, int val1, int val2)
 	{
 		g_arr[PREPARED_SELECTOR_DATA_START+0] = layer;
@@ -1444,9 +1640,20 @@ namespace Venrob::Subscreen
 				return;
 			}
 		}
-	}
+	} //end Selector
+	void minitile(bitmap bit, int layer, int x, int y, int tile, int cset, int corner) //start
+	{
+		unless(<bitmap>(g_arr[MINITILE_BITMAP])->isValid())
+		{
+			<bitmap>(g_arr[MINITILE_BITMAP])->Free();
+			g_arr[MINITILE_BITMAP] = Game->CreateBitmap(16,16);
+		}
+		<bitmap>(g_arr[MINITILE_BITMAP])->Clear(0);
+		<bitmap>(g_arr[MINITILE_BITMAP])->FastTile(0, 0, 0, tile, cset, OP_OPAQUE);
+		<bitmap>(g_arr[MINITILE_BITMAP])->Blit(layer, bit, (corner&01b)?8:0, (corner&10b)?8:0, 8, 8, x, y, 8, 8, 0, 0, 0, 0, 0, true);
+	} //end
 	
-	bitmap getSubscreenBitmap(bool active)
+	bitmap getSubscreenBitmap(bool active) //start
 	{
 		if(active)
 		{
@@ -1462,9 +1669,8 @@ namespace Venrob::Subscreen
 			unless((<bitmap>g_arr[PASSIVE_BITMAP])->isValid()) generate((<bitmap>g_arr[PASSIVE_BITMAP]), W, H);
 			return (<bitmap>g_arr[PASSIVE_BITMAP]);
 		}
-	}
-	
-	void clearActive1frame()
+	} //end
+	void clearActive1frame() //start
 	{
 		getSubscreenBitmap(true)->Clear(7);
 		getSubscreenBitmap(false)->Clear(7);
@@ -1477,14 +1683,13 @@ namespace Venrob::Subscreen
 		else if(g_arr[INDEX_SELECTION_COOLDOWN])
 			--g_arr[INDEX_SELECTION_COOLDOWN];
 		g_arr[LAST_SELECTED_INDEX] = g_arr[ACTIVE_SELECTED_INDEX];
-	}
-
-	void clearPassive1frame()
+	} //end
+	void clearPassive1frame() //start
 	{
 		getSubscreenBitmap(false)->Clear(7);
 		g_arr[PASSIVE_1FRAME_FLAGS_1] = 0;
 		g_arr[SHARED_1FRAME_FLAGS_1] = 0;
-	}
+	} //end
 	//end
 	
 	//start getters/setters

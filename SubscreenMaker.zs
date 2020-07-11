@@ -16,6 +16,7 @@ namespace Venrob::SubscreenEditor
 {
 	using namespace Venrob::Subscreen;
 	using namespace Venrob::Subscreen::Internal;
+	using namespace Venrob::SubscreenEditor::DIALOG::PARTS;
 	char32 FileEncoding[] = "Venrob_Subscreen_FileSystem"; //Do not change this! This is used for validating saved files.
 	
 	DEFINE VERSION_ASUB = 1;
@@ -174,7 +175,11 @@ namespace Venrob::SubscreenEditor
 		//end
 		loadSysSettings();
 		f->Free();
-		for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = MAX_COUNTER;
+		for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = 60;
+		Hero->MaxHP = HP_PER_HEART * 10;
+		Hero->HP = Hero->MaxHP;
+		Hero->MaxMP = MP_PER_BLOCK * 8;
+		Hero->MP = Hero->MaxMP;
 	} //end Init
 	
 	int count_subs(bool passive) //start
@@ -366,6 +371,43 @@ namespace Venrob::SubscreenEditor
 				{
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 5*16-1, 3*16-1, mod_indx, active, true);
 				}
+				break;
+			}
+			
+			case MODULE_TYPE_TILEBLOCK:
+			{
+				if(interactive) handleDragging(module_arr, mod_indx, active);
+				bit->DrawTile(0,  module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P3], module_arr[P4], module_arr[P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3]*16-1, module_arr[P4]*16-1, mod_indx, active, true);
+				}
+				break;
+			}
+			
+			case MODULE_TYPE_HEART:
+			{
+				if(interactive) handleDragging(module_arr, mod_indx, active);
+				heart(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
+				}
+				break;
+			}
+			
+			case MODULE_TYPE_HEARTROW:
+			{
+				if(interactive) handleDragging(module_arr, mod_indx, active);
+				if(module_arr[M_FLAGS1] & FLAG_RTOLHEARTS)
+					invheartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				else
+					heartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5], 7, mod_indx, active, true);
+				}
+				break;
 			}
 			
 			//case :
@@ -658,6 +700,14 @@ namespace Venrob::SubscreenEditor
 				return 0;
 			case MODULE_TYPE_BGCOLOR:
 				return 0;
+			case MODULE_TYPE_MINIMAP:
+				return 256 - (16 * 5);
+			case MODULE_TYPE_TILEBLOCK:
+				return 256 - (16 * module_arr[P3]);
+			case MODULE_TYPE_HEART:
+				return 256 - 8;
+			case MODULE_TYPE_HEARTROW:
+				return 256 - ((module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5]);
 		}
 		return 256-16;
 	}
@@ -678,10 +728,6 @@ namespace Venrob::SubscreenEditor
 				bool hit = activeData[STTNG_FLAGS1]&FLAG_ITEMS_USE_HITBOX_FOR_SELECTOR;
 				int xoffs = (hit ? id->HitXOffset : id->DrawXOffset);
 				return 0 - xoffs;
-			case MODULE_TYPE_PASSIVESUBSCREEN:
-				return 0;
-			case MODULE_TYPE_BGCOLOR:
-				return 0;
 		}
 		return 0;
 	}
@@ -709,6 +755,13 @@ namespace Venrob::SubscreenEditor
 				return 224-56;
 			case MODULE_TYPE_BGCOLOR:
 				return 0;
+			case MODULE_TYPE_MINIMAP:
+				return 256 - (16 * 3);
+			case MODULE_TYPE_TILEBLOCK:
+				return 256 - (16 * module_arr[P4]);
+			case MODULE_TYPE_HEARTROW:
+			case MODULE_TYPE_HEART:
+				return 256 - 8;
 		}
 		return (active ? 224 : 56)-16;
 	}
@@ -729,10 +782,6 @@ namespace Venrob::SubscreenEditor
 				bool hit = activeData[STTNG_FLAGS1]&FLAG_ITEMS_USE_HITBOX_FOR_SELECTOR;
 				int yoffs = (hit ? id->HitYOffset : id->DrawYOffset);
 				return 0 - yoffs;
-			case MODULE_TYPE_PASSIVESUBSCREEN:
-				return 0;
-			case MODULE_TYPE_BGCOLOR:
-				return 0;
 		}
 		return 0;
 	}
