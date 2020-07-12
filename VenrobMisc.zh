@@ -1,8 +1,8 @@
 #option SHORT_CIRCUIT on
 /**
 * Author: Venrob
-* Version: 1.3
-* Release: July 22nd, 2019
+* Version: 1.4
+* Release: July 12th, 2020
 * Purpose: Miscellaneous functions, which I tend to use in my scripts.
 */
 namespace Venrob
