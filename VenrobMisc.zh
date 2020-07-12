@@ -604,7 +604,7 @@ namespace Venrob
 		int fontHeight = Text->FontHeight(font);
 		while(true)
 		{
-			int nlpos = ContainsCharPos(CHAR_NEWLINE, cpyptr);
+			int endpos = -1;
 			int width = 0;
 			int lastEmptyPos = -1;
 			int length = strlen(cpyptr);
@@ -618,13 +618,18 @@ namespace Venrob
 					break;
 				}
 				width += Text->CharWidth(chr, font);
-				if(width>=MaxWidth && lastEmptyPos!=-1) break;
+				if(width>=MaxWidth)
+				{
+					unless(lastEmptyPos==q)
+						endpos = q;
+					break;
+				}
 				if(cpyptr[q+1]==0) lastEmptyPos = -1;
 			}
 			int pos;
-			if(nlpos==-1)pos=lastEmptyPos;
-			else if(lastEmptyPos==-1)pos=nlpos;
-			else pos = Min(lastEmptyPos,nlpos);
+			if(endpos==-1)pos=lastEmptyPos;
+			else if(lastEmptyPos==-1)pos=endpos;
+			else pos = Min(lastEmptyPos,endpos);
 			if(pos==-1) //No newline
 			{
 				Screen->DrawString(layer, x, y, font, color, background_color, format, cpyptr, opacity);
@@ -633,7 +638,12 @@ namespace Venrob
 			int buf[256];
 			memcpy(buf, 0, cpyptr, 0, pos); //Copy first string
 			Screen->DrawString(layer, x, y, font, color, background_color, format, buf, opacity);
-			remnchr(cpyptr, 0, pos+1); //Shift back the string, deleting what was already drawn
+			if(endpos==pos)
+			{
+				remnchr(cpyptr, 0, pos-1); //Shift back the string, save for 2 chars
+				cpyptr[0] = '-'; //Hyphenate when cutting mid-word
+			}
+			else remnchr(cpyptr, 0, pos+1); //Shift back the string, deleting what was already drawn
 			y+=fontHeight+verticalSpacing;
 		}
 	}
@@ -654,7 +664,7 @@ namespace Venrob
 		int fontHeight = Text->FontHeight(font);
 		while(true)
 		{
-			int nlpos = ContainsCharPos(CHAR_NEWLINE, cpyptr);
+			int endpos = -1;
 			int width = 0;
 			int lastEmptyPos = -1;
 			int length = strlen(cpyptr);
@@ -668,13 +678,18 @@ namespace Venrob
 					break;
 				}
 				width += Text->CharWidth(chr, font);
-				if(width>=MaxWidth && lastEmptyPos!=-1) break;
+				if(width>=MaxWidth)
+				{
+					unless(lastEmptyPos==q)
+						endpos = q;
+					break;
+				}
 				if(cpyptr[q+1]==0) lastEmptyPos = -1;
 			}
 			int pos;
-			if(nlpos==-1)pos=lastEmptyPos;
-			else if(lastEmptyPos==-1)pos=nlpos;
-			else pos = Min(lastEmptyPos,nlpos);
+			if(endpos==-1)pos=lastEmptyPos;
+			else if(lastEmptyPos==-1)pos=endpos;
+			else pos = Min(lastEmptyPos,endpos);
 			if(pos==-1) //No newline
 			{
 				b->DrawString(layer, x, y, font, color, background_color, format, cpyptr, opacity);
@@ -683,7 +698,12 @@ namespace Venrob
 			int buf[256];
 			memcpy(buf, 0, cpyptr, 0, pos); //Copy first string
 			b->DrawString(layer, x, y, font, color, background_color, format, buf, opacity);
-			remnchr(cpyptr, 0, pos+1); //Shift back the string, deleting what was already drawn
+			if(endpos==pos)
+			{
+				remnchr(cpyptr, 0, pos-1); //Shift back the string, save for 2 chars
+				cpyptr[0] = '-'; //Hyphenate when cutting mid-word
+			}
+			else remnchr(cpyptr, 0, pos+1); //Shift back the string, deleting what was already drawn
 			y+=fontHeight+verticalSpacing;
 		}
 	}
@@ -700,7 +720,7 @@ namespace Venrob
 		int fontHeight = Text->FontHeight(font);
 		while(true)
 		{
-			int nlpos = ContainsCharPos(CHAR_NEWLINE, cpyptr);
+			int endpos = -1;
 			int width = 0;
 			int lastEmptyPos = -1;
 			int length = strlen(cpyptr);
@@ -714,18 +734,28 @@ namespace Venrob
 					break;
 				}
 				width += Text->CharWidth(chr, font);
-				if(width>=MaxWidth && lastEmptyPos!=-1) break;
+				if(width>=MaxWidth)
+				{
+					unless(lastEmptyPos==q)
+						endpos = q;
+					break;
+				}
 				if(cpyptr[q+1]==0) lastEmptyPos = -1;
 			}
 			int pos;
-			if(nlpos==-1)pos=lastEmptyPos;
-			else if(lastEmptyPos==-1)pos=nlpos;
-			else pos = Min(lastEmptyPos,nlpos);
+			if(endpos==-1)pos=lastEmptyPos;
+			else if(lastEmptyPos==-1)pos=endpos;
+			else pos = Min(lastEmptyPos,endpos);
 			if(pos==-1) //No newline
 			{
 				return count;
 			}
-			remnchr(cpyptr, 0, pos+1); //Shift back the string, deleting what was already drawn
+			if(endpos==pos)
+			{
+				remnchr(cpyptr, 0, pos-1); //Shift back the string, save for 2 chars
+				cpyptr[0] = '-'; //Hyphenate when cutting mid-word
+			}
+			else remnchr(cpyptr, 0, pos+1); //Shift back the string, deleting what was already drawn
 			++count;
 		}
 	}
