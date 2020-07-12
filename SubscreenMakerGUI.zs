@@ -490,9 +490,23 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1, swatch_color);
 				return swatch_color;
 			}//end
-			void tile_swatch(bitmap bit, int x, int y, int wid, int hei, int arr, untyped dlgdata) //start
+			void minitile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata) //start
 			{
-				int x2 = x+wid-1, y2 = y+hei-1;
+				tile_swatch(bit, x, y, arr, dlgdata);
+				if(SubEditorData[SED_RCLICKED] && DLGCursorBox(x+1, y+1, x+16, y+16, dlgdata))
+				{
+					int cx = DLGMouseX(dlgdata) - (x+1),
+					    cy = DLGMouseY(dlgdata) - (y+1);
+					int crn = 0;
+					if(cx >= 8) crn |= 1b;
+					if(cy >= 8) crn |= 10b;
+					arr[2] = crn;
+				}
+				h_rect(bit, x + ((arr[2]&1b)?9:1), y + ((arr[2]&10b)?9:1), x + ((arr[2]&1b)?16:8), y + ((arr[2]&10b)?16:8), PAL[COL_HIGHLIGHT]);
+			} //end
+			void tile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata) //start
+			{
+				int x2 = x+17, y2 = y+17;
 				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x, y, x2, y2, dlgdata))
 				{
 					pick_tile(arr);
@@ -1192,13 +1206,13 @@ namespace Venrob::SubscreenEditor
 						char32 bufm8[] = " 8x8 Tile";
 						int tilearr[2] = {arr[P7], arr[P8]};
 						text(bit, FRAME_X, FRAME_Y + 25 + (10 * 7) + 4, TF_NORMAL, bufm16, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7), 18, 18, tilearr, data);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7), tilearr, data);
 						arr[P7] = tilearr[0];
 						arr[P8] = tilearr[1];
 						tilearr[0] = arr[P9];
 						tilearr[1] = arr[P10];
 						text(bit, FRAME_X+ Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20 + 4, TF_RIGHT, bufm8, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20, 18, 18, tilearr, data);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20, tilearr, data);
 						arr[P9] = tilearr[0];
 						arr[P10] = tilearr[1];
 						if(prev&1b)
@@ -1213,7 +1227,7 @@ namespace Venrob::SubscreenEditor
 						char32 buftl[] = "Tile:";
 						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 18, 18, tlarr, data);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data);
 						arr[P1] = tlarr[0];
 						arr[P2] = tlarr[1];
 						
@@ -1258,7 +1272,7 @@ namespace Venrob::SubscreenEditor
 						char32 buftl[] = "Tile:";
 						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 18, 18, tlarr, data);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data);
 						arr[P1] = tlarr[0];
 						arr[P2] = tlarr[1];
 						
