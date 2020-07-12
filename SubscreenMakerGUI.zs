@@ -1285,7 +1285,7 @@ namespace Venrob::SubscreenEditor
 					
 					case MODULE_TYPE_COUNTER: //start UNFINISHED
 					{
-						//FORMAT: {META..., FONT, CNTR, TODO INFITEM, TODO INFCHAR, TODO MINDIG, TXTCOL, BGCOL, SHADCOL}
+						//FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, TODO MINDIG, TXTCOL, BGCOL, SHADCOL}
 						char32 buf1[] = "Font:";
 						text(bit, FRAME_X, FRAME_Y+12+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
 						arr[P1] = dropdown_proc(bit, FRAME_X+Text->StringWidth(buf1, DIA_FONT)+2, FRAME_Y+12, DDWN_WID_FONT, arr[P1], data, SSL_FONT, -1, 6, lastframe, 0);
@@ -1298,16 +1298,21 @@ namespace Venrob::SubscreenEditor
 						char32 buf3[] = "Counter:";
 						if(arr[M_FLAGS1]&FLAG_CNTR_SPECIAL)
 						{
-							text(bit, FRAME_X, FRAME_Y+27, TF_NORMAL, buf3, PAL[COL_TEXT_MAIN]);
-							arr[P2] = dropdown_proc(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+25, 64, arr[P2], data, {"Any Keys", "Level Keys", "A Btn Cost", "B Btn Cost"}, -1, 4, lastframe, 0);
+							text(bit, FRAME_X, FRAME_Y+26, TF_NORMAL, buf3, PAL[COL_TEXT_MAIN]);
+							arr[P2] = dropdown_proc(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 64, arr[P2], data, {"Any Keys", "Level Keys", "A Btn Cost", "B Btn Cost"}, -1, 4, lastframe, 0);
 						}
 						else
 						{
-							titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+25, 64, argbuf2, 2, false, data, 5, 0, 0, MAX_INT, buf3);
+							titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 64, argbuf2, 2, false, data, 5, 0, 0, MAX_INT, buf3);
 							arr[P2] = Max(atoi(argbuf2), 0);
 						}
+						char32 buf4[] = "Min Digits:";
+						titled_inc_text_field(bit, FRAME_X+70+Text->StringWidth(buf3, DIA_FONT)+Text->StringWidth(buf4, DIA_FONT), FRAME_Y+24, 20, argbuf5, 2, false, data, 5, 0, 0, 5, buf4);
+						arr[P5] = atoi(argbuf5);
 						
-						switch(titled_checkbox(bit, FRAME_X, FRAME_Y + 38 + (10 * 0), 7, arr[M_FLAGS1]&FLAG_CNTR_SPECIAL, data, 0, "Special Counter"))
+						
+						
+						switch(titled_checkbox(bit, FRAME_X, FRAME_Y + 37 + (10 * 0), 7, arr[M_FLAGS1]&FLAG_CNTR_SPECIAL, data, 0, "Special Counter"))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_CNTR_SPECIAL;
@@ -1319,7 +1324,7 @@ namespace Venrob::SubscreenEditor
 								arr[P2] = 0;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 38 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_CNTR_SHADOWED, data, 0, "Shadow", "Counter text displays a shadow."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 37 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_CNTR_SHADOWED, data, 0, "Shadow", "Counter text displays a shadow."))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_CNTR_SHADOWED;
@@ -1328,7 +1333,7 @@ namespace Venrob::SubscreenEditor
 								arr[M_FLAGS1]|=FLAG_CNTR_SHADOWED;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 38 + (10 * 2), 7, arr[M_FLAGS1]&FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO, data, 0, "Hide Leading Zeros", "Leading zeros will be replaced with spaces."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 37 + (10 * 2), 7, arr[M_FLAGS1]&FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO, data, 0, "Hide Leading Zeros", "Leading zeros will be replaced with spaces."))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO;
@@ -1346,9 +1351,37 @@ namespace Venrob::SubscreenEditor
 						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Shadow:", PAL[COL_TEXT_MAIN]);
 						arr[P8] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, arr[P8], data);
 						
-						arr[P3] = itemsel_bundle(bit, WIDTH - FRAME_X - 132 - 1, FRAME_Y+12 + (18*2) + 16 - Text->FontHeight(DIA_FONT),
+						arr[P3] = itemsel_bundle(bit, WIDTH-FRAME_X-133, FRAME_Y+66-Text->FontHeight(DIA_FONT),
 						                         arr[P3], data, lastframe, 0, 6, "Infinite Item:", true);
+						char32 bf[2] = {arr[P4]};
+						titled_text_field(bit, WIDTH-FRAME_X-11, FRAME_Y+88+Text->FontHeight(DIA_FONT), 10, bf, 1, TypeAString::TMODE_ALPHANUMERIC_SYMBOLS, data, 7, 0, "Inf. Char:");
+						arr[P4] = bf[0];
 						
+						//
+						DEFINE P_C_X = WIDTH/2;
+						DEFINE P_BMP_WID = 64;
+						int p_hei = Text->FontHeight(arr[P1])+1;
+						DEFINE P_Y = ABOVE_BOTTOM_Y - p_hei;
+						line(bit, P_C_X, P_Y - 3, P_C_X, P_Y + p_hei + 2, PAL[COL_NULL]);
+						bitmap sub = create(P_BMP_WID, p_hei+1);
+						int al = arr[M_FLAGS1] & MASK_CNTR_ALIGN;
+						arr[M_FLAGS1] ~= MASK_CNTR_ALIGN;
+						int p_wid = counter(arr, sub, 1, 1, 1);
+						arr[M_FLAGS1] |= al;
+						frame_rect(sub, 0, 0, ++p_wid, p_hei++, 1);
+						switch(al)
+						{
+							case TF_NORMAL: default:
+								sub->Blit(1,bit,0,0,P_BMP_WID,p_hei,P_C_X,P_Y,P_BMP_WID,p_hei, 0, 0, 0, 0, 0, true);
+								break;
+							case TF_RIGHT:
+								sub->Blit(1,bit,0,0,P_BMP_WID,p_hei,P_C_X-p_wid,P_Y,P_BMP_WID,p_hei, 0, 0, 0, 0, 0, true);
+								break;
+							case TF_CENTERED:
+								sub->Blit(1,bit,0,0,P_BMP_WID,p_hei,P_C_X-p_wid/2,P_Y,P_BMP_WID,p_hei, 0, 0, 0, 0, 0, true);
+								break;
+						}
+						sub->Free();
 						break;
 					} //end
 					default:

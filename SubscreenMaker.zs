@@ -439,11 +439,9 @@ namespace Venrob::SubscreenEditor
 					case TF_NORMAL: break;
 					case TF_CENTERED:
 						xoff = -wid/2;
-						wid /= 2;
 						break;
 					case TF_RIGHT:
 						xoff = -wid;
-						wid = 0;
 						break;
 				} //end
 				if(interactive)
@@ -1733,6 +1731,8 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P2] = CR_RUPEES;
 		buf_arr[P4] = 'A';
 		buf_arr[P5] = 2;
+		buf_arr[P6] = 0x01;
+		buf_arr[P8] = 0x0F;
 	}
 	//end Constructors
 	//start FileIO

@@ -699,6 +699,55 @@ namespace Venrob::Subscreen
 	} //end
 	//end Life Bar
 	//start Counter
+	bool hasInfItem(int cr) //start
+	{
+		switch(cr)
+		{
+			case CR_RUPEES:
+			{
+				int id = get_item_of_class(IC_WALLET);
+				return (id > -1 && Game->LoadItemData(id)->Power);
+			}
+			case CR_BOMBS:
+			{
+				int id = get_item_of_class(IC_BOMBBAG);
+				return (id > -1 && Game->LoadItemData(id)->Power);
+			}
+			case CR_SBOMBS:
+			{
+				int id = get_item_of_class(IC_BOMBBAG);
+				if(id < 0) return false;
+				itemdata dat = Game->LoadItemData(id);
+				return (dat->Power && dat->Flags[0]);
+			}
+			case CR_ARROWS:
+			{
+				int id = get_item_of_class(IC_QUIVER);
+				return (id > -1 && Game->LoadItemData(id)->Power);
+			}
+			case CR_KEYS:
+			{
+				int id = get_item_of_class(IC_MAGICKEY);
+				if(id > -1)
+				{
+					itemdata dat = Game->LoadItemData(id);
+					return (dat->Flags[0] ? dat->Power >= Game->GetCurLevel() : dat->Power == Game->GetCurLevel());
+				}
+				return false;
+			}
+		}
+		return false;
+	} //end
+	int getCost(itemdata id) //start
+	{
+		switch(id->Type)
+		{
+			case IC_ARROW: return Game->FFRules[qr_TRUEARROWS] ? CR_ARROWS : CR_RUPEES;
+			case IC_BOMB: return CR_BOMBS;
+			case IC_SBOMB: return CR_SBOMBS;
+			default: return id->Cost ? id->CostCounter : -1;
+		}
+	} //end
 	//returns width in pixels
 	int counter(untyped arr, bitmap bit, int layer, int x, int y)
 	{
@@ -716,23 +765,32 @@ namespace Venrob::Subscreen
 						//fallthrough
 					case CNTR_LKEY:
 						val += Game->LKeys[Game->GetCurLevel()];
+						if(hasInfItem(CR_KEYS)) infinite = true;
 						break;
 					case CNTR_ABTN:
 						unless(Hero->ItemA > 0) return 0;
 						itemdata id = Game->LoadItemData(Hero->ItemA);
-						if(id->CostCounter > CR_CUSTOM25 || id->CostCounter < 0) return 0;
-						val = Game->Counter[id->CostCounter];
+						int cr = getCost(id);
+						if(cr > CR_CUSTOM25 || cr < 0) return 0;
+						if(hasInfItem(cr)) infinite = true;
+						val = Game->Counter[cr];
 						break;
 					case CNTR_BBTN:
 						unless(Hero->ItemB > 0) return 0;
 						itemdata id = Game->LoadItemData(Hero->ItemB);
-						if(id->CostCounter > CR_CUSTOM25 || id->CostCounter < 0) return 0;
-						val = Game->Counter[id->CostCounter];
+						int cr = getCost(id);
+						if(cr > CR_CUSTOM25 || cr < 0) return 0;
+						if(hasInfItem(cr)) infinite = true;
+						val = Game->Counter[cr];
 						break;
 				}
 			} //end
-			else val = Game->Counter[arr[P2]];
-			unless(val || arr[P5]) return 0; //no min digits, and no value
+			else
+			{
+				val = Game->Counter[arr[P2]];
+				if(hasInfItem(arr[P2])) infinite = true;
+			}
+			unless(val || infinite || arr[P5]) return 0; //no min digits, and no value
 		}
 		char32 buf[6];
 		if(infinite)
@@ -742,8 +800,9 @@ namespace Venrob::Subscreen
 		}
 		else
 		{
-			char32 format[16];
-			sprintf(format, "%%0%ii", arr[P5]); //Puts '%0ni' in buffer, with n = min digits
+			char32 format[16] = "%i";
+			if(arr[P5])
+				sprintf(format, "%%0%ii", arr[P5]); //Puts '%0ni' in buffer, with n = min digits
 			sprintf(buf, format, val);
 			if(arr[M_FLAGS1] & FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO) //start Trim lead 0s
 			{
@@ -762,15 +821,17 @@ namespace Venrob::Subscreen
 		}
 		//buf now contains the proper counter value
 		int bg = arr[P7];
-		unless(bg) bg = -1;
+		int wid = Text->StringWidth(buf, arr[P1]);
 		if(arr[M_FLAGS1] & FLAG_CNTR_SHADOWED && arr[P8]) //Draw shadow
 		{
-			bit->DrawString(layer, x+1, y+1, arr[P1], arr[P8], bg, arr[M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE);
+			if(bg) bit->Rectangle(layer, x, y, x+wid, y+Text->FontHeight(arr[P1])-1, bg, 1, 0, 0, 0, true, OP_OPAQUE);
 			bg = -1;
+			bit->DrawString(layer, x+1, y+1, arr[P1], arr[P8], -1, arr[M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE);
 		}
+		unless(bg) bg = -1;
 		if(arr[P6])
 			bit->DrawString(layer, x, y, arr[P1], arr[P6], bg, arr[M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE);
-		return Text->StringWidth(buf, arr[P1]) + ((arr[M_FLAGS1] & FLAG_CNTR_SHADOWED)?1:0);
+		return wid + ((arr[M_FLAGS1] & FLAG_CNTR_SHADOWED)?1:0);
 	}
 	//end Counter
 	//end Handler Functions
