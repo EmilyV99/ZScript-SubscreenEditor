@@ -919,7 +919,7 @@ namespace Venrob::SubscreenEditor
 					if(delwarn())
 					{
 						running = false;
-						SubEditorData[SED_QUEUED_DELETION] = mod_indx;
+						SubEditorData[SED_QUEUED_DELETION] = active ? mod_indx : -mod_indx;
 						SubEditorData[SED_HIGHLIGHTED] = 0; //This had to be highlighted to open this menu!
 						bit->Free();
 						gen_final();
@@ -1026,67 +1026,67 @@ namespace Venrob::SubscreenEditor
 						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf6, 2, false, data, 5, 0, 1, 9, buf1);
 						module_arr[P6] = VBound(atoi(argbuf6), 9, 1);
 						
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[M_FLAGS1]&FLAG_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[M_FLAGS1]&FLAG_MMP_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_COMP_ON_BOSS;
+								module_arr[M_FLAGS1]~=FLAG_MMP_COMP_ON_BOSS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_COMP_ON_BOSS;
+								module_arr[M_FLAGS1]|=FLAG_MMP_COMP_ON_BOSS;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[M_FLAGS1]&FLAG_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_SHOW_EXPLORED_ROOMS_OW;
+								module_arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_SHOW_EXPLORED_ROOMS_OW;
+								module_arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[M_FLAGS1]&FLAG_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								module_arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_SHOW_EXPLORED_ROOMS_DUNGEON;
+								module_arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[M_FLAGS1]&FLAG_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								module_arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_SHOW_EXPLORED_ROOMS_INTERIOR;
+								module_arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[M_FLAGS1]&FLAG_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[M_FLAGS1]&FLAG_MMP_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_COMPASS_BLINK_DOESNT_STOP;
+								module_arr[M_FLAGS1]~=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_COMPASS_BLINK_DOESNT_STOP;
+								module_arr[M_FLAGS1]|=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[M_FLAGS1]&FLAG_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[M_FLAGS1]&FLAG_MMP_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_IGNORE_DMAP_BGTILE;
+								module_arr[M_FLAGS1]~=FLAG_MMP_IGNORE_DMAP_BGTILE;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_IGNORE_DMAP_BGTILE;
+								module_arr[M_FLAGS1]|=FLAG_MMP_IGNORE_DMAP_BGTILE;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[M_FLAGS1]&FLAG_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[M_FLAGS1]&FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								module_arr[M_FLAGS1]~=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_LARGE_PLAYER_COMPASS_MARKERS;
+								module_arr[M_FLAGS1]|=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 						}
 						DEFINE MMY = ABOVE_BOTTOM_Y-48;
@@ -1157,13 +1157,13 @@ namespace Venrob::SubscreenEditor
 						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39, 28, argbuf5, 2, false, data, 7, 0, buf2);
 						module_arr[P5] = atoi(argbuf5);
 						
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53, 7, module_arr[M_FLAGS1]&FLAG_RTOLHEARTS, data, 0, "Right to Left", "This row of hearts fills from right to left, instead of left to right."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53, 7, module_arr[M_FLAGS1]&FLAG_HROW_RTOL, data, 0, "Right to Left", "This row of hearts fills from right to left, instead of left to right."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_RTOLHEARTS;
+								module_arr[M_FLAGS1]~=FLAG_HROW_RTOL;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_RTOLHEARTS;
+								module_arr[M_FLAGS1]|=FLAG_HROW_RTOL;
 								break;
 						}
 					} //end
@@ -1197,6 +1197,12 @@ namespace Venrob::SubscreenEditor
 						//end Preview
 						break;
 					} //end
+					
+					case MODULE_TYPE_COUNTER: //UNFINISHED
+					{
+						
+						break;
+					}
 					default:
 					{
 						text(bit, WIDTH/2, ((HEIGHT-(Text->FontHeight(DIA_FONT)*((1*3)+(0.5*2))))/2), TF_CENTERED, "WIP UNDER CONSTRUCTION", PAL[COL_TEXT_MAIN], 1);
@@ -1859,7 +1865,9 @@ namespace Venrob::SubscreenEditor
 			//end
 			untyped proc_data[1];
 			int indx;
-			int val[] = {2,3,4,5,6,7,8,9,10};
+			int aval[] = {2,3,4,5,6,7,8,9,10,11};
+			int pval[] = {4,5,7,8,9,10,11};
+			int val = active ? aval : pval;
 			while(running)
 			{
 				lastframe->Clear(0);
@@ -1871,7 +1879,11 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, "Create Object", data, "Create a new object of a given type, at it's default settings.\nAfter creating the object, it's editing window will open.")==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row"}, -1/*Auto*/, 10, lastframe, 0);
+				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data,
+				                     active
+				                     ? {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter"}
+				                     : {"A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter"}
+				                     , -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)-(BUTTON_WIDTH/2), HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, "Create", data, proc_data, 0, FLAG_DEFAULT))
@@ -1910,6 +1922,10 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_HEARTROW:
 						{
 							MakeHeartRow(module_arr); break;
+						}
+						case MODULE_TYPE_COUNTER:
+						{
+							MakeCounter(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -2035,13 +2051,13 @@ namespace Venrob::SubscreenEditor
 			printf("Counts: %03d,%03d\n",num_active_sub,num_passive_sub);
 			unless(num_active_sub)
 			{
-				clearActive(true);
+				resetActive();
 				save_active_file(1);
 				++num_active_sub;
 			}
 			unless(num_passive_sub)
 			{
-				clearPassive(true);
+				resetPassive();
 				save_passive_file(1);
 				++num_passive_sub;
 			}
@@ -2067,9 +2083,7 @@ namespace Venrob::SubscreenEditor
 				}
 				//Dropdowns
 				{
-					//UNFINISHED Add dropdown for active subscreen selector
 					active_indx = dropdown_proc(bit, ACOL_X, FRAME_Y+8, COL_WID, active_indx, data, NULL, num_active_sub, 10, lastframe, 0);
-					//UNFINISHED Add dropdown for passive subscreen selector
 					passive_indx = dropdown_proc(bit, PCOL_X, FRAME_Y+8, COL_WID, passive_indx, data, NULL, num_passive_sub, 10, lastframe, 0);
 				}
 				//Buttons
@@ -2086,13 +2100,13 @@ namespace Venrob::SubscreenEditor
 					{
 						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 2)) //start
 						{
-							clearActive(true);
+							resetActive();
 							active_indx = num_active_sub;
 							save_active_file(++num_active_sub);
 						} //end
 						if(PROC_CONFIRM==button(bit, PCOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 1), BUTTON_WIDTH, BUTTON_HEIGHT, "New", data, proc_data, 3)) //start
 						{
-							clearPassive(true);
+							resetPassive();
 							passive_indx = num_passive_sub;
 							save_passive_file(++num_passive_sub);
 						} //end
@@ -2119,7 +2133,7 @@ namespace Venrob::SubscreenEditor
 									active_indx = 0;
 									unless(--num_active_sub)
 									{
-										clearActive(true);
+										resetActive();
 										save_active_file(1);
 										++num_active_sub;
 									}
@@ -2146,7 +2160,7 @@ namespace Venrob::SubscreenEditor
 									passive_indx = 0;
 									unless(--num_passive_sub)
 									{
-										clearPassive(true);
+										resetPassive();
 										save_passive_file(1);
 										++num_passive_sub;
 									}
@@ -3085,6 +3099,10 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Heart Row"); break;
 				}
+				case MODULE_TYPE_HEARTROW:
+				{
+					strcat(buf, "Counter"); break;
+				}
 			}
 		} //end
 		
@@ -3136,6 +3154,11 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "A row of heart containers."); break;
 				}
+			
+				case MODULE_TYPE_COUNTER:
+				{
+					strcat(buf, "Displays the value of a counter."); break;
+				}
 			}
 		} //end
 		
@@ -3145,7 +3168,7 @@ namespace Venrob::SubscreenEditor
 			{
 				switch(flag)
 				{
-					case FLAG_ITEMS_USE_HITBOX_FOR_SELECTOR:
+					case FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR:
 					{
 						strcat(buf, "Items Use Hitbox Size"); break;
 					}
@@ -3167,7 +3190,7 @@ namespace Venrob::SubscreenEditor
 			{
 				switch(flag)
 				{
-					case FLAG_ITEMS_USE_HITBOX_FOR_SELECTOR:
+					case FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR:
 					{
 						strcat(buf, "The highlight around items, both in the editor and when selecting them in-game, are based on 'Hit' size if this is on, or 'Draw' size otherwise."); break;
 					}
