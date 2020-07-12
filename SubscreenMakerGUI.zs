@@ -192,6 +192,13 @@ namespace Venrob::SubscreenEditor
 			{
 				DrawStringsBitmap(bit, 0, x, y, DIA_FONT, color, -1, tf, str, OP_OPAQUE, Text->FontHeight(DIA_FONT)/2, width);
 			} //end
+			void text(bitmap bit, int x, int y, int tf, char32 str, int color, int width, int height) //start
+			{
+				bitmap sub = create(width, height);
+				DrawStringsBitmap(sub, 0, 0, 0, DIA_FONT, color, -1, tf, str, OP_OPAQUE, Text->FontHeight(DIA_FONT)/2, width);
+				sub->Blit(0, bit, 0, 0, width, height, x, y, width, height, 0, 0, 0, 0, 0, true);
+				sub->Free();
+			} //end
 			int shortcuttext_width(char32 str, int font) //start
 			{
 				int pos = _strchr(str, 0, '%');
@@ -493,15 +500,28 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1);
 				tile(bit, x+1, y+1, arr[0], arr[1]);
 			}//end
-			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags)
+			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags) //start
 			{
-				if(num_opts <= 0) num_opts = SizeOfArray(strings);
-				char32 num_buf[12];
-				itoa(num_buf,indx+1);
+				if(num_opts <= 0)
+				{
+					if(strings > 0) num_opts = SizeOfArray(strings);
+					else unless(num_opts) num_opts = 1; //Error
+					else num_opts = getSpecialStringCount(strings);
+				}
 				bool disabled = flags&FLAG_DISABLE;
 				int hei = 2 + 2 + Text->FontHeight(DIA_FONT);
 				frame_rect(bit, x, y, x+wid-1, y+hei-1, 1, disabled ? PAL[COL_BODY_MAIN_MED] : PAL[COL_FIELD_BG]);
-				text(bit, x+2, y+2, TF_NORMAL, strings ? strings[indx] : num_buf, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_FIELD]);
+				char32 buf[128];
+				char32 ptr = buf;
+				if(strings > 0)
+					ptr = strings[indx];
+				else unless(strings)
+					itoa(buf,indx+1);
+				else getSpecialString(buf, strings, indx);
+				bitmap sub = create(wid, hei);
+				text(sub, 2, 2, TF_NORMAL, ptr, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_FIELD]);
+				sub->Blit(0, bit, 0, 0, wid, hei, x, y, wid, hei, 0, 0, 0, BITDX_NORMAL, 0, true);
+				sub->Free();
 				//
 				DEFINE BTN_HEIGHT = hei, BTN_WIDTH = hei;
 				int bx = x + (wid - BTN_WIDTH);
@@ -509,14 +529,52 @@ namespace Venrob::SubscreenEditor
 				line(bit, bx + 2, y + 5, (bx + BTN_WIDTH/2)-1, y+(BTN_HEIGHT/2)+2, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				line(bit, bx + BTN_WIDTH - 2 - 1, y + 5, (bx + BTN_WIDTH/2), y+(BTN_HEIGHT/2)+2, (disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
 				//
-				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x, y, x+wid-1, y+hei-1, dlgdata))
+				if(DLGCursorBox(x, y, x+wid-1, y+hei-1, dlgdata))
 				{
-					indx = dropdown_open(lastframe, x, y+hei, wid, indx, dlgdata, strings, num_opts, NUM_VIS_OPTS);
+					if(SubEditorData[SED_LCLICKED])
+					{
+						indx = dropdown_open(lastframe, x, y+hei, wid, indx, dlgdata, strings, num_opts, NUM_VIS_OPTS);
+					}
+					else
+					{
+						if(Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
+							indx = Max(indx-1, 0);
+						else if(Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
+							indx = Min(indx+1, num_opts-1);
+					}
 				}
 				return indx;
-			}
+			} //end
 			//end
 			//start compounds
+			int dropdown_inc_text_combo(bitmap bit, int x, int y, int ddwid, int val, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags, int tfwid, int maxchar, bool neg, int tf_indx, int min, int max, bool tf_left) //start
+			{
+				val = dropdown_proc(bit, tf_left ? x+tfwid : x, y, ddwid, val, dlgdata, strings, num_opts, NUM_VIS_OPTS, lastframe, flags);
+				char32 buf[16];
+				itoa(buf, val);
+				inc_text_field(bit, tf_left ? x : x+ddwid, y, tfwid, buf, maxchar, neg, dlgdata, tf_indx, flags, min, max);
+				if(max > min)
+					return VBound(atoi(buf), max, min);
+				return atoi(buf);
+			} //end
+			int itemsel_bundle(bitmap bit, int x, int y, int val, untyped dlgdata, bitmap lastframe, int flags, int tf_indx, char32 title, bool flip_preview) //start
+			{
+				text(bit, x, y, TF_NORMAL, title, (flags&FLAG_DISABLE) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+				val = dropdown_inc_text_combo(bit, x, y+Text->FontHeight(DIA_FONT), 104, val, dlgdata, SSL_ITEM, -1, 10, lastframe, flags, 28, 3, false, tf_indx, MIN_ITEMDATA, MAX_ITEMDATA, true);
+				y += Text->FontHeight(DIA_FONT)*2+4;
+				DEFINE ITMNAME_WID = 110;
+				frame_rect(bit, flip_preview ? x+ITMNAME_WID+4 : x, y, flip_preview ? x+ITMNAME_WID+21 : x+17, y+17, 1);
+				itm(bit, flip_preview ? x+ITMNAME_WID+5 : x+1, y+1, val);
+				char32 iname[64];
+				Game->LoadItemData(val)->GetName(iname);
+				if(Text->StringWidth(iname, DIA_FONT) < (104-10))
+					return val; //Don't display the name again if it fits in the dropdown preview
+				frame_rect(bit, flip_preview ? x : x+18, y, flip_preview ? x+ITMNAME_WID+3: x+18+ITMNAME_WID+3, y-2
+				           + Min((Text->FontHeight(DIA_FONT)+4) * DrawStringsCount(DIA_FONT, iname, ITMNAME_WID), 19)
+				           ,1);
+				text(bit, flip_preview ? x+1 : x+20, y+2, TF_NORMAL, iname, PAL[COL_TEXT_MAIN], ITMNAME_WID, 17);
+				return val;
+			} //end
 			ProcRet title_bar(bitmap bit, int margin, int barheight, char32 title, untyped dlgdata, char32 descstr, bool buttons) //start
 			{
 				--barheight;
@@ -639,21 +697,30 @@ namespace Venrob::SubscreenEditor
 				int ux1 = x+wid-WIDTH, ux2 = x+wid-1, uy1 = y, uy2 = y+(HEIGHT/2)-1,
 				    dx1 = ux1, dx2 = ux2, dy1 = y+(HEIGHT/2), dy2 = y+HEIGHT-1;
 				int clicked;
-				if(SubEditorData[SED_LCLICKED] && !disabled)
+				if(!disabled && DLGCursorBox(x, y, x+wid-1, y+HEIGHT-1, dlgdata))
 				{
-					if(DLGCursorBox(ux1, uy1, ux2, uy2, dlgdata))
+					if(SubEditorData[SED_LCLICKED])
+					{
+						if(DLGCursorBox(ux1, uy1, ux2, uy2, dlgdata))
+						{
+							clicked = 1;
+						}
+						else if(DLGCursorBox(dx1, dy1, dx2, dy2, dlgdata))
+						{
+							clicked = 2;
+						}
+					}
+					if(clicked == 1 || Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
 					{
 						int a = atoi(buf)+1;
 						remchr(buf, 0);
 						itoa(buf, doBound ? VBound(a,max,min) : a);
-						clicked = 1;
 					}
-					else if(DLGCursorBox(dx1, dy1, dx2, dy2, dlgdata))
+					else if(clicked == 2 || Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
 					{
 						int a = atoi(buf)-1;
 						remchr(buf, 0);
 						itoa(buf, doBound ? VBound(a,max,min) : a);
-						clicked = 2;
 					}
 				}
 				if(clicked==1) inv_frame_rect(bit, ux1, uy1, ux2, uy2, 1);
@@ -792,7 +859,7 @@ namespace Venrob::SubscreenEditor
 		} //end
 		//Full DLGs
 		//start Edit Object
-		void editObj(untyped module_arr, int mod_indx, bool active)
+		void editObj(untyped arr, int mod_indx, bool active)
 		{
 			gen_startup();
 			//start setup
@@ -806,21 +873,23 @@ namespace Venrob::SubscreenEditor
 			int old_indx = mod_indx;
 			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
+			bitmap lastframe = create(WIDTH, HEIGHT);
+			lastframe->ClearToColor(0, PAL[COL_NULL]);
 			
 			char32 title[128] = "Edit Object #%d - %s";
 			char32 module_name[64];
-			get_module_name(module_name, module_arr[M_TYPE]);
+			get_module_name(module_name, arr[M_TYPE]);
 			
 			untyped data[DLG_DATA_SZ];
 			data[DLG_DATA_WID] = WIDTH;
 			data[DLG_DATA_HEI] = HEIGHT;
 			
 			char32 buf_x[4];
-			itoa(buf_x, module_arr[M_X]);
+			itoa(buf_x, arr[M_X]);
 			char32 buf_y[4];
-			itoa(buf_y, module_arr[M_Y]);
+			itoa(buf_y, arr[M_Y]);
 			char32 buf_lyr[2];
-			itoa(buf_lyr, module_arr[M_LAYER]);
+			itoa(buf_lyr, arr[M_LAYER]);
 			char32 buf_pos[3];
 			itoa(buf_pos, mod_indx);
 			
@@ -836,9 +905,9 @@ namespace Venrob::SubscreenEditor
 			char32 argbuf9[16];
 			char32 argbuf10[16];
 			char32 argbuf[11] = {argbuf1, argbuf2, argbuf3, argbuf4, argbuf5, argbuf6, argbuf7, argbuf8, argbuf9, argbuf10, -1};
-			for(int q = MODULE_META_SIZE; q < module_arr[M_SIZE] && argbuf[q-MODULE_META_SIZE] != -1; ++q)
+			for(int q = MODULE_META_SIZE; q < arr[M_SIZE] && argbuf[q-MODULE_META_SIZE] != -1; ++q)
 			{
-				itoa(argbuf[q-MODULE_META_SIZE], module_arr[q]);
+				itoa(argbuf[q-MODULE_META_SIZE], arr[q]);
 			}
 			
 			//
@@ -856,8 +925,11 @@ namespace Venrob::SubscreenEditor
 			int LItem = Game->LItems[Game->GetCurLevel()];
 			Game->LItems[Game->GetCurLevel()] = LI_COMPASS | LI_MAP;
 			int prev = 0;
+			int foo1, foo2, foo3;
 			while(running)
 			{
+				lastframe->Clear(0);
+				fullblit(0, lastframe, bit);
 				++g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER];
 				g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] %= 100000000000000000b;
 				
@@ -868,36 +940,36 @@ namespace Venrob::SubscreenEditor
 				char32 TITLEBUF[1024];
 				sprintf(TITLEBUF, title, mod_indx, module_name);
 				char32 DESCBUF[1024];
-				get_module_desc(DESCBUF, module_arr[M_TYPE]);
+				get_module_desc(DESCBUF, arr[M_TYPE]);
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, TITLEBUF, data, DESCBUF)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
 				if(DEBUG && PROC_CONFIRM==button(bit, WIDTH-(9*3)-1, 2, 7, 7, "D", data, proc_data, 1)) //start
 				{
 					printf("Debug Printout (%d)\n", mod_indx);
-					for(int q = 0; q < module_arr[M_SIZE]; ++q)
+					for(int q = 0; q < arr[M_SIZE]; ++q)
 					{
 						switch(q)
 						{
 							case MODULE_META_SIZE:
 								TraceNL();
-								printf("%d: %d\n", q, module_arr[q]);
+								printf("%d: %d\n", q, arr[q]);
 								break;
 							
 							case M_META_SIZE:
-								if(module_arr[M_META_SIZE] == MODULE_META_SIZE)
-									printf("%d: %d\n", q, module_arr[q]);
-								else printf("%d: %d (Bad Size! Should be %d)\n", q, module_arr[q], MODULE_META_SIZE);
+								if(arr[M_META_SIZE] == MODULE_META_SIZE)
+									printf("%d: %d\n", q, arr[q]);
+								else printf("%d: %d (Bad Size! Should be %d)\n", q, arr[q], MODULE_META_SIZE);
 								break;
 							
 							case M_TYPE:
 								char32 buf[64];
-								get_module_name(buf, module_arr[M_TYPE]);
-								printf("%d: %d (%s)\n", q, module_arr[q], buf);
+								get_module_name(buf, arr[M_TYPE]);
+								printf("%d: %d (%s)\n", q, arr[q], buf);
 								break;
 								
 							default:
-								printf("%d: %d\n", q, module_arr[q]);
+								printf("%d: %d\n", q, arr[q]);
 						}
 					}
 					printf("/Debug Printout (%d)\n", mod_indx);
@@ -914,7 +986,7 @@ namespace Venrob::SubscreenEditor
 					running = false;
 					do_save_changes = true;
 				}
-				if(PROC_CONFIRM==button(bit, FRAME_X+(2*(BUTTON_WIDTH+3)), HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%%77%%Del%ete", data, proc_data, 4, module_arr[M_TYPE]==MODULE_TYPE_BGCOLOR?FLAG_DISABLE:0))
+				if(PROC_CONFIRM==button(bit, FRAME_X+(2*(BUTTON_WIDTH+3)), HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "%%77%%Del%ete", data, proc_data, 4, arr[M_TYPE]==MODULE_TYPE_BGCOLOR?FLAG_DISABLE:0))
 				{
 					if(delwarn())
 					{
@@ -930,7 +1002,7 @@ namespace Venrob::SubscreenEditor
 				DEFINE TXTBX_LEFTMARG = 3, TXTBOX_SPACING = 4;
 				int tfx = FRAME_X + TXTBX_LEFTMARG + Text->StringWidth("X:",DIA_FONT);
 				DEFINE XYBOX_WID = 20;
-				switch(module_arr[M_TYPE])
+				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_PASSIVESUBSCREEN:
 					case MODULE_TYPE_BGCOLOR:
@@ -940,7 +1012,7 @@ namespace Venrob::SubscreenEditor
 						titled_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_x, 3, TypeAString::TMODE_NUMERIC_POSITIVE, data, 1, 0, "X:");
 				}
 				tfx += XYBOX_WID+TXTBOX_SPACING+Text->StringWidth("Y:",DIA_FONT);
-				switch(module_arr[M_TYPE])
+				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_BGCOLOR:
 						titled_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_y, 3, TypeAString::TMODE_NUMERIC_POSITIVE, data, 2, FLAG_DISABLE, "Y:");
@@ -950,7 +1022,7 @@ namespace Venrob::SubscreenEditor
 				}
 				tfx += XYBOX_WID+TXTBOX_SPACING+Text->StringWidth("Layer:",DIA_FONT);
 				DEFINE LAYERBOX_WID = 24;
-				switch(module_arr[M_TYPE])
+				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_BGCOLOR:
 						titled_inc_text_field(bit, tfx, FRAME_Y, LAYERBOX_WID, buf_lyr, 1, false, data, 3, FLAG_DISABLE, 0, 7, "Layer:");
@@ -960,7 +1032,7 @@ namespace Venrob::SubscreenEditor
 				}
 				tfx += LAYERBOX_WID+TXTBOX_SPACING+Text->StringWidth("Pos:",DIA_FONT);
 				DEFINE POSBOX_WID = 24;
-				switch(module_arr[M_TYPE])
+				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_BGCOLOR:
 						titled_inc_text_field(bit, tfx, FRAME_Y, POSBOX_WID, buf_pos, 2, false, data, 4, FLAG_DISABLE, 2, active?g_arr[NUM_ACTIVE_MODULES]-1:g_arr[NUM_PASSIVE_MODULES]-1, "Pos:");
@@ -969,35 +1041,48 @@ namespace Venrob::SubscreenEditor
 						titled_inc_text_field(bit, tfx, FRAME_Y, POSBOX_WID, buf_pos, 2, false, data, 4, 0, 2, active?g_arr[NUM_ACTIVE_MODULES]-1:g_arr[NUM_PASSIVE_MODULES]-1, "Pos:");
 				}
 				//end
-				switch(module_arr[M_TYPE]) //start
+				switch(arr[M_TYPE]) //start
 				{
 					case MODULE_TYPE_BGCOLOR: //start
 					{
 						char32 buf[] = "Color:";
 						text(bit, FRAME_X, FRAME_Y+12+5, TF_NORMAL, buf, PAL[COL_TEXT_MAIN]);
-						module_arr[P1] = pal_swatch(bit, FRAME_X+Text->StringWidth(buf, DIA_FONT), FRAME_Y+12, 16, 16, module_arr[P1], data);
+						arr[P1] = pal_swatch(bit, FRAME_X+Text->StringWidth(buf, DIA_FONT), FRAME_Y+12, 16, 16, arr[P1], data);
 						break;
 					} //end
 					
 					case MODULE_TYPE_SELECTABLE_ITEM_ID:
 					case MODULE_TYPE_SELECTABLE_ITEM_CLASS: //start
 					{
-						bool class = module_arr[M_TYPE] == MODULE_TYPE_SELECTABLE_ITEM_CLASS;
+						bool class = arr[M_TYPE] == MODULE_TYPE_SELECTABLE_ITEM_CLASS;
 						char32 buf[16];
 						strcpy(buf, class ? "Class:" : "Item:");
 						DEFINE FIELD_WID = 28, FIELD_X = WIDTH - MARGIN_WIDTH - 2 - FIELD_WID;
-						titled_inc_text_field(bit, FRAME_X + Text->StringWidth(buf, DIA_FONT)+2, FRAME_Y+12+(10*1), FIELD_WID, argbuf1, 3, false, data, 5, 0, MIN_ITEMDATA, MAX_ITEMDATA, buf);
-						DEFINE ITMX = (FRAME_X + Text->StringWidth(buf, DIA_FONT) + FIELD_WID + 4 +1), ITMY = FRAME_Y+18;
-						frame_rect(bit, ITMX-1, ITMY-1, ITMX+16, ITMY+16, 1);
-						int itmid = (class?(get_item_of_class(atoi(argbuf1))):(atoi(argbuf1)));
-						if(itmid < 0) itmid = class ? get_item_of_class(atoi(argbuf1), true) : 0;
-						if(itmid < 0) itmid = 0;
-						itm(bit, ITMX, ITMY, itmid);
+						if(class)
+						{
+							char32 valbuf[4];
+							itoa(valbuf, arr[P1]);
+							titled_inc_text_field(bit, FRAME_X + Text->StringWidth(buf, DIA_FONT)+2, FRAME_Y+12, FIELD_WID, valbuf, 3, false, data, 5, 0, MIN_ITEMDATA, MAX_ITEMDATA, buf);
+							arr[P1] = VBound(atoi(valbuf), MAX_ITEMDATA, MIN_ITEMDATA);
+							DEFINE ITMX = (FRAME_X + 2), ITMY = FRAME_Y+25;
+							frame_rect(bit, ITMX-1, ITMY-1, ITMX+16, ITMY+16, 1);
+							int itmid = get_item_of_class(arr[P1]);
+							if(itmid < 0) itmid = get_item_of_class(arr[P1], true);
+							if(itmid < 0) itmid = 0;
+							itm(bit, ITMX, ITMY, itmid);
+						}
+						else
+						{
+							arr[P1] = itemsel_bundle(bit, FRAME_X+1, FRAME_Y+14, arr[P1], data, lastframe, 0, 5, "Item:", false);
+							//text(bit, FRAME_X, FRAME_Y+14, TF_NORMAL, buf, PAL[COL_TEXT_MAIN]);
+							//arr[P1] = dropdown_inc_text_combo(bit, FRAME_X + Text->StringWidth(buf, DIA_FONT)+2, FRAME_Y+12, 112, arr[P1], data, SSL_ITEM, -1, 10, lastframe, 0, FIELD_WID, 3, false, 5, 0, MAX_ITEMDATA, true);
+						}
 						titled_inc_text_field(bit, FIELD_X-(FIELD_WID*1), FRAME_Y+12+(10*0), FIELD_WID, argbuf2, 3, true, data, 6, 0, -1, MAX_MODULES, "Pos:");
 						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*1), FIELD_WID, argbuf3, 3, true, data, 7, 0, -1, MAX_MODULES);
 						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*3), FIELD_WID, argbuf4, 3, true, data, 8, 0, -1, MAX_MODULES);
-						titled_inc_text_field(bit, FIELD_X-(FIELD_WID*2), FRAME_Y+12+(10*2), FIELD_WID, argbuf5, 3, true, data, 9, 0, -1, MAX_MODULES, "Dirs:");
+						inc_text_field(bit, FIELD_X-(FIELD_WID*2), FRAME_Y+12+(10*2), FIELD_WID, argbuf5, 3, true, data, 9, 0, -1, MAX_MODULES);
 						inc_text_field(bit, FIELD_X, FRAME_Y+12+(10*2), FIELD_WID, argbuf6, 3, true, data, 10, 0, -1, MAX_MODULES);
+						text(bit, FIELD_X-FIELD_WID/2, FRAME_Y+14+(10*2), TF_CENTERED, "Dirs", PAL[COL_TEXT_MAIN]);
 						break;
 					} //end
 					
@@ -1012,81 +1097,81 @@ namespace Venrob::SubscreenEditor
 					{
 						DEFINE TEXT_OFFSET = WIDTH - FRAME_X - 20;
 						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*0), TF_RIGHT, "Current Color:", PAL[COL_TEXT_MAIN]);
-						module_arr[P1] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, module_arr[P1], data);
+						arr[P1] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, arr[P1], data);
 						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*1), TF_RIGHT, "Explored Color:", PAL[COL_TEXT_MAIN]);
-						module_arr[P2] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, module_arr[P2], data);
+						arr[P2] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, arr[P2], data);
 						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Unexplored Color:", PAL[COL_TEXT_MAIN]);
-						module_arr[P3] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, module_arr[P3], data);
+						arr[P3] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, arr[P3], data);
 						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*3), TF_RIGHT, "Compass Color:", PAL[COL_TEXT_MAIN]);
-						module_arr[P4] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*3), 16, 16, module_arr[P4], data);
+						arr[P4] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*3), 16, 16, arr[P4], data);
 						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*4), TF_RIGHT, "Compass Dead Color:", PAL[COL_TEXT_MAIN]);
-						module_arr[P5] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*4), 16, 16, module_arr[P5], data);
+						arr[P5] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*4), 16, 16, arr[P5], data);
 						
 						char32 buf1[] = "Comp. Blink Rate:";
 						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf6, 2, false, data, 5, 0, 1, 9, buf1);
-						module_arr[P6] = VBound(atoi(argbuf6), 9, 1);
+						arr[P6] = VBound(atoi(argbuf6), 9, 1);
 						
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, module_arr[M_FLAGS1]&FLAG_MMP_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, arr[M_FLAGS1]&FLAG_MMP_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_MMP_COMP_ON_BOSS;
+								arr[M_FLAGS1]~=FLAG_MMP_COMP_ON_BOSS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_MMP_COMP_ON_BOSS;
+								arr[M_FLAGS1]|=FLAG_MMP_COMP_ON_BOSS;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, module_arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on overworld dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
+								arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
+								arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, module_arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on dungeon dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
+								arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
+								arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, module_arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on interior dmaps"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
+								arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
+								arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, module_arr[M_FLAGS1]&FLAG_MMP_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, arr[M_FLAGS1]&FLAG_MMP_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
+								arr[M_FLAGS1]~=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
+								arr[M_FLAGS1]|=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, module_arr[M_FLAGS1]&FLAG_MMP_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, arr[M_FLAGS1]&FLAG_MMP_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The MiniMap BG tile set in the DMap editor will be ignored"))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_MMP_IGNORE_DMAP_BGTILE;
+								arr[M_FLAGS1]~=FLAG_MMP_IGNORE_DMAP_BGTILE;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_MMP_IGNORE_DMAP_BGTILE;
+								arr[M_FLAGS1]|=FLAG_MMP_IGNORE_DMAP_BGTILE;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, module_arr[M_FLAGS1]&FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, arr[M_FLAGS1]&FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "On 8x8 dmaps, the player position and compass markers will take the full 7x3, instead of the center 3x3."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
+								arr[M_FLAGS1]~=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
+								arr[M_FLAGS1]|=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 								break;
 						}
 						DEFINE MMY = ABOVE_BOTTOM_Y-48;
@@ -1105,20 +1190,20 @@ namespace Venrob::SubscreenEditor
 						}
 						char32 bufm16[] = "16x8 Tile";
 						char32 bufm8[] = " 8x8 Tile";
-						int tilearr[2] = {module_arr[P7], module_arr[P8]};
+						int tilearr[2] = {arr[P7], arr[P8]};
 						text(bit, FRAME_X, FRAME_Y + 25 + (10 * 7) + 4, TF_NORMAL, bufm16, PAL[COL_TEXT_MAIN]);
 						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7), 18, 18, tilearr, data);
-						module_arr[P7] = tilearr[0];
-						module_arr[P8] = tilearr[1];
-						tilearr[0] = module_arr[P9];
-						tilearr[1] = module_arr[P10];
+						arr[P7] = tilearr[0];
+						arr[P8] = tilearr[1];
+						tilearr[0] = arr[P9];
+						tilearr[1] = arr[P10];
 						text(bit, FRAME_X+ Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20 + 4, TF_RIGHT, bufm8, PAL[COL_TEXT_MAIN]);
 						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20, 18, 18, tilearr, data);
-						module_arr[P9] = tilearr[0];
-						module_arr[P10] = tilearr[1];
+						arr[P9] = tilearr[0];
+						arr[P10] = tilearr[1];
 						if(prev&1b)
 							Game->LItems[Game->GetCurLevel()] |= LI_BOSS | LI_TRIFORCE;
-						minimap(module_arr, bit, active, MMX, MMY);
+						minimap(arr, bit, active, MMX, MMY);
 						Game->LItems[Game->GetCurLevel()] ~= LI_BOSS | LI_TRIFORCE;
 						break;
 					} //end
@@ -1126,25 +1211,25 @@ namespace Venrob::SubscreenEditor
 					case MODULE_TYPE_TILEBLOCK: //start
 					{
 						char32 buftl[] = "Tile:";
-						int tlarr[2] = {module_arr[P1], module_arr[P2]};
+						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
 						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 18, 18, tlarr, data);
-						module_arr[P1] = tlarr[0];
-						module_arr[P2] = tlarr[1];
+						arr[P1] = tlarr[0];
+						arr[P2] = tlarr[1];
 						
 						char32 buf1[] = "Wid:";
 						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, 0, 0, 1, 16, buf1);
-						module_arr[P3] = VBound(atoi(argbuf3), 16, 1);
+						arr[P3] = VBound(atoi(argbuf3), 16, 1);
 						char32 buf2[] = "Hei:";
 						titled_inc_text_field(bit, FRAME_X+59+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+19, 28, argbuf4, 2, false, data, 1, 0, 1, 14, buf2);
-						module_arr[P4] = VBound(atoi(argbuf4), 14, 1);
+						arr[P4] = VBound(atoi(argbuf4), 14, 1);
 						
-						DEFINE PREVWID = module_arr[P3] * 16;
-						DEFINE PREVHEI = VBound(module_arr[P4] * 16, 16*9, 0);
+						DEFINE PREVWID = arr[P3] * 16;
+						DEFINE PREVHEI = VBound(arr[P4] * 16, 16*9, 0);
 						DEFINE PREVY = ABOVE_BOTTOM_Y-PREVHEI;
 						frame_rect(bit, (WIDTH/2)-(PREVWID/2), PREVY-1, (WIDTH/2)+(PREVWID/2), PREVY+PREVHEI, 1);
 						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview (Shows max 16x9):", PAL[COL_TEXT_MAIN]);
-						tilebl(bit, (WIDTH/2)-(PREVWID/2)+1, PREVY, module_arr[P1], module_arr[P2], PREVWID/16, PREVHEI/16);
+						tilebl(bit, (WIDTH/2)-(PREVWID/2)+1, PREVY, arr[P1], arr[P2], PREVWID/16, PREVHEI/16);
 						break;
 					} //end
 					
@@ -1152,18 +1237,18 @@ namespace Venrob::SubscreenEditor
 					{
 						char32 buf1[] = "Heart Count:";
 						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39, 28, argbuf4, 2, false, data, 6, 0, 0, MAX_INT, buf1);
-						module_arr[P4] = VBound(atoi(argbuf4), 32, 1);
+						arr[P4] = VBound(atoi(argbuf4), 32, 1);
 						char32 buf2[] = "Spacing:";
 						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39, 28, argbuf5, 2, false, data, 7, 0, buf2);
-						module_arr[P5] = atoi(argbuf5);
+						arr[P5] = atoi(argbuf5);
 						
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53, 7, module_arr[M_FLAGS1]&FLAG_HROW_RTOL, data, 0, "Right to Left", "This row of hearts fills from right to left, instead of left to right."))
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53, 7, arr[M_FLAGS1]&FLAG_HROW_RTOL, data, 0, "Right to Left", "This row of hearts fills from right to left, instead of left to right."))
 						{
 							case PROC_UPDATED_FALSE:
-								module_arr[M_FLAGS1]~=FLAG_HROW_RTOL;
+								arr[M_FLAGS1]~=FLAG_HROW_RTOL;
 								break;
 							case PROC_UPDATED_TRUE:
-								module_arr[M_FLAGS1]|=FLAG_HROW_RTOL;
+								arr[M_FLAGS1]|=FLAG_HROW_RTOL;
 								break;
 						}
 					} //end
@@ -1171,15 +1256,15 @@ namespace Venrob::SubscreenEditor
 					case MODULE_TYPE_HEART: //start
 					{
 						char32 buftl[] = "Tile:";
-						int tlarr[2] = {module_arr[P1], module_arr[P2]};
+						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
 						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 18, 18, tlarr, data);
-						module_arr[P1] = tlarr[0];
-						module_arr[P2] = tlarr[1];
+						arr[P1] = tlarr[0];
+						arr[P2] = tlarr[1];
 						
 						char32 buf3[] = "Heart Num:";
 						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, 5, 0, 0, MAX_INT, buf3);
-						module_arr[P3] = Max(atoi(argbuf3), 0);
+						arr[P3] = Max(atoi(argbuf3), 0);
 						//start Preview
 						DEFINE PREVIEW_WID = 17*8;
 						DEFINE PREVIEW_X = (WIDTH/2) - (PREVIEW_WID/2) + 1;
@@ -1189,20 +1274,83 @@ namespace Venrob::SubscreenEditor
 						{
 							for(int crn = 0; crn < 4; ++crn)
 							{
-								minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y, module_arr[P1]+tl+1, module_arr[P2], crn);
+								minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y, arr[P1]+tl+1, arr[P2], crn);
 							}
 						}
-						minitile(bit, PREVIEW_X + 16*8, PREVIEW_Y, module_arr[P1], module_arr[P2], 0);
+						minitile(bit, PREVIEW_X + 16*8, PREVIEW_Y, arr[P1], arr[P2], 0);
 						text(bit, WIDTH/2, PREVIEW_Y-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
 						//end Preview
 						break;
 					} //end
 					
-					case MODULE_TYPE_COUNTER: //UNFINISHED
+					case MODULE_TYPE_COUNTER: //start UNFINISHED
 					{
+						//FORMAT: {META..., FONT, CNTR, TODO INFITEM, TODO INFCHAR, TODO MINDIG, TXTCOL, BGCOL, SHADCOL}
+						char32 buf1[] = "Font:";
+						text(bit, FRAME_X, FRAME_Y+12+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						arr[P1] = dropdown_proc(bit, FRAME_X+Text->StringWidth(buf1, DIA_FONT)+2, FRAME_Y+12, DDWN_WID_FONT, arr[P1], data, SSL_FONT, -1, 6, lastframe, 0);
+						
+						char32 buf2[] = "Align:";
+						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
+						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_CNTR_ALIGN)
+						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_CNTR_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
+						
+						char32 buf3[] = "Counter:";
+						if(arr[M_FLAGS1]&FLAG_CNTR_SPECIAL)
+						{
+							text(bit, FRAME_X, FRAME_Y+27, TF_NORMAL, buf3, PAL[COL_TEXT_MAIN]);
+							arr[P2] = dropdown_proc(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+25, 64, arr[P2], data, {"Any Keys", "Level Keys", "A Btn Cost", "B Btn Cost"}, -1, 4, lastframe, 0);
+						}
+						else
+						{
+							titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+25, 64, argbuf2, 2, false, data, 5, 0, 0, MAX_INT, buf3);
+							arr[P2] = Max(atoi(argbuf2), 0);
+						}
+						
+						switch(titled_checkbox(bit, FRAME_X, FRAME_Y + 38 + (10 * 0), 7, arr[M_FLAGS1]&FLAG_CNTR_SPECIAL, data, 0, "Special Counter"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_CNTR_SPECIAL;
+								remchr(argbuf2,0);
+								argbuf2[0] = '0';
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_CNTR_SPECIAL;
+								arr[P2] = 0;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 38 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_CNTR_SHADOWED, data, 0, "Shadow", "Counter text displays a shadow."))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_CNTR_SHADOWED;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_CNTR_SHADOWED;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 38 + (10 * 2), 7, arr[M_FLAGS1]&FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO, data, 0, "Hide Leading Zeros", "Leading zeros will be replaced with spaces."))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO;
+								break;
+						}
+						
+						DEFINE TEXT_OFFSET = WIDTH - FRAME_X - 20;
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*0), TF_RIGHT, "Text:", PAL[COL_TEXT_MAIN]);
+						arr[P6] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, arr[P6], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*1), TF_RIGHT, "BG:", PAL[COL_TEXT_MAIN]);
+						arr[P7] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, arr[P7], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Shadow:", PAL[COL_TEXT_MAIN]);
+						arr[P8] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, arr[P8], data);
+						
+						arr[P3] = itemsel_bundle(bit, WIDTH - FRAME_X - 132 - 1, FRAME_Y+12 + (18*2) + 16 - Text->FontHeight(DIA_FONT),
+						                         arr[P3], data, lastframe, 0, 6, "Infinite Item:", true);
 						
 						break;
-					}
+					} //end
 					default:
 					{
 						text(bit, WIDTH/2, ((HEIGHT-(Text->FontHeight(DIA_FONT)*((1*3)+(0.5*2))))/2), TF_CENTERED, "WIP UNDER CONSTRUCTION", PAL[COL_TEXT_MAIN], 1);
@@ -1216,6 +1364,7 @@ namespace Venrob::SubscreenEditor
 				KillButtons();
 				subscr_Waitframe();
 			}
+			//start Closing
 			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
 			{
 				null_screen();
@@ -1226,21 +1375,20 @@ namespace Venrob::SubscreenEditor
 			Game->LItems[Game->GetCurLevel()] = LItem;
 			if(do_save_changes)
 			{
-				bit->Write(0, "_DIALOGUE.png", true);
-				module_arr[M_X] = VBound(atoi(buf_x), max_x(module_arr), min_x(module_arr));
-				module_arr[M_Y] = VBound(atoi(buf_y), max_y(module_arr, active), min_y(module_arr));
-				module_arr[M_LAYER] = VBound(atoi(buf_lyr), 7, 0);
-				switch(module_arr[M_TYPE])
+				arr[M_X] = VBound(atoi(buf_x), max_x(arr), min_x(arr));
+				arr[M_Y] = VBound(atoi(buf_y), max_y(arr, active), min_y(arr));
+				arr[M_LAYER] = VBound(atoi(buf_lyr), 7, 0);
+				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
 					case MODULE_TYPE_SELECTABLE_ITEM_ID:
 					{
-						module_arr[P1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
-						module_arr[P2] = VBound(atoi(argbuf2), MAX_MODULES, -1);
-						module_arr[P3] = VBound(atoi(argbuf3), MAX_MODULES, -1);
-						module_arr[P4] = VBound(atoi(argbuf4), MAX_MODULES, -1);
-						module_arr[P5] = VBound(atoi(argbuf5), MAX_MODULES, -1);
-						module_arr[P6] = VBound(atoi(argbuf6), MAX_MODULES, -1);
+						arr[P1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
+						arr[P2] = VBound(atoi(argbuf2), MAX_MODULES, -1);
+						arr[P3] = VBound(atoi(argbuf3), MAX_MODULES, -1);
+						arr[P4] = VBound(atoi(argbuf4), MAX_MODULES, -1);
+						arr[P5] = VBound(atoi(argbuf5), MAX_MODULES, -1);
+						arr[P6] = VBound(atoi(argbuf6), MAX_MODULES, -1);
 						break;
 					}
 				}
@@ -1248,19 +1396,20 @@ namespace Venrob::SubscreenEditor
 				{
 					mod_indx = VBound(atoi(buf_pos), g_arr[NUM_ACTIVE_MODULES]-1, 1);
 					remove_active_module(old_indx);
-					add_active_module(module_arr, mod_indx);
+					add_active_module(arr, mod_indx);
 				}
 				else
 				{
 					mod_indx = VBound(atoi(buf_pos), g_arr[NUM_PASSIVE_MODULES]-1, 1);
 					remove_passive_module(old_indx);
-					add_passive_module(module_arr, mod_indx);
+					add_passive_module(arr, mod_indx);
 				}
 				if(mod_indx!=old_indx) SubEditorData[SED_HIGHLIGHTED] = mod_indx;
 			}
 			
 			bit->Free();
 			gen_final();
+			//end
 		} //end editObj
 		//start Main GUI
 		enum GuiState
@@ -1541,7 +1690,6 @@ namespace Venrob::SubscreenEditor
 			
 			if(do_save_changes)
 			{
-				bit->Write(0, "_DIALOGUE.png", true);
 				memcpy(PAL, NEWPAL, PAL_SIZE);
 			}
 			else
@@ -1812,7 +1960,6 @@ namespace Venrob::SubscreenEditor
 			
 			if(do_save_changes)
 			{
-				bit->Write(0, "_DIALOGUE.png", true);
 				if(active)
 				{
 					settings_arr[A_STTNG_FRAME_HOLD_DELAY] = VBound(atoi(b1), MAX_INT, 0);
@@ -1953,8 +2100,6 @@ namespace Venrob::SubscreenEditor
 				KillButtons();
 				subscr_Waitframe();
 			}
-			
-			bit->Write(0, "_DIALOGUE.png", true);
 			
 			bit->Free();
 			lastframe->Free();
@@ -2418,7 +2563,6 @@ namespace Venrob::SubscreenEditor
 			//end Setup
 			
 			int clk, iclk;
-			int mz = Input->Mouse[MOUSE_Z];
 			bool controls = true;
 			bitmap blnk = create(256, 208);
 			blnk->ClearToColor(0, COL_NULL);
@@ -2464,15 +2608,14 @@ namespace Venrob::SubscreenEditor
 					++tl;
 				else if(Input->Press[CB_LEFT] || (ki && Input->Button[CB_LEFT]))
 					--tl;
-				else if(keyprocp(KEY_PGDN) || Input->Mouse[MOUSE_Z] < mz)
+				else if(keyprocp(KEY_PGDN) || Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
 					tl += TL_PER_PAGE;
-				else if(keyprocp(KEY_PGUP) || Input->Mouse[MOUSE_Z] > mz)
+				else if(keyprocp(KEY_PGUP) || Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
 					tl -= TL_PER_PAGE;
 				else if(keyprocp(KEY_P))
 				{
 					tl = jumpPage(tl);
 				}
-				mz = Input->Mouse[MOUSE_Z];
 				if(Input->Press[CB_UP] || Input->Press[CB_DOWN] || Input->Press[CB_RIGHT] || Input->Press[CB_LEFT])
 					iclk = 0;
 				if(tl < 0) tl += NUM_TILES;
@@ -2808,8 +2951,6 @@ namespace Venrob::SubscreenEditor
 				subscr_Waitframe();
 			}
 			
-			bit->Write(0, "_DIALOGUE.png", true);
-			
 			bit->Free();
 			gen_final();
 		} //end
@@ -2906,21 +3047,26 @@ namespace Venrob::SubscreenEditor
 					int ty = MARGIN_WIDTH + 2;
 					for(int q = 0; q < NUM_OPTS; ++q)
 					{
-						int num_buf[12];
-						itoa(num_buf, q+1);
 						if(q==selIndx) rect(listbit, 0, ty-2, 0+BMP_WIDTH-1, ty+UNIT_HEIGHT-2, PAL[COL_HIGHLIGHT]);
-						text(listbit, TXT_X, ty, TF_NORMAL, strings ? strings[q] : num_buf, PAL[COL_TEXT_FIELD]);
+						char32 buf[128];
+						char32 ptr = buf;
+						if(strings > 0)
+							ptr = strings[q];
+						else unless(strings)
+							itoa(buf,q+1);
+						else getSpecialString(buf, strings, q);
+						text(listbit, TXT_X, ty, TF_NORMAL, ptr, PAL[COL_TEXT_FIELD]);
 						ty += Text->FontHeight(DIA_FONT) + TXT_VSPACE;
 					}
 				}
 				//Directionals
 				{
-					if(keyprocp(KEY_UP))
+					if(keyprocp(KEY_UP) || Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
 					{
 						selIndx = Max(selIndx-1, 0);
 						scrollIndx = VBound(scrollIndx, Min(MAX_SCROLL_INDX, selIndx), Max(0, selIndx-NUM_VIS_OPTS+1));
 					}	
-					else if(keyprocp(KEY_DOWN))
+					else if(keyprocp(KEY_DOWN) || Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
 					{
 						selIndx = Min(selIndx+1, NUM_OPTS-1);
 						scrollIndx = VBound(scrollIndx, Min(MAX_SCROLL_INDX, selIndx), Max(0, selIndx-NUM_VIS_OPTS+1));
@@ -3099,7 +3245,7 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Heart Row"); break;
 				}
-				case MODULE_TYPE_HEARTROW:
+				case MODULE_TYPE_COUNTER:
 				{
 					strcat(buf, "Counter"); break;
 				}
@@ -3206,27 +3352,27 @@ namespace Venrob::SubscreenEditor
 			}
 		} //end
 		
-		bool DLGCursorBox(int x, int y, int x2, int y2, untyped dlgdata) //Automatically handle dlg offsets when reading the cursor's position
+		bool DLGCursorBox(int x, int y, int x2, int y2, untyped dlgdata) //start Automatically handle dlg offsets when reading the cursor's position
 		{
 			return CursorBox(x, y, x2, y2, -dlgdata[DLG_DATA_XOFFS], -dlgdata[DLG_DATA_YOFFS]);
-		}
+		} //end
 		
-		int DLGMouseX(untyped dlgdata)
+		int DLGMouseX(untyped dlgdata) //start
 		{
 			return Input->Mouse[MOUSE_X] - dlgdata[DLG_DATA_XOFFS];
-		}
+		} //end
 		
-		int DLGMouseY(untyped dlgdata)
+		int DLGMouseY(untyped dlgdata) //start
 		{
 			return Input->Mouse[MOUSE_Y] - dlgdata[DLG_DATA_YOFFS];
-		}
+		} //end
 		
-		bool isHovering(untyped dlgdata)
+		bool isHovering(untyped dlgdata) //start
 		{
 			return DLGCursorBox(0, 0, dlgdata[DLG_DATA_WID]-1, dlgdata[DLG_DATA_HEI]-1, dlgdata);
-		}
+		} //end
 
-		void grabType(char32 buf, int maxchar, TypeAString::TMode tm)
+		void grabType(char32 buf, int maxchar, TypeAString::TMode tm) //start
 		{
 			using namespace TypeAString;
 			startTypingMode(maxchar, tm);
@@ -3235,14 +3381,65 @@ namespace Venrob::SubscreenEditor
 			handleTyping();
 			getType(buf);
 			endTypingMode();
-		}
+		} //end
 		
-		int _strchr(char32 str, int pos, char32 chr)
+		int _strchr(char32 str, int pos, char32 chr) //start
 		{	//Find the first NON-ESCAPED instance of a character
 			int ret = strchr(str, pos, chr);
 			until(ret<0 || (ret==0 || str[ret-1]!='\\'))
 				ret = strchr(str, ret+1, chr);
 			return ret;
-		} //end 
+		} //end
+		//end 
+		//start Special String Lists
+		enum
+		{
+			SSL_FONT = -1,
+			SSL_ALIGNMENT = -2,
+			SSL_ITEM = -3
+		};
+		DEFINE DDWN_WID_FONT = 107;
+		DEFINE DDWN_WID_ALIGN = 39;
+		void getSpecialString(char32 buf, int val, int indx)
+		{
+			switch(val)
+			{
+				case SSL_FONT:
+					getFontName(buf, indx);
+					return;
+				case SSL_ALIGNMENT:
+					switch(indx)
+					{
+						case TF_NORMAL:
+							strcpy(buf, "Left"); return;
+						case TF_RIGHT:
+							strcpy(buf, "Right"); return;
+						case TF_CENTERED:
+							strcpy(buf, "Center"); return;
+						default:
+							strcpy(buf, "ERROR");
+					}
+					return;
+				case SSL_ITEM:
+					itemdata id = Game->LoadItemData(indx);
+					id->GetName(buf);
+					return;
+			}
+			strcpy(buf, "UNKNOWN LIST ACCESS");
+		}
+		int getSpecialStringCount(int val)
+		{
+			switch(val)
+			{
+				case SSL_FONT:
+					return NUM_FONTS;
+				case SSL_ALIGNMENT:
+					return 3;
+				case SSL_ITEM:
+					return MAX_ITEMDATA+1;
+			}
+			return 1;
+		}
+		//end Special String Lists
 	}
 }

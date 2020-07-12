@@ -57,6 +57,7 @@ namespace Venrob::SubscreenEditor
 		SED_CANCELBTN,
 		SED_LASTMOUSE_X,
 		SED_LASTMOUSE_Y,
+		SED_LASTMOUSE_Z,
 		SED_GUISTATE,
 		SED_GUI_BMP,
 		SED_QUEUED_DELETION,
@@ -650,6 +651,7 @@ namespace Venrob::SubscreenEditor
 	{
 		SubEditorData[SED_LASTMOUSE_X] = Input->Mouse[MOUSE_X];
 		SubEditorData[SED_LASTMOUSE_Y] = Input->Mouse[MOUSE_Y];
+		SubEditorData[SED_LASTMOUSE_Z] = Input->Mouse[MOUSE_Z];
 		if(sys_settings[SSET_CURSORTILE] > 0)
 		{
 			Screen->FastTile(7, Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y], sys_settings[SSET_CURSORTILE], 0, OP_OPAQUE);
