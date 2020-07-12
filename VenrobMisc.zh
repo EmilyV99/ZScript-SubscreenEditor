@@ -9,13 +9,19 @@ namespace Venrob
 {
 	typedef const int CONFIG;
 	typedef const bool CONFIGB;
+	
+	//start Constants
+	DEFINE MAX_FONT = FONT_LISA;
+	DEFINE NUM_FONTS = MAX_FONT+1;
+	//end Constants
+	
 	/**
 	* My version of RunNPCScript, since noone else has one yet.
 	* Takes an enemy ID, and an NPC script number, as well as optional args.
 	* Spawns an enemy of that ID, assigns it the script and args.
 	* Returns an `npc` pointer to the new enemy.
 	*/
-	npc RunNPCScript(int ID, int scriptNum, untyped args)
+	npc RunNPCScript(int ID, int scriptNum, untyped args) //start
 	{
 		// Invalid script
 		if(scriptNum < 0 || scriptNum > 511)
@@ -29,31 +35,32 @@ namespace Venrob
 				n->InitD[q] = args[q];
 		}
 		return n;
-	}
-	npc RunNPCScript(int ID, int scriptNum)
+	} //end
+	npc RunNPCScript(int ID, int scriptNum) //start
 	{
 		return RunNPCScript(ID, scriptNum, NULL);
-	}
+	} //end
 	
 	/**
 	* As above, but takes x and y args, and assigns them to the new NPC.
 	*/
-	npc RunNPCScriptAt(int ID, int scriptNum, int x, int y, untyped args)
+	npc RunNPCScriptAt(int ID, int scriptNum, int x, int y, untyped args) //start
 	{
 		npc n = RunNPCScript(ID, scriptNum, args);
 		n->X = x;
 		n->Y = y;
 		return n;
-	}
-	npc RunNPCScriptAt(int ID, int scriptNum, int x, int y)
+	} //end
+	npc RunNPCScriptAt(int ID, int scriptNum, int x, int y) //start
 	{
 		return RunNPCScriptAt(ID, scriptNum, x, y, NULL);
-	}
+	} //end
 	
+	//start Directional Functions
 	/**
 	* Returns 1 if the dir is rightward, -1 if leftward, 0 if neither
 	*/
-	int dirX(int dir)
+	int dirX(int dir) //start
 	{
 		switch(dir)
 		{
@@ -64,12 +71,12 @@ namespace Venrob
 			default:
 				return 0;
 		}
-	}
+	} //end
 
 	/**
 	* Returns 1 if the dir is downward, -1 if upward, 0 if neither
 	*/
-	int dirY(int dir)
+	int dirY(int dir) //start
 	{
 		switch(dir)
 		{
@@ -80,12 +87,12 @@ namespace Venrob
 			default:
 				return 0;
 		}
-	}
+	} //end
 
 	/**
 	* Removes the horizontal component of a direction
 	*/
-	int remX(int dir)
+	int remX(int dir) //start
 	{
 		switch(dir)
 		{
@@ -96,12 +103,12 @@ namespace Venrob
 			default:
 				return -1;
 		}
-	}
+	} //end
 
 	/**
 	* Removes the vertical component of a direction
 	*/
-	int remY(int dir)
+	int remY(int dir) //start
 	{
 		switch(dir)
 		{
@@ -112,21 +119,21 @@ namespace Venrob
 			default:
 				return -1;
 		}
-	}
+	} //end
 
 	/**
 	* Spin a dir clockwise 45°
 	*/
-	int SpinDir8(int dir)
+	int SpinDir8(int dir) //start
 	{
 		SpinDir8(dir, 1);
-	}
+	} //end
 	
 	/**
 	* Spin a dir clockwise 45°, `count` number of times
 	* If count is negative, will spin counterclockwise instead
 	*/
-	int SpinDir8(int dir, int count)
+	int SpinDir8(int dir, int count) //start
 	{
 		if(count<0)
 		{
@@ -161,7 +168,8 @@ namespace Venrob
 				}
 		}
 		return dir;
-	}
+	} //end
+	//end Directional Functions
 	
 	//start CanWalkM
 	/** If true, then calling CanWalkM with the current screen's mapdata will use `Screen->` instead of the provided `mapdata->` */
@@ -320,26 +328,26 @@ namespace Venrob
 	/**
 	* Returns a mapdata pointer to the current screen.
 	*/
-	mapdata CurMapdata()
+	mapdata CurMapdata() //start
 	{
 		return Game->LoadMapData(Game->GetCurMap(), Game->GetCurScreen());
-	}
+	} //end
 
 	/**
 	 * Returns the length of the line which has an angle of `angle`, and results in a change in x of `deltax`
 	 */
-	int InvVectorX(int deltax, int angle)
+	int InvVectorX(int deltax, int angle) //start
 	{
 		return deltax / Cos(angle);
-	}
+	} //end
 
 	/**
 	 * Returns the length of the line which has an angle of `angle`, and results in a change in y of `deltay`
 	 */
-	int InvVectorY(int deltay, int angle)
+	int InvVectorY(int deltay, int angle) //start
 	{
 		return deltay / Sin(angle);
-	}
+	} //end
 	
 	//start Collsion Functions
 	/**
@@ -495,19 +503,19 @@ namespace Venrob
 	 * Returns true if Hero is scrolling, or about to begin scrolling. Any scripted draws intended to not draw during scrolling should run only if this returns false.
 	 * Due to variance with Hero's movement (1 or 2 pixels), this may sometimes return true extraneously.
 	 */
-	bool HeroIsScrolling()
+	bool HeroIsScrolling() //start
 	{
 		return Hero->Action == LA_SCROLLING
 			|| (Hero->X >= 239 && Input->Button[CB_RIGHT] && CanScrollInDir(DIR_RIGHT))
 			|| (Hero->X <= 1 && Input->Button[CB_LEFT] && CanScrollInDir(DIR_LEFT))
 			|| (Hero->Y <= 1 && Input->Button[CB_UP] && CanScrollInDir(DIR_UP))
 			|| (Hero->Y >= 159 && Input->Button[CB_DOWN] && CanScrollInDir(DIR_DOWN));
-	}
+	} //end
 	
 	/**
 	 * Returns true if scrolling in a particular direction from this screen is valid. This checks for the edge of the map, respecting sidewarps.
 	 */
-	bool CanScrollInDir(int dir)
+	bool CanScrollInDir(int dir) //start
 	{
 		if(Game->GetCurScreen() == 0x80) return dir == DIR_DOWN;
 		if(Screen->SideWarpID[dir] > -1) return true;
@@ -523,12 +531,12 @@ namespace Venrob
 				return (Game->GetCurScreen() % 0x10) != 0x0F;
 		}
 		return false;
-	}
+	} //end
 	
 	/**
 	 * Returns the X-offset to add to a sprite's coordinate to be directly in front of it, by 'dist' pixels of them
 	 */
-	int InFrontCenteredX(int dir, int dist)
+	int InFrontCenteredX(int dir, int dist) //start
 	{
 		switch(dir)
 		{
@@ -540,12 +548,12 @@ namespace Venrob
 			case DIR_RIGHT:
 				return 15+dist;
 		}
-	}
+	} //end
 	
 	/**
 	 * Returns the Y-offset to add to a sprite's coordinate to be directly in front of it, by 'dist' pixels of them
 	 */
-	int InFrontCenteredY(int dir, int dist)
+	int InFrontCenteredY(int dir, int dist) //start
 	{
 		switch(dir)
 		{
@@ -557,16 +565,16 @@ namespace Venrob
 			case DIR_RIGHT:
 				return 8;
 		}
-	}
+	} //end
 	
 	/**
 	 * Zeroes all movement factors of an FFC
 	 */
-	void haltFFC(ffc f)
+	void haltFFC(ffc f) //start
 	{
 		f->Vx = 0; f->Vy = 0;
 		f->Ax = 0; f->Ay = 0;
-	}
+	} //end
 	
 	//start Drawing Functions
 
@@ -760,4 +768,294 @@ namespace Venrob
 		}
 	}
 	//end Drawing Functions
+
+	void getFontName(char32 buf, int font) //start
+	{
+		switch(font)
+		{
+			case FONT_Z1:
+				strcpy(buf, "Zelda NES");
+				break;
+				
+			case FONT_Z3:
+				strcpy(buf, "Link to the Past");
+				break;
+				
+			case FONT_Z3SMALL:
+				strcpy(buf, "LttP Small");
+				break;
+				
+			case FONT_DEF:
+				strcpy(buf, "Allegro Default");
+				break;
+				
+			case FONT_L:
+				strcpy(buf, "GUI Font Bold");
+				break;
+				
+			case FONT_L2:
+				strcpy(buf, "GUI Font");
+				break;
+				
+			case FONT_P:
+				strcpy(buf, "GUI Font Narrow");
+				break;
+				
+			case FONT_MATRIX:
+				strcpy(buf, "Zelda NES (Matrix)");
+				break;
+				
+			case FONT_ZTIME:
+				strcpy(buf, "BS Time (Incomplete)");
+				break;
+				
+			case FONT_S:
+				strcpy(buf, "Small");
+				break;
+				
+			case FONT_S2:
+				strcpy(buf, "Small 2");
+				break;
+				
+			case FONT_SP:
+				strcpy(buf, "S. Proportional");
+				break;
+				
+			case FONT_SUBSCREEN1:
+				strcpy(buf, "SS 1 (Numerals)");
+				break;
+				
+			case FONT_SUBSCREEN2:
+				strcpy(buf, "SS 2 (Incomplete)");
+				break;
+				
+			case FONT_SUBSCREEN3:
+				strcpy(buf, "SS 3");
+				break;
+				
+			case FONT_SUBSCREEN4:
+				strcpy(buf, "SS 4 (Numerals)");
+				break;
+				
+			case FONT_LA:
+				strcpy(buf, "Link's Awakening");
+				break;
+				
+			case FONT_GORON:
+				strcpy(buf, "Goron");
+				break;
+				
+			case FONT_ZORAN:
+				strcpy(buf, "Zoran");
+				break;
+				
+			case FONT_HYLIAN1:
+				strcpy(buf, "Hylian 1");
+				break;
+				
+			case FONT_HYLIAN2:
+				strcpy(buf, "Hylian 2");
+				break;
+				
+			case FONT_HYLIAN3:
+				strcpy(buf, "Hylian 3");
+				break;
+				
+			case FONT_HYLIAN4:
+				strcpy(buf, "Hylian 4");
+				break;
+				
+			case FONT_GBORACLE:
+				strcpy(buf, "Oracle");
+				break;
+				
+			case FONT_GBORACLEP:
+				strcpy(buf, "Oracle Proportional");
+				break;
+				
+			case FONT_DSPHANTOM:
+				strcpy(buf, "Phantom");
+				break;
+				
+			case FONT_DSPHANTOMP:
+				strcpy(buf, "Phantom Proportional");
+				break;
+				
+			case FONT_ATARI800:
+				strcpy(buf, "Atari 800");
+				break;
+				
+			case FONT_ACORN:
+				strcpy(buf, "Acorn");
+				break;
+				
+			case FONT_ADOS:
+				strcpy(buf, "ADOS");
+				break;
+				
+			case FONT_ALLEGRO:
+				strcpy(buf, "Allegro");
+				break;
+				
+			case FONT_APPLE2:
+				strcpy(buf, "Apple II");
+				break;
+				
+			case FONT_APPLE2_80COL:
+				strcpy(buf, "Apple II 80 Column");
+				break;
+				
+			case FONT_APPLE2GS:
+				strcpy(buf, "Apple IIgs");
+				break;
+				
+			case FONT_AQUARIUS:
+				strcpy(buf, "Aquarius");
+				break;
+				
+			case FONT_ATARI400:
+				strcpy(buf, "Atari 400");
+				break;
+				
+			case FONT_C64:
+				strcpy(buf, "C64");
+				break;
+				
+			case FONT_C64_HIRES:
+				strcpy(buf, "C64 HiRes");
+				break;
+				
+			case FONT_CGA:
+				strcpy(buf, "IBM CGA");
+				break;
+				
+			case FONT_COCO:
+				strcpy(buf, "COCO Mode I");
+				break;
+				
+			case FONT_COCO2:
+				strcpy(buf, "COCO Mode II");
+				break;
+				
+			case FONT_COUPE:
+				strcpy(buf, "Coupe");
+				break;
+				
+			case FONT_CPC:
+				strcpy(buf, "Amstrad CPC");
+				break;
+				
+			case FONT_FANTASY:
+				strcpy(buf, "Fantasy Letters");
+				break;
+				
+			case FONT_FDS_KANA:
+				strcpy(buf, "FDS Katakana");
+				break;
+				
+			case FONT_FDSLIKE:
+				strcpy(buf, "FDSesque");
+				break;
+				
+			case FONT_FDS_ROMAN:
+				strcpy(buf, "FDS Roman");
+				break;
+				
+			case FONT_FF:
+				strcpy(buf, "FF");
+				break;
+				
+			case FONT_FUTHARK:
+				strcpy(buf, "Elder Futhark");
+				break;
+				
+			case FONT_GAIA:
+				strcpy(buf, "Gaia");
+				break;
+				
+			case FONT_HIRA:
+				strcpy(buf, "Hira");
+				break;
+				
+			case FONT_JP:
+				strcpy(buf, "JP Unsorted");
+				break;
+				
+			case FONT_KONG:
+				strcpy(buf, "Kong");
+				break;
+				
+			case FONT_MANA:
+				strcpy(buf, "Mana");
+				break;
+				
+			case FONT_MARIOLAND:
+				strcpy(buf, "Mario");
+				break;
+				
+			case FONT_MOT:
+				strcpy(buf, "Mot CPU");
+				break;
+				
+			case FONT_MSX0:
+				strcpy(buf, "MSX Mode 0");
+				break;
+				
+			case FONT_MSX1:
+				strcpy(buf, "MSX Mode 1");
+				break;
+				
+			case FONT_PET:
+				strcpy(buf, "PET");
+				break;
+				
+			case FONT_PSTART:
+				strcpy(buf, "Homebrew");
+				break;
+				
+			case FONT_SATURN:
+				strcpy(buf, "Mr. Saturn");
+				break;
+				
+			case FONT_SCIFI:
+				strcpy(buf, "Sci-Fi");
+				break;
+				
+			case FONT_SHERWOOD:
+				strcpy(buf, "Sherwood");
+				break;
+				
+			case FONT_SINQL:
+				strcpy(buf, "Sinclair QL");
+				break;
+				
+			case FONT_SPECTRUM:
+				strcpy(buf, "Spectrum");
+				break;
+				
+			case FONT_SPECTRUM_LG:
+				strcpy(buf, "Spectrum Large");
+				break;
+				
+			case FONT_TI99:
+				strcpy(buf, "TI99");
+				break;
+				
+			case FONT_TRS:
+				strcpy(buf, "TRS");
+				break;
+				
+			case FONT_Z2:
+				strcpy(buf, "Zelda 2");
+				break;
+				
+			case FONT_LISA:
+				strcpy(buf, "Lisa");
+				break;
+			
+			default:
+				strcpy(buf, "Unknown Font");
+				break;
+		}
+	} //end
 }
