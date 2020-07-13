@@ -1226,7 +1226,7 @@ namespace Venrob::SubscreenEditor
 					{
 						char32 buftl[] = "Tile:";
 						int tlarr[2] = {arr[P1], arr[P2]};
-						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						text(bit, FRAME_X+3, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
 						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data);
 						arr[P1] = tlarr[0];
 						arr[P2] = tlarr[1];
@@ -1297,7 +1297,7 @@ namespace Venrob::SubscreenEditor
 						break;
 					} //end
 					
-					case MODULE_TYPE_COUNTER: //start UNFINISHED
+					case MODULE_TYPE_COUNTER: //start
 					{
 						//FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, TODO MINDIG, TXTCOL, BGCOL, SHADCOL}
 						char32 buf1[] = "Font:";
@@ -1396,6 +1396,22 @@ namespace Venrob::SubscreenEditor
 								break;
 						}
 						sub->Free();
+						break;
+					} //end
+					case MODULE_TYPE_MINITILE: //start
+					{
+						char32 buftl[] = "Minitile:";
+						int tlarr[3] = {arr[P1], arr[P2],arr[M_FLAGS1]&MASK_MINITL_CRN};
+						text(bit, FRAME_X+3, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						minitile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data);
+						arr[P1] = tlarr[0];
+						arr[P2] = tlarr[1];
+						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_MINITL_CRN) | tlarr[2];
+						
+						DEFINE PREVY = ABOVE_BOTTOM_Y-8;
+						frame_rect(bit, (WIDTH/2)-4, PREVY-1, (WIDTH/2)+4, PREVY+8, 1);
+						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
+						minitile(bit, (WIDTH/2)-3, PREVY, arr[P1], arr[P2], arr[M_FLAGS1]&MASK_MINITL_CRN);
 						break;
 					} //end
 					default:
@@ -2059,8 +2075,8 @@ namespace Venrob::SubscreenEditor
 			//end
 			untyped proc_data[1];
 			int indx;
-			int aval[] = {2,3,4,5,6,7,8,9,10,11};
-			int pval[] = {4,5,7,8,9,10,11};
+			int aval[] = {2,3,4,5,6,7,8,9,10,11,12};
+			int pval[] = {4,5,7,8,9,10,11,12};
 			int val = active ? aval : pval;
 			while(running)
 			{
@@ -2075,8 +2091,8 @@ namespace Venrob::SubscreenEditor
 				
 				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data,
 				                     active
-				                     ? {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter"}
-				                     : {"A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter"}
+				                     ? {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
+				                     : {"A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
 				                     , -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
@@ -2121,17 +2137,22 @@ namespace Venrob::SubscreenEditor
 						{
 							MakeCounter(module_arr); break;
 						}
+						case MODULE_TYPE_MINITILE:
+						{
+							MakeMinitile(module_arr); break;
+						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
 						{
 							MakePassiveSubscreen(module_arr); break;
 						}
 					}
-					if(active) add_active_module(module_arr);
-					else add_passive_module(module_arr);
-					int indx = (active ? g_arr[NUM_ACTIVE_MODULES] : g_arr[NUM_PASSIVE_MODULES])-1;
-					open_data_pane(indx, active); //Go directly into the editObj dialogue from here!
-					SubEditorData[SED_HIGHLIGHTED] = indx; //And highlight it, too!
+					if(active ? add_active_module(module_arr) : add_passive_module(module_arr))
+					{
+						int indx = (active ? g_arr[NUM_ACTIVE_MODULES] : g_arr[NUM_PASSIVE_MODULES])-1;
+						open_data_pane(indx, active); //Go directly into the editObj dialogue from here!
+						SubEditorData[SED_HIGHLIGHTED] = indx; //And highlight it, too!
+					}
 					running = false;
 				}
 				//
@@ -3296,6 +3317,10 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Counter"); break;
 				}
+				case MODULE_TYPE_MINITILE:
+				{
+					strcat(buf, "MiniTile"); break;
+				}
 			}
 		} //end
 		
@@ -3351,6 +3376,11 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_COUNTER:
 				{
 					strcat(buf, "Displays the value of a counter."); break;
+				}
+			
+				case MODULE_TYPE_MINITILE:
+				{
+					strcat(buf, "Draws a quarter of a tile."); break;
 				}
 			}
 		} //end

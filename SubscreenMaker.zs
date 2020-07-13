@@ -37,6 +37,7 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_HEART = 1;
 	DEFINE MVER_HEARTROW = 1;
 	DEFINE MVER_COUNTER = 1;
+	DEFINE MVER_MINITILE = 1;
 	//end Versioning
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
@@ -446,7 +447,17 @@ namespace Venrob::SubscreenEditor
 				} //end
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X]+xoff, module_arr[M_Y], wid, Text->FontHeight(module_arr[P1]), mod_indx, active, true);
+					editorCursor(module_arr[M_LAYER], module_arr[M_X]+xoff, module_arr[M_Y], wid-1, Text->FontHeight(module_arr[P1])-1, mod_indx, active, true);
+				}
+				break;
+			}
+			case MODULE_TYPE_MINITILE:
+			{
+				if(interactive) handleDragging(module_arr, mod_indx, active);
+				minitile(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], module_arr[M_FLAGS1]&MASK_MINITL_CRN);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
 				}
 				break;
 			}
@@ -762,6 +773,8 @@ namespace Venrob::SubscreenEditor
 						return 256-(wid/2);
 				}
 				return 256-wid;
+			case MODULE_TYPE_COUNTER:
+				return 256-8;
 		}
 		return 256-16;
 	}
@@ -832,6 +845,8 @@ namespace Venrob::SubscreenEditor
 				return _BOTTOM - 8;
 			case MODULE_TYPE_COUNTER:
 				return _BOTTOM - Text->FontHeight(module_arr[P1]);
+			case MODULE_TYPE_MINITILE:
+				return _BOTTOM - 8;
 		}
 		return _BOTTOM-16;
 	}
@@ -1347,6 +1362,33 @@ namespace Venrob::SubscreenEditor
 				}
 				return true;
 			} //end
+			
+			case MODULE_TYPE_MINITILE: //start
+			{
+				if(module_arr[M_SIZE]!=P2+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_MINITILE (%d) must have argument size (5) in format {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}; argument size %d found", MODULE_TYPE_MINITILE, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MINITILE (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MINITILE, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MINITILE (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MINITILE, module_arr[P2]);
+					}
+					return false;
+				}
+				return true;
+			} //end
 			default:
 			{
 				if(DEBUG)
@@ -1733,6 +1775,14 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P5] = 2;
 		buf_arr[P6] = 0x01;
 		buf_arr[P8] = 0x0F;
+	}
+	
+	void MakeMinitile(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P2+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_MINITILE;
+		buf_arr[M_VER] = MVER_MINITILE;
 	}
 	//end Constructors
 	//start FileIO

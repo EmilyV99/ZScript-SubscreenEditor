@@ -160,6 +160,10 @@ namespace Venrob::Subscreen
 		CNTR_BBTN,
 		CNTR_MAX_SPECIAL
 	};
+	enum //Minitile
+	{
+		MASK_MINITL_CRN = FLAG1 | FLAG2
+	};
 	//start Clearing/Init
 	void init()
 	{
@@ -255,6 +259,7 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_HEART, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM}
 		MODULE_TYPE_HEARTROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}
 		MODULE_TYPE_COUNTER, //FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, MINDIG, TXTCOL, BGCOL, SHADCOL}
+		MODULE_TYPE_MINITILE, //FORMAT: {META..., TILE, CSET}
 		MODULE_TYPE_MAX
 	};
 	
@@ -533,11 +538,16 @@ namespace Venrob::Subscreen
 				break;
 			} //end
 			
-			case MODULE_TYPE_COUNTER:
+			case MODULE_TYPE_COUNTER: //start
 			{
 				counter(module_arr, bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y]);
 				break;
-			}
+			} //end
+			case MODULE_TYPE_MINITILE: //start
+			{
+				minitile(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], module_arr[M_FLAGS1]&MASK_MINITL_CRN);
+				break;
+			} //end
 			//case :
 		}
 		return EVENT_NONE;
