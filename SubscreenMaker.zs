@@ -40,11 +40,12 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_MINITILE = 1;
 	//end Versioning
 	//start SubEditorData
-	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, NULL, 0, 0, false};
+	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false};
 	enum
 	{
-		SED_HIGHLIGHTED,
+		SED_SELECTED,
 		SED_DRAGGING,
+		SED_TRY_SELECT,
 		SED_ACTIVE_PANE,
 		SED_PANE_MENU_TYPE,
 		SED_LCLICKED,
@@ -56,6 +57,9 @@ namespace Venrob::SubscreenEditor
 		SED_DEFAULTBTN,
 		SED_DEFAULTBTN2,
 		SED_CANCELBTN,
+		SED_MOUSE_X,
+		SED_MOUSE_Y,
+		SED_MOUSE_Z,
 		SED_LASTMOUSE_X,
 		SED_LASTMOUSE_Y,
 		SED_LASTMOUSE_Z,
@@ -65,6 +69,13 @@ namespace Venrob::SubscreenEditor
 		SED_GLOBAL_TIMER,
 		SED_JUST_CLONED
 	}; //end
+	//start Module Edit Flags
+	untyped mod_flags[MAX_INT];
+	enum
+	{
+		MODFLAG_SELECTED = FLAG1
+	};
+	//end
 	//start System Settings
 	untyped sys_settings[MAX_INT];
 	enum sysSetting
@@ -273,6 +284,7 @@ namespace Venrob::SubscreenEditor
 			saveModule(buf, q, true);
 			runFauxModule(q, buf, true, true);
 		}
+		handleDragging(true);
 		runPreparedSelector(true);
 		getSubscreenBitmap(true)->Blit(7, RT_SCREEN, 0, 0, 256, 224, 0, -56, 256, 224, 0, 0, 0, 0, 0, true);
 		activetimers();
@@ -289,6 +301,7 @@ namespace Venrob::SubscreenEditor
 			saveModule(buf, q, false);
 			runFauxModule(q, buf, false, interactive);
 		}
+		handleDragging(false);
 		runPreparedSelector(false);
 	}
 
@@ -322,7 +335,6 @@ namespace Venrob::SubscreenEditor
 				int itmid = module_arr[M_TYPE] == MODULE_TYPE_ABUTTONITEM ? Hero->ItemA : Hero->ItemB;
 				itemdata id = Game->LoadItemData(itmid);
 				int frm = Div(g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				if(interactive)
 				{
@@ -351,7 +363,6 @@ namespace Venrob::SubscreenEditor
 				
 				itemdata id = Game->LoadItemData(itmid);
 				int frm = Div(g_arr[ACTIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				if(interactive)
 				{
@@ -371,7 +382,6 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_PASSIVESUBSCREEN:
 			{
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				bit->BlitTo(module_arr[M_LAYER], getSubscreenBitmap(false), 0, 0, 256, 56, module_arr[M_X], module_arr[M_Y], 256, 56, 0, 0, 0, 0, 0, true);
 				if(interactive)
 				{
@@ -382,7 +392,6 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_MINIMAP:
 			{
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				minimap(module_arr, bit, active);
 				if(interactive)
 				{
@@ -393,7 +402,6 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_TILEBLOCK:
 			{
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				bit->DrawTile(0,  module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P3], module_arr[P4], module_arr[P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
 				if(interactive)
 				{
@@ -404,7 +412,6 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_HEART:
 			{
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				heart(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
 				if(interactive)
 				{
@@ -415,7 +422,6 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_HEARTROW:
 			{
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				if(module_arr[M_FLAGS1] & FLAG_HROW_RTOL)
 					invheartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
 				else
@@ -429,7 +435,6 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_COUNTER:
 			{
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				int wid = counter(module_arr, bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y]);
 				if(wid < 8) //Ensure there's a hitbox to grab for repositioning
 					wid = 8;
@@ -453,7 +458,6 @@ namespace Venrob::SubscreenEditor
 			}
 			case MODULE_TYPE_MINITILE:
 			{
-				if(interactive) handleDragging(module_arr, mod_indx, active);
 				minitile(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], module_arr[M_FLAGS1]&MASK_MINITL_CRN);
 				if(interactive)
 				{
@@ -466,41 +470,70 @@ namespace Venrob::SubscreenEditor
 		}
 	}
 	
-	void handleDragging(untyped module_arr, int mod_indx, bool active)
+	void handleDragging(bool active)
 	{
-		if(SubEditorData[SED_DRAGGING] == mod_indx)
+		int dx, dy;
+		if(SubEditorData[SED_LCLICKING] && !SubEditorData[SED_LCLICKED]) //start
 		{
 			clearPreparedSelector();
-			int dx = Input->Mouse[MOUSE_X] - SubEditorData[SED_LASTMOUSE_X],
-				dy = Input->Mouse[MOUSE_Y] - SubEditorData[SED_LASTMOUSE_Y];
-			module_arr[M_X] = VBound(module_arr[M_X]+dx, max_x(module_arr), min_x(module_arr));
-			module_arr[M_Y] = VBound(module_arr[M_Y]+dy, max_y(module_arr, active), min_y(module_arr));
-			setModX(mod_indx, active, module_arr[M_X]);
-			setModY(mod_indx, active, module_arr[M_Y]);
-		}
-		else if(SubEditorData[SED_HIGHLIGHTED] == mod_indx)
+			dx = SubEditorData[SED_MOUSE_X] - SubEditorData[SED_LASTMOUSE_X];
+			dy = SubEditorData[SED_MOUSE_Y] - SubEditorData[SED_LASTMOUSE_Y];
+			// module_arr[M_X] = VBound(module_arr[M_X]+dx, max_x(module_arr), min_x(module_arr));
+			// module_arr[M_Y] = VBound(module_arr[M_Y]+dy, max_y(module_arr, active), min_y(module_arr));
+			// setModX(mod_indx, active, module_arr[M_X]);
+			// setModY(mod_indx, active, module_arr[M_Y]);
+		} //end
+		else //start
 		{
 			if(Input->Press[CB_UP])
 			{
-				module_arr[M_Y] = VBound(module_arr[M_Y]-1, max_y(module_arr, active), min_y(module_arr));
-				setModY(mod_indx, active, module_arr[M_Y]);
+				dy = -1;
+				// module_arr[M_Y] = VBound(module_arr[M_Y]-1, max_y(module_arr, active), min_y(module_arr));
+				// setModY(mod_indx, active, module_arr[M_Y]);
 			}
 			else if(Input->Press[CB_DOWN])
 			{
-				module_arr[M_Y] = VBound(module_arr[M_Y]+1, max_y(module_arr, active), min_y(module_arr));
-				setModY(mod_indx, active, module_arr[M_Y]);
+				dy = 1;
+				// module_arr[M_Y] = VBound(module_arr[M_Y]+1, max_y(module_arr, active), min_y(module_arr));
+				// setModY(mod_indx, active, module_arr[M_Y]);
 			}
 			if(Input->Press[CB_LEFT])
 			{
-				module_arr[M_X] = VBound(module_arr[M_X]-1, max_x(module_arr), min_x(module_arr));
-				setModX(mod_indx, active, module_arr[M_X]);
+				dx = -1;
+				// module_arr[M_X] = VBound(module_arr[M_X]-1, max_x(module_arr), min_x(module_arr));
+				// setModX(mod_indx, active, module_arr[M_X]);
 			}
 			else if(Input->Press[CB_RIGHT])
 			{
-				module_arr[M_X] = VBound(module_arr[M_X]+1, max_x(module_arr), min_x(module_arr));
-				setModX(mod_indx, active, module_arr[M_X]);
+				dx = 1;
+				// module_arr[M_X] = VBound(module_arr[M_X]+1, max_x(module_arr), min_x(module_arr));
+				// setModX(mod_indx, active, module_arr[M_X]);
 			}
-		}
+		} //end
+		int sz_indx = active ? NUM_ACTIVE_MODULES : NUM_PASSIVE_MODULES;
+		for(int q = 2; q < g_arr[sz_indx]; ++q) //start Limit drag on ALL selected
+		{
+			unless(mod_flags[q] & MODFLAG_SELECTED) continue;
+			untyped arr[MODULE_BUF_SIZE];
+			saveModule(arr, q, active);
+			int tx = VBound(arr[M_X] + dx, max_x(arr), min_x(arr));
+			int ty = VBound(arr[M_Y] + dy, max_y(arr, active), min_y(arr));
+			if(tx != arr[M_X] + dx)
+			{
+				dx = tx - arr[M_X];
+			}
+			if(ty != arr[M_Y] + dy)
+			{
+				dy = ty - arr[M_Y];
+			}
+		} //end
+		
+		for(int q = 2; q < g_arr[sz_indx]; ++q) //start Actually move the modules
+		{
+			unless(mod_flags[q] & MODFLAG_SELECTED) continue;
+			incModX(q, active, dx);
+			incModY(q, active, dy);
+		} //end
 	}
 	
 	void editorCursor(int layer, int x, int y, int wid, int hei, int mod_indx, bool active)
@@ -513,29 +546,22 @@ namespace Venrob::SubscreenEditor
 		//bool overlapBorder = (wid >= 16*3 || hei >= 16*3); //Overlap the border on large (3 tile wide/tall or larger) objects
 		int sx = overlapBorder ? x+1 : x, sy = overlapBorder ? y+1 : y, swid = overlapBorder ? wid-2 : wid, shei = overlapBorder ? hei-2 : hei;
 		bool onGUI = DIALOG::isHoveringGUI();
-		bool isHovering = !onGUI && (active ? CursorBox(x, y, x+wid, y+hei, 0, 56) : CursorBox(x, y, x+wid, y+hei, 0, PASSIVE_EDITOR_TOP - 56));
-		bool isDragging = SubEditorData[SED_DRAGGING] == mod_indx;
+		bool isHovering = !onGUI && (active ? DIALOG::DLGCursorBox(x, y, x+wid, y+hei, 0, 56) : DIALOG::DLGCursorBox(x, y, x+wid, y+hei, 0, PASSIVE_EDITOR_TOP - 56));
 		if(isHovering && SubEditorData[SED_LCLICKED]) //Clicking
 		{
-			SubEditorData[SED_DRAGGING] = mod_indx;
-			if(SubEditorData[SED_HIGHLIGHTED] != mod_indx)
-			{
-				SubEditorData[SED_HIGHLIGHTED] = mod_indx;
-				return;
-			}
+			SubEditorData[SED_TRY_SELECT] = mod_indx;
 		}
-		if(SubEditorData[SED_HIGHLIGHTED] == mod_indx)
+		if(SubEditorData[SED_SELECTED] == mod_indx)
 		{
-			if(DIALOG::keyproc(KEY_DEL) || DIALOG::keyproc(KEY_DEL_PAD))
+			if(keyproc(KEY_DEL) || keyproc(KEY_DEL_PAD))
 			{
 				if(mod_indx>1 && DIALOG::delwarn())
 				{
 					SubEditorData[SED_QUEUED_DELETION] = active ? mod_indx : -mod_indx;
-					SubEditorData[SED_HIGHLIGHTED] = 0;
-					if(isDragging) SubEditorData[SED_DRAGGING] = 0;
+					SubEditorData[SED_SELECTED] = 0;
 				}
 			}
-			if(!isDragging && isHovering)
+			if(!SubEditorData[SED_LCLICKING] && isHovering)
 			{
 				clearPreparedSelector();
 				if(SubEditorData[SED_RCLICKED]) //RClick
@@ -544,13 +570,15 @@ namespace Venrob::SubscreenEditor
 					SubEditorData[SED_RCLICKED] = false;
 				}
 			}
-			else if(SubEditorData[SED_LCLICKED] && !onGUI) //Clicked off
-			{
-				SubEditorData[SED_HIGHLIGHTED] = 0;
-				return;
-			}
-			DrawSelector(layer, sx, sy, swid, shei, active, false, SEL_RECTANGLE, PAL[COL_HIGHLIGHT]);
+			// else if(SubEditorData[SED_LCLICKED] && !onGUI) //Clicked off
+			// {
+				// SubEditorData[SED_SELECTED] = 0;
+				// return;
+			// }
+			//DrawSelector(layer, sx, sy, swid, shei, active, false, SEL_RECTANGLE, PAL[COL_HIGHLIGHT]);
 		}
+		if(mod_flags[mod_indx] & MODFLAG_SELECTED)
+			DrawSelector(layer, sx, sy, swid, shei, active, false, SEL_RECTANGLE, PAL[COL_HIGHLIGHT]);
 		else if(isHovering)
 			DrawSelector(layer, sx, sy, swid, shei, active, true, SEL_RECTANGLE, PAL[COL_CURSOR]);
 	}
@@ -646,6 +674,9 @@ namespace Venrob::SubscreenEditor
 	{
 		++SubEditorData[SED_GLOBAL_TIMER];
 		SubEditorData[SED_GLOBAL_TIMER]%=3600;
+		SubEditorData[SED_MOUSE_X] = Input->Mouse[MOUSE_X];
+		SubEditorData[SED_MOUSE_Y] = Input->Mouse[MOUSE_Y];
+		SubEditorData[SED_MOUSE_Z] = Input->Mouse[MOUSE_Z];
 		SubEditorData[SED_LCLICKED] = Input->Mouse[MOUSE_LEFT] && !SubEditorData[SED_LCLICKING];
 		SubEditorData[SED_RCLICKED] = Input->Mouse[MOUSE_RIGHT] && !SubEditorData[SED_RCLICKING];
 		SubEditorData[SED_MCLICKED] = Input->Mouse[MOUSE_MIDDLE] && !SubEditorData[SED_MCLICKING];
@@ -658,16 +689,34 @@ namespace Venrob::SubscreenEditor
 	
 	void handleEndFrame()
 	{
-		SubEditorData[SED_LASTMOUSE_X] = Input->Mouse[MOUSE_X];
-		SubEditorData[SED_LASTMOUSE_Y] = Input->Mouse[MOUSE_Y];
-		SubEditorData[SED_LASTMOUSE_Z] = Input->Mouse[MOUSE_Z];
+		SubEditorData[SED_LASTMOUSE_X] = SubEditorData[SED_MOUSE_X];
+		SubEditorData[SED_LASTMOUSE_Y] = SubEditorData[SED_MOUSE_Y];
+		SubEditorData[SED_LASTMOUSE_Z] = SubEditorData[SED_MOUSE_Z];
+		if(SubEditorData[SED_TRY_SELECT])
+		{
+			unless((mod_flags[SubEditorData[SED_TRY_SELECT]] & MODFLAG_SELECTED) || keyproc(KEY_LSHIFT) || keyproc(KEY_RSHIFT))
+			{
+				for(int q = Max(g_arr[NUM_ACTIVE_MODULES], g_arr[NUM_PASSIVE_MODULES])-1; q >= 0; --q)
+					mod_flags[q] ~= MODFLAG_SELECTED;
+			}
+			mod_flags[SubEditorData[SED_TRY_SELECT]] |= MODFLAG_SELECTED;
+			SubEditorData[SED_SELECTED] = SubEditorData[SED_TRY_SELECT];
+			SubEditorData[SED_TRY_SELECT] = 0;
+		}
+		else if(SubEditorData[SED_LCLICKED] && !DIALOG::isHoveringGUI())
+		{
+			for(int q = Max(g_arr[NUM_ACTIVE_MODULES], g_arr[NUM_PASSIVE_MODULES])-1; q >= 0; --q)
+				mod_flags[q] ~= MODFLAG_SELECTED;
+			SubEditorData[SED_SELECTED] = 0;
+			SubEditorData[SED_TRY_SELECT] = 0;
+		}
 		if(sys_settings[SSET_CURSORTILE] > 0)
 		{
-			Screen->FastTile(7, Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y], sys_settings[SSET_CURSORTILE], 0, OP_OPAQUE);
+			Screen->FastTile(7, SubEditorData[SED_MOUSE_X], SubEditorData[SED_MOUSE_Y], sys_settings[SSET_CURSORTILE], 0, OP_OPAQUE);
 		}
 		else
 		{
-			DrawCursor(sys_settings[SSET_CURSOR_VER], Input->Mouse[MOUSE_X], Input->Mouse[MOUSE_Y]);
+			DrawCursor(sys_settings[SSET_CURSOR_VER], SubEditorData[SED_MOUSE_X], SubEditorData[SED_MOUSE_Y]);
 		}
 		
 		if(Input->Key[KEY_G])

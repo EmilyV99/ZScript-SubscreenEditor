@@ -158,7 +158,46 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_TEXT_TITLE_BAR] = SYS_BLACK;
 	} //end
 	//end 
-		
+	//start Key procs
+	bool keyproc(int key)
+	{
+		return KeyInput(key);
+		//printf("KeyProc'ing key %d (%s?): %s\n", key, {key-KEY_A+'A', 0}, ret?"true":"false");
+	}
+	bool keyprocp(int key)
+	{
+		return KeyPressed(key);
+	}
+	void killkey(int key)
+	{
+		KeyPressed(key, false);
+		KeyInput(key, false);
+	}
+	bool DefaultButton()
+	{
+		return KeyInput(SubEditorData[SED_DEFAULTBTN]) || KeyInput(SubEditorData[SED_DEFAULTBTN2]);
+	}
+	bool DefaultButtonP()
+	{
+		return KeyPressed(SubEditorData[SED_DEFAULTBTN]) || KeyPressed(SubEditorData[SED_DEFAULTBTN2]);
+	}
+	bool CancelButton()
+	{
+		return KeyInput(SubEditorData[SED_CANCELBTN]);
+	}
+	bool CancelButtonP()
+	{
+		return KeyPressed(SubEditorData[SED_CANCELBTN]);
+	}
+	bool HelpButton()
+	{
+		return Input->ReadKey[KEY_F1];
+	}
+	void KillDLGButtons()
+	{
+		KillAllKeyboard();
+	}
+	//end
 	namespace DIALOG
 	{
 		DEFINE DIA_FONT = FONT_Z3SMALL;
@@ -551,9 +590,9 @@ namespace Venrob::SubscreenEditor
 					}
 					else
 					{
-						if(Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
+						if(SubEditorData[SED_MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
 							indx = Max(indx-1, 0);
-						else if(Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
+						else if(SubEditorData[SED_MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
 							indx = Min(indx+1, num_opts-1);
 					}
 				}
@@ -724,13 +763,13 @@ namespace Venrob::SubscreenEditor
 							clicked = 2;
 						}
 					}
-					if(clicked == 1 || Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
+					if(clicked == 1 || SubEditorData[SED_MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
 					{
 						int a = atoi(buf)+1;
 						remchr(buf, 0);
 						itoa(buf, doBound ? VBound(a,max,min) : a);
 					}
-					else if(clicked == 2 || Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
+					else if(clicked == 2 || SubEditorData[SED_MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
 					{
 						int a = atoi(buf)-1;
 						remchr(buf, 0);
@@ -801,46 +840,6 @@ namespace Venrob::SubscreenEditor
 			} //end
 			//end
 		} //end
-		//start Key procs
-		bool keyproc(int key)
-		{
-			return KeyInput(key);
-			//printf("KeyProc'ing key %d (%s?): %s\n", key, {key-KEY_A+'A', 0}, ret?"true":"false");
-		}
-		bool keyprocp(int key)
-		{
-			return KeyPressed(key);
-		}
-		void killkey(int key)
-		{
-			KeyPressed(key, false);
-			KeyInput(key, false);
-		}
-		bool DefaultButton()
-		{
-			return KeyInput(SubEditorData[SED_DEFAULTBTN]) || KeyInput(SubEditorData[SED_DEFAULTBTN2]);
-		}
-		bool DefaultButtonP()
-		{
-			return KeyPressed(SubEditorData[SED_DEFAULTBTN]) || KeyPressed(SubEditorData[SED_DEFAULTBTN2]);
-		}
-		bool CancelButton()
-		{
-			return KeyInput(SubEditorData[SED_CANCELBTN]);
-		}
-		bool CancelButtonP()
-		{
-			return KeyPressed(SubEditorData[SED_CANCELBTN]);
-		}
-		bool HelpButton()
-		{
-			return Input->ReadKey[KEY_F1];
-		}
-		void KillDLGButtons()
-		{
-			KillAllKeyboard();
-		}
-		//end 
 		//Flagsets
 		DEFINE FLAG_DISABLE = 00000001b;
 		DEFINE FLAG_DEFAULT = 00000010b;
@@ -1006,7 +1005,16 @@ namespace Venrob::SubscreenEditor
 					{
 						running = false;
 						SubEditorData[SED_QUEUED_DELETION] = active ? mod_indx : -mod_indx;
-						SubEditorData[SED_HIGHLIGHTED] = 0; //This had to be highlighted to open this menu!
+						SubEditorData[SED_SELECTED] = 0; //This had to be highlighted to open this menu!
+						mod_flags[mod_indx] = 0;
+						for(int q = (active ? g_arr[NUM_ACTIVE_MODULES] : g_arr[NUM_PASSIVE_MODULES])-1; q > 0; --q)
+						{
+							if(mod_flags[q] & MODFLAG_SELECTED)
+							{
+								SubEditorData[SED_SELECTED] = q;
+								break;
+							}
+						}
 						bit->Free();
 						gen_final();
 						return;
@@ -1467,7 +1475,13 @@ namespace Venrob::SubscreenEditor
 					remove_passive_module(old_indx);
 					add_passive_module(arr, mod_indx);
 				}
-				if(mod_indx!=old_indx) SubEditorData[SED_HIGHLIGHTED] = mod_indx;
+				if(mod_indx!=old_indx)
+				{
+					int f = mod_flags[old_indx];
+					mod_flags[old_indx] = mod_flags[mod_indx];
+					mod_flags[mod_indx] = f | MODFLAG_SELECTED;
+					SubEditorData[SED_SELECTED] = mod_indx;
+				}
 			}
 			
 			bit->Free();
@@ -1532,6 +1546,7 @@ namespace Venrob::SubscreenEditor
 			data[DLG_DATA_HEI] = MAIN_GUI_HEIGHT;
 			data[DLG_DATA_YOFFS] = yoffs;
 			int ret = GUIRET_NULL;
+			int szindx = active ? NUM_ACTIVE_MODULES : NUM_PASSIVE_MODULES;
 			bitmap bit = getGUIBitmap();
 			{
 				//Deco
@@ -1550,16 +1565,41 @@ namespace Venrob::SubscreenEditor
 				{
 					open_data_pane(DLG_NEWOBJ, PANE_T_SYSTEM);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Edit", data, main_proc_data, 1, SubEditorData[SED_HIGHLIGHTED] ? FLAG_DEFAULT : FLAG_DISABLE))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Edit", data, main_proc_data, 1, SubEditorData[SED_SELECTED] ? FLAG_DEFAULT : FLAG_DISABLE))
 				{
-					open_data_pane(SubEditorData[SED_HIGHLIGHTED], active);
+					open_data_pane(SubEditorData[SED_SELECTED], active);
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Clone", data, main_proc_data, 2, SubEditorData[SED_HIGHLIGHTED] > 1 ? 0 : FLAG_DISABLE))
+				bool can_clone;
+				for(int q = 2; q < g_arr[szindx]; ++q)
+				{
+					if(mod_flags[q] & MODFLAG_SELECTED)
+					{
+						can_clone = true;
+						break;
+					}
+				}
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Clone", data, main_proc_data, 2, can_clone ? FLAG_DEFAULT : FLAG_DISABLE))
 				{
 					unless(SubEditorData[SED_JUST_CLONED]) //Don't clone every frame it's held, just the first frame pressed!
 					{
-						cloneModule(SubEditorData[SED_HIGHLIGHTED], active);
-						SubEditorData[SED_HIGHLIGHTED] = active ? g_arr[NUM_ACTIVE_MODULES]-1 : g_arr[NUM_PASSIVE_MODULES]-1;
+						int old_cnt = g_arr[szindx];
+						for(int q = 0; q < old_cnt; ++q)
+						{
+							unless(mod_flags[q] & MODFLAG_SELECTED) continue;
+							if(q > 1) //Can't clone settings / bgcolor
+							{
+								cloneModule(q, active);
+								if(SubEditorData[SED_SELECTED] == q) //Select clone of previously selected
+									SubEditorData[SED_SELECTED] = g_arr[szindx]-1;
+							}
+							mod_flags[q] ~= MODFLAG_SELECTED;
+						}
+						for(int q = old_cnt; q < g_arr[szindx]; ++q)
+							mod_flags[q] |= MODFLAG_SELECTED;
+						/*
+						cloneModule(SubEditorData[SED_SELECTED], active);
+						SubEditorData[SED_SELECTED] = active ? g_arr[NUM_ACTIVE_MODULES]-1 : g_arr[NUM_PASSIVE_MODULES]-1;
+						*/
 						SubEditorData[SED_JUST_CLONED] = true;
 					}
 				}
@@ -2151,7 +2191,14 @@ namespace Venrob::SubscreenEditor
 					{
 						int indx = (active ? g_arr[NUM_ACTIVE_MODULES] : g_arr[NUM_PASSIVE_MODULES])-1;
 						open_data_pane(indx, active); //Go directly into the editObj dialogue from here!
-						SubEditorData[SED_HIGHLIGHTED] = indx; //And highlight it, too!
+						SubEditorData[SED_SELECTED] = indx; //And highlight it, too!
+						
+						for(int q = active ? g_arr[NUM_ACTIVE_MODULES]-1 : g_arr[NUM_PASSIVE_MODULES]-1; q >= 0; --q)
+						{
+							mod_flags[q] ~= MODFLAG_SELECTED;
+						}
+						mod_flags[indx] |= MODFLAG_SELECTED;
+						SubEditorData[SED_TRY_SELECT] = 0;
 					}
 					running = false;
 				}
@@ -2445,8 +2492,19 @@ namespace Venrob::SubscreenEditor
 		} //end
 		bool runEditor(int mode) //start
 		{
-			unless(mode)
-				disableKeys(false);
+			switch(mode)
+			{
+				case 0:
+					disableKeys(false);
+					break;
+				case 1:
+					memset(mod_flags, 0, g_arr[NUM_ACTIVE_MODULES]);
+					break;
+				case 2:
+					memset(mod_flags, 0, g_arr[NUM_PASSIVE_MODULES]);
+					break;
+			}
+			
 			while(true)
 			{
 				switch(mode)
@@ -2475,10 +2533,20 @@ namespace Venrob::SubscreenEditor
 				{
 					if(SubEditorData[SED_QUEUED_DELETION]<0) //passive
 					{
+						for(int q = -SubEditorData[SED_QUEUED_DELETION]; q < g_arr[NUM_PASSIVE_MODULES]-1; ++q)
+						{
+							mod_flags[q] = mod_flags[q+1];
+						}
+						mod_flags[g_arr[NUM_PASSIVE_MODULES]-1] = 0;
 						remove_passive_module(-SubEditorData[SED_QUEUED_DELETION]);
 					}
 					else //active
 					{
+						for(int q = SubEditorData[SED_QUEUED_DELETION]; q < g_arr[NUM_ACTIVE_MODULES]-1; ++q)
+						{
+							mod_flags[q] = mod_flags[q+1];
+						}
+						mod_flags[g_arr[NUM_ACTIVE_MODULES]-1] = 0;
 						remove_active_module(SubEditorData[SED_QUEUED_DELETION]);
 					}
 					SubEditorData[SED_QUEUED_DELETION]=0;
@@ -2676,9 +2744,9 @@ namespace Venrob::SubscreenEditor
 					++tl;
 				else if(Input->Press[CB_LEFT] || (ki && Input->Button[CB_LEFT]))
 					--tl;
-				else if(keyprocp(KEY_PGDN) || Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
+				else if(keyprocp(KEY_PGDN) || SubEditorData[SED_MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
 					tl += TL_PER_PAGE;
-				else if(keyprocp(KEY_PGUP) || Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
+				else if(keyprocp(KEY_PGUP) || SubEditorData[SED_MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
 					tl -= TL_PER_PAGE;
 				else if(keyprocp(KEY_P))
 				{
@@ -3129,12 +3197,12 @@ namespace Venrob::SubscreenEditor
 				}
 				//Directionals
 				{
-					if(keyprocp(KEY_UP) || Input->Mouse[MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
+					if(keyprocp(KEY_UP) || SubEditorData[SED_MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
 					{
 						selIndx = Max(selIndx-1, 0);
 						scrollIndx = VBound(scrollIndx, Min(MAX_SCROLL_INDX, selIndx), Max(0, selIndx-NUM_VIS_OPTS+1));
 					}	
-					else if(keyprocp(KEY_DOWN) || Input->Mouse[MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
+					else if(keyprocp(KEY_DOWN) || SubEditorData[SED_MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
 					{
 						selIndx = Min(selIndx+1, NUM_OPTS-1);
 						scrollIndx = VBound(scrollIndx, Min(MAX_SCROLL_INDX, selIndx), Max(0, selIndx-NUM_VIS_OPTS+1));
@@ -3429,19 +3497,26 @@ namespace Venrob::SubscreenEditor
 			}
 		} //end
 		
+		bool DLGCursorBox(int x, int y, int x2, int y2, int xoffs, int yoffs) //start Automatically handle dlg offsets when reading the cursor's position
+		{
+			return SubEditorData[SED_MOUSE_X] + xoffs >= x && SubEditorData[SED_MOUSE_X] + xoffs <= x2
+				&& SubEditorData[SED_MOUSE_Y] + yoffs >= y && SubEditorData[SED_MOUSE_Y] + yoffs <= y2;
+		} //end
 		bool DLGCursorBox(int x, int y, int x2, int y2, untyped dlgdata) //start Automatically handle dlg offsets when reading the cursor's position
 		{
-			return CursorBox(x, y, x2, y2, -dlgdata[DLG_DATA_XOFFS], -dlgdata[DLG_DATA_YOFFS]);
+			int xoffs = -dlgdata[DLG_DATA_XOFFS], yoffs = -dlgdata[DLG_DATA_YOFFS];
+			return SubEditorData[SED_MOUSE_X] + xoffs >= x && SubEditorData[SED_MOUSE_X] + xoffs <= x2
+				&& SubEditorData[SED_MOUSE_Y] + yoffs >= y && SubEditorData[SED_MOUSE_Y] + yoffs <= y2;
 		} //end
 		
 		int DLGMouseX(untyped dlgdata) //start
 		{
-			return Input->Mouse[MOUSE_X] - dlgdata[DLG_DATA_XOFFS];
+			return SubEditorData[SED_MOUSE_X] - dlgdata[DLG_DATA_XOFFS];
 		} //end
 		
 		int DLGMouseY(untyped dlgdata) //start
 		{
-			return Input->Mouse[MOUSE_Y] - dlgdata[DLG_DATA_YOFFS];
+			return SubEditorData[SED_MOUSE_Y] - dlgdata[DLG_DATA_YOFFS];
 		} //end
 		
 		bool isHovering(untyped dlgdata) //start
