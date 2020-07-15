@@ -27,8 +27,8 @@ namespace Venrob::SubscreenEditor
 	//Module Versions
 	DEFINE MVER_SETTINGS = 1;
 	DEFINE MVER_BGCOLOR = 1;
-	DEFINE MVER_SELECTABLE_ITEM_ID = 1;
-	DEFINE MVER_SELECTABLE_ITEM_CLASS = 1;
+	DEFINE MVER_SEL_ITEM_ID = 1;
+	DEFINE MVER_SEL_ITEM_CLASS = 1;
 	DEFINE MVER_ABUTTONITEM = 1;
 	DEFINE MVER_BBUTTONITEM = 1;
 	DEFINE MVER_PASSIVESUBSCREEN = 1;
@@ -38,6 +38,8 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_HEARTROW = 1;
 	DEFINE MVER_COUNTER = 1;
 	DEFINE MVER_MINITILE = 1;
+	DEFINE MVER_NONSEL_ITEM_ID = 1;
+	DEFINE MVER_NONSEL_ITEM_CLASS = 1;
 	//end Versioning
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false};
@@ -352,11 +354,14 @@ namespace Venrob::SubscreenEditor
 				break;
 			}
 			
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+			case MODULE_TYPE_NONSEL_ITEM_ID:
+			case MODULE_TYPE_NONSEL_ITEM_CLASS:
+			case MODULE_TYPE_SEL_ITEM_ID:
+			case MODULE_TYPE_SEL_ITEM_CLASS:
 			{
-				unless(active) break; //Not allowed on passive
-				bool class = (module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_CLASS);
+				bool nonsel = module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
+				unless(active || nonsel) break; //Not allowed on passive
+				bool class = (module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_CLASS || module_arr[M_TYPE]==MODULE_TYPE_NONSEL_ITEM_CLASS);
 				int itmid = (class?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
 				if(itmid < 0) itmid = class ? get_item_of_class(module_arr[P1], true) : 0;
 				if(itmid < 0) itmid = 0;
@@ -785,9 +790,11 @@ namespace Venrob::SubscreenEditor
 		{
 			case MODULE_TYPE_ABUTTONITEM:
 			case MODULE_TYPE_BBUTTONITEM:
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+			case MODULE_TYPE_NONSEL_ITEM_ID:
+			case MODULE_TYPE_NONSEL_ITEM_CLASS:
+			case MODULE_TYPE_SEL_ITEM_ID:
+			case MODULE_TYPE_SEL_ITEM_CLASS:
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?Hero->ItemA:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?Hero->ItemB:((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID)?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return 256-16;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -822,7 +829,7 @@ namespace Venrob::SubscreenEditor
 						return 256-(wid/2);
 				}
 				return 256-wid;
-			case MODULE_TYPE_COUNTER:
+			case MODULE_TYPE_MINITILE:
 				return 256-8;
 		}
 		return 256-16;
@@ -835,9 +842,9 @@ namespace Venrob::SubscreenEditor
 		{
 			case MODULE_TYPE_ABUTTONITEM:
 			case MODULE_TYPE_BBUTTONITEM:
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+			case MODULE_TYPE_SEL_ITEM_ID:
+			case MODULE_TYPE_SEL_ITEM_CLASS:
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return 0;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -869,9 +876,11 @@ namespace Venrob::SubscreenEditor
 		{
 			case MODULE_TYPE_ABUTTONITEM:
 			case MODULE_TYPE_BBUTTONITEM:
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+			case MODULE_TYPE_NONSEL_ITEM_ID:
+			case MODULE_TYPE_NONSEL_ITEM_CLASS:
+			case MODULE_TYPE_SEL_ITEM_ID:
+			case MODULE_TYPE_SEL_ITEM_CLASS:
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?Hero->ItemA:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?Hero->ItemB:((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID)?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return _BOTTOM-16;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -907,9 +916,9 @@ namespace Venrob::SubscreenEditor
 		{
 			case MODULE_TYPE_ABUTTONITEM:
 			case MODULE_TYPE_BBUTTONITEM:
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+			case MODULE_TYPE_SEL_ITEM_ID:
+			case MODULE_TYPE_SEL_ITEM_CLASS:
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return 0;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -977,78 +986,56 @@ namespace Venrob::SubscreenEditor
 				return true;
 			} //end
 			
-			case MODULE_TYPE_SELECTABLE_ITEM_ID: //start
+			case MODULE_TYPE_NONSEL_ITEM_ID: //start
 			{
-				if(module_arr[M_SIZE]!=P6+1)
+				if(module_arr[M_SIZE]!=P1+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) must have argument size (6) in format {ITEMID, POS, UP, DOWN, LEFT, RIGHT}; argument size %d found", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_NONSEL_ITEM_ID (%d) must have argument size (2) in format {META..., ITEMID}; argument size %d found", MODULE_TYPE_NONSEL_ITEM_ID, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
 				if(module_arr[P1] < MIN_ITEMDATA || module_arr[P1] > MAX_ITEMDATA || (module_arr[P1]%1))
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 1 (ITEMID) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, MAX_ITEMDATA, module_arr[P1]);
-					}
-					return false;
-				}
-				if(module_arr[P2] < -1 || (module_arr[P2]%1))
-				{
-					if(DEBUG)
-					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P2]);
-					}
-					return false;
-				}
-				if(module_arr[P3] < -1 || (module_arr[P3]%1))
-				{
-					if(DEBUG)
-					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P3]);
-					}
-					return false;
-				}
-				if(module_arr[P4] < -1 || (module_arr[P4]%1))
-				{
-					if(DEBUG)
-					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P4]);
-					}
-					return false;
-				}
-				if(module_arr[P5] < -1 || (module_arr[P5]%1))
-				{
-					if(DEBUG)
-					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P5]);
-					}
-					return false;
-				}
-				if(module_arr[P6] < -1 || (module_arr[P6]%1))
-				{
-					if(DEBUG)
-					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_ID (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_ID, module_arr[P6]);
+						error("MODULE_TYPE_NONSEL_ITEM_ID (%d) argument 1 (ITEMID) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_NONSEL_ITEM_ID, MAX_ITEMDATA, module_arr[P1]);
 					}
 					return false;
 				}
 				return true;
 			} //end
-			
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS: //start
+			case MODULE_TYPE_NONSEL_ITEM_CLASS: //start
 			{
-				if(module_arr[M_SIZE]!=P6+1)
+				if(module_arr[M_SIZE]!=P1+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) must have argument size (6) in format {ITEMCLASS, POS, UP, DOWN, LEFT, RIGHT}; argument size %d found", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_NONSEL_ITEM_CLASS (%d) must have argument size (2) in format {META..., ITEMID}; argument size %d found", MODULE_TYPE_NONSEL_ITEM_CLASS, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
 				if(module_arr[P1] < 0 || (module_arr[P1]%1))
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 1 (ITEMCLASS) must be a positive integer; found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P1]);
+						error("MODULE_TYPE_NONSEL_ITEM_CLASS (%d) argument 1 (ITEMCLASS) must be a positive integer; found %d", MODULE_TYPE_NONSEL_ITEM_CLASS, module_arr[P1]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			
+			case MODULE_TYPE_SEL_ITEM_ID: //start
+			{
+				if(module_arr[M_SIZE]!=P6+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_SEL_ITEM_ID (%d) must have argument size (6) in format {ITEMID, POS, UP, DOWN, LEFT, RIGHT}; argument size %d found", MODULE_TYPE_SEL_ITEM_ID, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < MIN_ITEMDATA || module_arr[P1] > MAX_ITEMDATA || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_SEL_ITEM_ID (%d) argument 1 (ITEMID) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_SEL_ITEM_ID, MAX_ITEMDATA, module_arr[P1]);
 					}
 					return false;
 				}
@@ -1056,7 +1043,7 @@ namespace Venrob::SubscreenEditor
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P2]);
+						error("MODULE_TYPE_SEL_ITEM_ID (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_ID, module_arr[P2]);
 					}
 					return false;
 				}
@@ -1064,7 +1051,7 @@ namespace Venrob::SubscreenEditor
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P3]);
+						error("MODULE_TYPE_SEL_ITEM_ID (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_ID, module_arr[P3]);
 					}
 					return false;
 				}
@@ -1072,7 +1059,7 @@ namespace Venrob::SubscreenEditor
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P4]);
+						error("MODULE_TYPE_SEL_ITEM_ID (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_ID, module_arr[P4]);
 					}
 					return false;
 				}
@@ -1080,7 +1067,7 @@ namespace Venrob::SubscreenEditor
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P5]);
+						error("MODULE_TYPE_SEL_ITEM_ID (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_ID, module_arr[P5]);
 					}
 					return false;
 				}
@@ -1088,7 +1075,66 @@ namespace Venrob::SubscreenEditor
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_SELECTABLE_ITEM_CLASS (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SELECTABLE_ITEM_CLASS, module_arr[P6]);
+						error("MODULE_TYPE_SEL_ITEM_ID (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_ID, module_arr[P6]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			
+			case MODULE_TYPE_SEL_ITEM_CLASS: //start
+			{
+				if(module_arr[M_SIZE]!=P6+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_SEL_ITEM_CLASS (%d) must have argument size (6) in format {ITEMCLASS, POS, UP, DOWN, LEFT, RIGHT}; argument size %d found", MODULE_TYPE_SEL_ITEM_CLASS, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_SEL_ITEM_CLASS (%d) argument 1 (ITEMCLASS) must be a positive integer; found %d", MODULE_TYPE_SEL_ITEM_CLASS, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < -1 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_SEL_ITEM_CLASS (%d) argument 2 (POS) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_CLASS, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < -1 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_SEL_ITEM_CLASS (%d) argument 3 (UP) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_CLASS, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < -1 || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_SEL_ITEM_CLASS (%d) argument 4 (DOWN) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_CLASS, module_arr[P4]);
+					}
+					return false;
+				}
+				if(module_arr[P5] < -1 || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_SEL_ITEM_CLASS (%d) argument 5 (LEFT) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_CLASS, module_arr[P5]);
+					}
+					return false;
+				}
+				if(module_arr[P6] < -1 || (module_arr[P6]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_SEL_ITEM_CLASS (%d) argument 6 (RIGHT) must be an integer (>= -1); found %d", MODULE_TYPE_SEL_ITEM_CLASS, module_arr[P6]);
 					}
 					return false;
 				}
@@ -1455,8 +1501,8 @@ namespace Venrob::SubscreenEditor
 		moduleType type = module_arr[M_TYPE];
 		switch(type)
 		{
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+			case MODULE_TYPE_SEL_ITEM_ID:
+			case MODULE_TYPE_SEL_ITEM_CLASS:
 			{
 				if(DEBUG) error("Selectable items cannot be placed on the passive subscreen!");
 				return false;
@@ -1717,9 +1763,8 @@ namespace Venrob::SubscreenEditor
 		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = P6+1;
 		buf_arr[M_LAYER] = 0;
-		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_ID;
-		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_SELIT_ABTN:0) | FLAG_SELIT_BBTN;
-		buf_arr[M_VER] = MVER_SELECTABLE_ITEM_ID;
+		buf_arr[M_TYPE] = MODULE_TYPE_SEL_ITEM_ID;
+		buf_arr[M_VER] = MVER_SEL_ITEM_ID;
 		
 		buf_arr[P1] = I_RUPEE1;
 		buf_arr[P2] = -1;
@@ -1734,10 +1779,8 @@ namespace Venrob::SubscreenEditor
 		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = P6+1;
 		buf_arr[M_LAYER] = 0;
-		buf_arr[M_TYPE] = MODULE_TYPE_SELECTABLE_ITEM_CLASS;
-		buf_arr[M_FLAGS1] = FLAG_SELIT_BBTN;
-		buf_arr[M_FLAGS1] = (Game->FFRules[qr_SELECTAWPN]?FLAG_SELIT_ABTN:0) | FLAG_SELIT_BBTN;
-		buf_arr[M_VER] = MVER_SELECTABLE_ITEM_CLASS;
+		buf_arr[M_TYPE] = MODULE_TYPE_SEL_ITEM_CLASS;
+		buf_arr[M_VER] = MVER_SEL_ITEM_CLASS;
 		
 		buf_arr[P1] = 0;
 		buf_arr[P2] = -1;
@@ -1745,6 +1788,28 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P4] = -1;
 		buf_arr[P5] = -1;
 		buf_arr[P6] = -1;
+	}
+	
+	void MakeNonSelectableItemID(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P1+1;
+		buf_arr[M_LAYER] = 0;
+		buf_arr[M_TYPE] = MODULE_TYPE_NONSEL_ITEM_ID;
+		buf_arr[M_VER] = MVER_NONSEL_ITEM_ID;
+		
+		buf_arr[P1] = I_RUPEE1;
+	}
+	
+	void MakeNonSelectableItemClass(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P1+1;
+		buf_arr[M_LAYER] = 0;
+		buf_arr[M_TYPE] = MODULE_TYPE_NONSEL_ITEM_CLASS;
+		buf_arr[M_VER] = MVER_NONSEL_ITEM_CLASS;
+		
+		buf_arr[P1] = 0;
 	}
 	
 	void MakeAButtonItem(untyped buf_arr)

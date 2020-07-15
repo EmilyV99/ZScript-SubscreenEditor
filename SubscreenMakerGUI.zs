@@ -529,9 +529,9 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1, swatch_color);
 				return swatch_color;
 			}//end
-			void minitile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata) //start
+			void minitile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata, bool show_t0) //start
 			{
-				tile_swatch(bit, x, y, arr, dlgdata);
+				tile_swatch(bit, x, y, arr, dlgdata, show_t0);
 				if(SubEditorData[SED_RCLICKED] && DLGCursorBox(x+1, y+1, x+16, y+16, dlgdata))
 				{
 					int cx = DLGMouseX(dlgdata) - (x+1),
@@ -541,9 +541,9 @@ namespace Venrob::SubscreenEditor
 					if(cy >= 8) crn |= 10b;
 					arr[2] = crn;
 				}
-				h_rect(bit, x + ((arr[2]&1b)?9:1), y + ((arr[2]&10b)?9:1), x + ((arr[2]&1b)?16:8), y + ((arr[2]&10b)?16:8), PAL[COL_HIGHLIGHT]);
+				if(arr[0] || show_t0) h_rect(bit, x + ((arr[2]&1b)?9:1), y + ((arr[2]&10b)?9:1), x + ((arr[2]&1b)?16:8), y + ((arr[2]&10b)?16:8), PAL[COL_HIGHLIGHT]);
 			} //end
-			void tile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata) //start
+			void tile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata, bool show_t0) //start
 			{
 				int x2 = x+17, y2 = y+17;
 				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x, y, x2, y2, dlgdata))
@@ -551,7 +551,7 @@ namespace Venrob::SubscreenEditor
 					pick_tile(arr);
 				}
 				frame_rect(bit, x, y, x2, y2, 1);
-				tile(bit, x+1, y+1, arr[0], arr[1]);
+				if(arr[0] || show_t0) tile(bit, x+1, y+1, arr[0], arr[1]);
 			}//end
 			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags) //start
 			{
@@ -1063,6 +1063,8 @@ namespace Venrob::SubscreenEditor
 						titled_inc_text_field(bit, tfx, FRAME_Y, POSBOX_WID, buf_pos, 2, false, data, 4, 0, 2, active?g_arr[NUM_ACTIVE_MODULES]-1:g_arr[NUM_PASSIVE_MODULES]-1, "Pos:");
 				}
 				//end
+				
+				DEFINE FIELD_WID = 28, FIELD_X = WIDTH - MARGIN_WIDTH - 2 - FIELD_WID;
 				switch(arr[M_TYPE]) //start
 				{
 					case MODULE_TYPE_BGCOLOR: //start
@@ -1073,13 +1075,23 @@ namespace Venrob::SubscreenEditor
 						break;
 					} //end
 					
-					case MODULE_TYPE_SELECTABLE_ITEM_ID:
-					case MODULE_TYPE_SELECTABLE_ITEM_CLASS: //start
+					case MODULE_TYPE_SEL_ITEM_ID:
+					case MODULE_TYPE_SEL_ITEM_CLASS: //start
 					{
-						bool class = arr[M_TYPE] == MODULE_TYPE_SELECTABLE_ITEM_CLASS;
+						titled_inc_text_field(bit, FIELD_X-(FIELD_WID*1), FRAME_Y+12+(10*0), FIELD_WID, argbuf2, 3, true, data, 6, 0, -1, MAX_MODULES, "Pos:");
+						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*1), FIELD_WID, argbuf3, 3, true, data, 7, 0, -1, MAX_MODULES);
+						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*3), FIELD_WID, argbuf4, 3, true, data, 8, 0, -1, MAX_MODULES);
+						inc_text_field(bit, FIELD_X-(FIELD_WID*2), FRAME_Y+12+(10*2), FIELD_WID, argbuf5, 3, true, data, 9, 0, -1, MAX_MODULES);
+						inc_text_field(bit, FIELD_X, FRAME_Y+12+(10*2), FIELD_WID, argbuf6, 3, true, data, 10, 0, -1, MAX_MODULES);
+						text(bit, FIELD_X-FIELD_WID/2, FRAME_Y+14+(10*2), TF_CENTERED, "Dirs", PAL[COL_TEXT_MAIN]);
+					} //end
+					//fallthrough
+					case MODULE_TYPE_NONSEL_ITEM_ID:
+					case MODULE_TYPE_NONSEL_ITEM_CLASS: //start
+					{
+						bool class = arr[M_TYPE] == MODULE_TYPE_SEL_ITEM_CLASS || arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
 						char32 buf[16];
 						strcpy(buf, class ? "Class:" : "Item:");
-						DEFINE FIELD_WID = 28, FIELD_X = WIDTH - MARGIN_WIDTH - 2 - FIELD_WID;
 						if(class)
 						{
 							char32 valbuf[4];
@@ -1099,12 +1111,6 @@ namespace Venrob::SubscreenEditor
 							//text(bit, FRAME_X, FRAME_Y+14, TF_NORMAL, buf, PAL[COL_TEXT_MAIN]);
 							//arr[P1] = dropdown_inc_text_combo(bit, FRAME_X + Text->StringWidth(buf, DIA_FONT)+2, FRAME_Y+12, 112, arr[P1], data, SSL_ITEM, -1, 10, lastframe, 0, FIELD_WID, 3, false, 5, 0, MAX_ITEMDATA, true);
 						}
-						titled_inc_text_field(bit, FIELD_X-(FIELD_WID*1), FRAME_Y+12+(10*0), FIELD_WID, argbuf2, 3, true, data, 6, 0, -1, MAX_MODULES, "Pos:");
-						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*1), FIELD_WID, argbuf3, 3, true, data, 7, 0, -1, MAX_MODULES);
-						inc_text_field(bit, FIELD_X-FIELD_WID, FRAME_Y+12+(10*3), FIELD_WID, argbuf4, 3, true, data, 8, 0, -1, MAX_MODULES);
-						inc_text_field(bit, FIELD_X-(FIELD_WID*2), FRAME_Y+12+(10*2), FIELD_WID, argbuf5, 3, true, data, 9, 0, -1, MAX_MODULES);
-						inc_text_field(bit, FIELD_X, FRAME_Y+12+(10*2), FIELD_WID, argbuf6, 3, true, data, 10, 0, -1, MAX_MODULES);
-						text(bit, FIELD_X-FIELD_WID/2, FRAME_Y+14+(10*2), TF_CENTERED, "Dirs", PAL[COL_TEXT_MAIN]);
 						break;
 					} //end
 					
@@ -1214,13 +1220,13 @@ namespace Venrob::SubscreenEditor
 						char32 bufm8[] = " 8x8 Tile";
 						int tilearr[2] = {arr[P7], arr[P8]};
 						text(bit, FRAME_X, FRAME_Y + 25 + (10 * 7) + 4, TF_NORMAL, bufm16, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7), tilearr, data);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7), tilearr, data, false);
 						arr[P7] = tilearr[0];
 						arr[P8] = tilearr[1];
 						tilearr[0] = arr[P9];
 						tilearr[1] = arr[P10];
 						text(bit, FRAME_X+ Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20 + 4, TF_RIGHT, bufm8, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20, tilearr, data);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 7) + 20, tilearr, data, false);
 						arr[P9] = tilearr[0];
 						arr[P10] = tilearr[1];
 						if(prev&1b)
@@ -1235,7 +1241,7 @@ namespace Venrob::SubscreenEditor
 						char32 buftl[] = "Tile:";
 						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
 						arr[P1] = tlarr[0];
 						arr[P2] = tlarr[1];
 						
@@ -1280,7 +1286,7 @@ namespace Venrob::SubscreenEditor
 						char32 buftl[] = "Tile:";
 						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
 						arr[P1] = tlarr[0];
 						arr[P2] = tlarr[1];
 						
@@ -1411,7 +1417,7 @@ namespace Venrob::SubscreenEditor
 						char32 buftl[] = "Minitile:";
 						int tlarr[3] = {arr[P1], arr[P2],arr[M_FLAGS1]&MASK_MINITL_CRN};
 						text(bit, FRAME_X+3, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
-						minitile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data);
+						minitile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
 						arr[P1] = tlarr[0];
 						arr[P2] = tlarr[1];
 						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_MINITL_CRN) | tlarr[2];
@@ -1451,8 +1457,8 @@ namespace Venrob::SubscreenEditor
 				arr[M_LAYER] = VBound(atoi(buf_lyr), 7, 0);
 				switch(arr[M_TYPE])
 				{
-					case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
-					case MODULE_TYPE_SELECTABLE_ITEM_ID:
+					case MODULE_TYPE_SEL_ITEM_CLASS:
+					case MODULE_TYPE_SEL_ITEM_ID:
 					{
 						arr[P1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
 						arr[P2] = VBound(atoi(argbuf2), MAX_MODULES, -1);
@@ -1860,14 +1866,14 @@ namespace Venrob::SubscreenEditor
 					DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
 					//Confirm / Reset
 					{
-						if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 4))
-						{
-							running = false;
-						}
-						if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 5, FLAG_DEFAULT))
+						if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*0), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 1, FLAG_DEFAULT))
 						{
 							running = false;
 							do_save_changes = true;
+						}
+						if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*1), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 2))
+						{
+							running = false;
 						}
 					}
 				}
@@ -2115,8 +2121,8 @@ namespace Venrob::SubscreenEditor
 			//end
 			untyped proc_data[1];
 			int indx;
-			int aval[] = {2,3,4,5,6,7,8,9,10,11,12};
-			int pval[] = {4,5,7,8,9,10,11,12};
+			int aval[] = {2,3,13,14,4,5,6,7,8,9,10,11,12};
+			int pval[] = {13,14,4,5,7,8,9,10,11,12,13,14};
 			int val = active ? aval : pval;
 			while(running)
 			{
@@ -2131,8 +2137,8 @@ namespace Venrob::SubscreenEditor
 				
 				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data,
 				                     active
-				                     ? {"Selectable Item (ID)", "Selectable Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
-				                     : {"A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
+				                     ? {"Sel. Item (ID)", "Sel. Item (Type)", "Item (ID)", "Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
+				                     : {"Item (ID)", "Item (Type)", "A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
 				                     , -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
@@ -2141,11 +2147,11 @@ namespace Venrob::SubscreenEditor
 					untyped module_arr[MODULE_BUF_SIZE];
 					switch(val[indx])
 					{
-						case MODULE_TYPE_SELECTABLE_ITEM_ID:
+						case MODULE_TYPE_SEL_ITEM_ID:
 						{
 							MakeSelectableItemID(module_arr); break;
 						}
-						case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+						case MODULE_TYPE_SEL_ITEM_CLASS:
 						{
 							MakeSelectableItemClass(module_arr); break;
 						}
@@ -2180,6 +2186,14 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_MINITILE:
 						{
 							MakeMinitile(module_arr); break;
+						}
+						case MODULE_TYPE_NONSEL_ITEM_ID:
+						{
+							MakeNonSelectableItemID(module_arr); break;
+						}
+						case MODULE_TYPE_NONSEL_ITEM_CLASS:
+						{
+							MakeNonSelectableItemClass(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -3345,11 +3359,11 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Background Color"); break;
 				}
-				case MODULE_TYPE_SELECTABLE_ITEM_ID:
+				case MODULE_TYPE_SEL_ITEM_ID:
 				{
 					strcat(buf, "Selectable Item (ID)"); break;
 				}
-				case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+				case MODULE_TYPE_SEL_ITEM_CLASS:
 				{
 					strcat(buf, "Selectable Item (Type)"); break;
 				}
@@ -3389,6 +3403,14 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "MiniTile"); break;
 				}
+				case MODULE_TYPE_NONSEL_ITEM_ID:
+				{
+					strcat(buf, "Item (ID)"); break;
+				}
+				case MODULE_TYPE_NONSEL_ITEM_CLASS:
+				{
+					strcat(buf, "Item (Class)"); break;
+				}
 			}
 		} //end
 		
@@ -3404,11 +3426,11 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "The background color of the subscreeen."); break;
 				}
-				case MODULE_TYPE_SELECTABLE_ITEM_ID:
+				case MODULE_TYPE_SEL_ITEM_ID:
 				{
 					strcat(buf, "A selectable object representing a specific item ID.\n\nSelectable objects have an 'Index' value. They also have 4 'Direction' values. Setting these direction values to the 'Index' of another selectable indicates where to select when a direction is pressed."); break;
 				}
-				case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+				case MODULE_TYPE_SEL_ITEM_CLASS:
 				{
 					strcat(buf, "A selectable object representing the highest item in the inventory of a specific item class.\n\nSelectable objects have an 'Index' value. They also have 4 'Direction' values. Setting these direction values to the 'Index' of another selectable indicates where to select when a direction is pressed."); break;
 				}
@@ -3449,6 +3471,14 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_MINITILE:
 				{
 					strcat(buf, "Draws a quarter of a tile."); break;
+				}
+				case MODULE_TYPE_NONSEL_ITEM_ID:
+				{
+					strcat(buf, "Draws a specific item ID."); break;
+				}
+				case MODULE_TYPE_NONSEL_ITEM_CLASS:
+				{
+					strcat(buf, "Draws the highest item in the inventory of a specific item class."); break;
 				}
 			}
 		} //end

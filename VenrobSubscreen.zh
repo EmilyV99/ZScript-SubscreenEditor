@@ -249,8 +249,8 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_SETTINGS = -1, //Internal use only; for settings
 		MODULE_TYPE_NULL, //NULL
 		MODULE_TYPE_BGCOLOR, //FORMAT: {META..., COLOR} - COLOR is an integer 0 to 255, representing a color from ZC's palette to use.
-		MODULE_TYPE_SELECTABLE_ITEM_ID, //FORMAT: {META..., ITEMID, POS, UP, DOWN, LEFT, RIGHT}
-		MODULE_TYPE_SELECTABLE_ITEM_CLASS, //FORMAT: {META..., ITEMCLASS, POS, UP, DOWN, LEFT, RIGHT}
+		MODULE_TYPE_SEL_ITEM_ID, //FORMAT: {META..., ITEMID, POS, UP, DOWN, LEFT, RIGHT}
+		MODULE_TYPE_SEL_ITEM_CLASS, //FORMAT: {META..., ITEMCLASS, POS, UP, DOWN, LEFT, RIGHT}
 		MODULE_TYPE_ABUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_BBUTTONITEM, //FORMAT: {META...}
 		MODULE_TYPE_PASSIVESUBSCREEN, //FORMAT: {META...}
@@ -260,6 +260,8 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_HEARTROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}
 		MODULE_TYPE_COUNTER, //FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, MINDIG, TXTCOL, BGCOL, SHADCOL}
 		MODULE_TYPE_MINITILE, //FORMAT: {META..., TILE, CSET}
+		MODULE_TYPE_NONSEL_ITEM_ID, //FORMAT: {META..., ITEMID}
+		MODULE_TYPE_NONSEL_ITEM_CLASS, //FORMAT: {META..., ITEMCLASS}
 		MODULE_TYPE_MAX
 	};
 	
@@ -417,11 +419,14 @@ namespace Venrob::Subscreen
 				}
 				break;
 			} //end
-			case MODULE_TYPE_SELECTABLE_ITEM_ID:
-			case MODULE_TYPE_SELECTABLE_ITEM_CLASS: //start
+			case MODULE_TYPE_NONSEL_ITEM_ID:
+			case MODULE_TYPE_NONSEL_ITEM_CLASS:
+			case MODULE_TYPE_SEL_ITEM_ID:
+			case MODULE_TYPE_SEL_ITEM_CLASS: //start
 			{
-				unless(active) break; //Not allowed on passive
-				int itmid = ((module_arr[M_TYPE]==MODULE_TYPE_SELECTABLE_ITEM_CLASS)?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
+				bool nonsel = module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
+				unless(active || nonsel) break; //Selectable not allowed on passive
+				int itmid = ((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_CLASS || module_arr[M_TYPE]==MODULE_TYPE_NONSEL_ITEM_CLASS)?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
 				if(itmid < 0 || !hasItem(itmid)) break;
 				
 				itemdata id = Game->LoadItemData(itmid);
@@ -432,16 +437,17 @@ namespace Venrob::Subscreen
 				if(temp >= 0)
 					frm = Floor(temp / id->ASpeed);
 				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
+				if(nonsel) break;
 				if(g_arr[ACTIVE_SELECTED_INDEX] == module_arr[P2])
 				{
-					if(Hero->ItemA != itmid && PressCheck(CB_A) && (module_arr[M_FLAGS1] & FLAG_SELIT_ABTN))
+					if(Hero->ItemA != itmid && PressCheck(CB_A) && Game->FFRules[qr_SELECTAWPN])
 					{
 						//Hero->SetItemSlot(itmid, 1, 1);
 						Hero->ItemA = itmid;
 						killBtn(CB_A, true);
 						if(Hero->ItemB == itmid) Hero->SetItemSlot(0, 2, 2);
 					}
-					else if(Hero->ItemB != itmid && PressCheck(CB_B) && (module_arr[M_FLAGS1] & FLAG_SELIT_BBTN))
+					else if(Hero->ItemB != itmid && PressCheck(CB_B))
 					{
 						//Hero->SetItemSlot(itmid, 2, 1);
 						Hero->ItemB = itmid;
@@ -625,14 +631,15 @@ namespace Venrob::Subscreen
 			int offs = Game->DMapOffset[Game->GetCurDMap()];
 			bool largeMarkers = module_arr[M_FLAGS1] & FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 			
-			int lim = Max(offs - 8, 0);
+			int lim = 8 - Max(offs - 8, 0);
+			int low_lim = Min(offs, 0);
 			
 			for(int q = 0; q < 128; ++q)
 			{			
-				if(q % 0x10 >= 8 - lim)
-				{
+				if(q % 0x10 >= lim)
 					continue;
-				}
+				if(q % 0x10 < low_lim)
+					continue;
 				
 				int c = 0;
 				int sm_c = 0;
@@ -664,7 +671,7 @@ namespace Venrob::Subscreen
 					{
 						c = module_arr[P2];
 					}
-					else if(ow != DMAP_BSOVERWORLD && hasMap && dmapinfo::VisibleOnDungeonMap(q))
+					else if(ow != DMAP_BSOVERWORLD && hasMap && dmapinfo::VisibleOnDungeonMap(q, true))
 					{
 						c = module_arr[P3];
 					}
@@ -1137,8 +1144,8 @@ namespace Venrob::Subscreen
 		{
 			switch(type)
 			{
-				case MODULE_TYPE_SELECTABLE_ITEM_ID:
-				case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+				case MODULE_TYPE_SEL_ITEM_ID:
+				case MODULE_TYPE_SEL_ITEM_CLASS:
 				{
 					return true;
 				}
@@ -1152,12 +1159,12 @@ namespace Venrob::Subscreen
 		{
 			switch(module_arr[M_TYPE])
 			{
-				case MODULE_TYPE_SELECTABLE_ITEM_ID:
+				case MODULE_TYPE_SEL_ITEM_ID:
 				{
 					int itmid = module_arr[P1];
 					return (itmid >= 0 && hasItem(itmid));
 				}
-				case MODULE_TYPE_SELECTABLE_ITEM_CLASS:
+				case MODULE_TYPE_SEL_ITEM_CLASS:
 				{
 					int itmid = get_item_of_class(module_arr[P1]);
 					return (itmid >= 0 && hasItem(itmid));
