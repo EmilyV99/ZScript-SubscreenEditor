@@ -1811,7 +1811,7 @@ namespace Venrob::SubscreenEditor
 		}
 		//end
 		//start System
-		void sys_dlg()
+		void sys_dlg() //start
 		{
 			gen_startup();
 			//start setup
@@ -1875,6 +1875,10 @@ namespace Venrob::SubscreenEditor
 						{
 							running = false;
 						}
+						if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*2), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cursor", data, proc_data, 3))
+						{
+							edit_syscursor_dlg();
+						}
 					}
 				}
 				
@@ -1899,7 +1903,110 @@ namespace Venrob::SubscreenEditor
 			
 			bit->Free();
 			gen_final();
-		}
+		} //end
+		void edit_syscursor_dlg() //start
+		{
+			gen_startup();
+			//start setup
+			DEFINE WIDTH = 128
+			     , HEIGHT = 80
+				 , BAR_HEIGHT = 11
+				 , MARGIN_WIDTH = 1
+				 , FRAME_X = MARGIN_WIDTH+2
+				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
+				 ;
+			bitmap bit = create(WIDTH, HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			bitmap lastframe = create(WIDTH, HEIGHT);
+			lastframe->ClearToColor(0, PAL[COL_NULL]);
+			
+			char32 title[128] = "System: Cursor Settings";
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			//
+			null_screen();
+			draw_dlg(bit, data);
+			KillButtons();
+			Waitframe();
+			//
+			center_dlg(bit, data);
+			
+			bool running = true;
+			bool do_save_changes = false;
+			untyped new_sys_settings[SSET_MAX];
+			memcpy(new_sys_settings, sys_settings, SSET_MAX);
+			//end
+			untyped proc_data[6];
+			DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+			DEFINE ABOVE_BOTTOM_Y = HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT-4;
+			while(running)
+			{
+				lastframe->Clear(0);
+				fullblit(0, lastframe, bit);
+				bit->ClearToColor(0, PAL[COL_NULL]);
+				//Deco
+				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
+				//Func
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data)==PROC_CANCEL || CancelButtonP())
+					running = false;
+				
+				int tlarr[2] = {new_sys_settings[SSET_CURSORTILE], new_sys_settings[SSET_CURSORCSET]};
+				tile_swatch(bit, FRAME_X, FRAME_Y, tlarr, data, false);
+				new_sys_settings[SSET_CURSORTILE] = tlarr[0];
+				new_sys_settings[SSET_CURSORCSET] = tlarr[1];
+				
+				new_sys_settings[SSET_CURSOR_VER] = dropdown_proc(bit, FRAME_X + 18, FRAME_Y, 64, new_sys_settings[SSET_CURSOR_VER], data, {"Basic", "Stick"}, -1, 10, lastframe, 0);
+				
+				frame_rect(bit, (WIDTH/2)-8, ABOVE_BOTTOM_Y-17, (WIDTH/2)+9, ABOVE_BOTTOM_Y, 1);
+				if(new_sys_settings[SSET_CURSORTILE] > 0)
+				{
+					bit->FastTile(7, (WIDTH/2)-7, ABOVE_BOTTOM_Y-16, new_sys_settings[SSET_CURSORTILE], new_sys_settings[SSET_CURSORCSET], OP_OPAQUE);
+				}
+				else
+				{
+					DrawCursor(bit, (WIDTH/2)-7, ABOVE_BOTTOM_Y-16, new_sys_settings[SSET_CURSOR_VER]);
+				}
+				
+				//Buttons
+				{
+					//Confirm / Reset
+					{
+						if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*0), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 1, FLAG_DEFAULT))
+						{
+							running = false;
+							do_save_changes = true;
+						}
+						if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*1), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 2))
+						{
+							running = false;
+						}
+					}
+				}
+				
+				//
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
+			{
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			if(do_save_changes)
+			{
+				memcpy(sys_settings, new_sys_settings, SSET_MAX);
+			}
+			
+			bit->Free();
+			gen_final();
+		} //end
+		
 		//end
 		//start Options
 		void opt_dlg(bool active)

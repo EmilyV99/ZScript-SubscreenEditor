@@ -83,6 +83,7 @@ namespace Venrob::SubscreenEditor
 	enum sysSetting
 	{
 		SSET_CURSORTILE, //if >0, tile to draw for cursor
+		SSET_CURSORCSET,
 		SSET_CURSOR_VER, //if SED_CURSORTILE <= 0, then which packaged cursor style to draw
 		SSET_DELWARN,
 		SSET_MAX
@@ -715,14 +716,7 @@ namespace Venrob::SubscreenEditor
 			SubEditorData[SED_SELECTED] = 0;
 			SubEditorData[SED_TRY_SELECT] = 0;
 		}
-		if(sys_settings[SSET_CURSORTILE] > 0)
-		{
-			Screen->FastTile(7, SubEditorData[SED_MOUSE_X], SubEditorData[SED_MOUSE_Y], sys_settings[SSET_CURSORTILE], 0, OP_OPAQUE);
-		}
-		else
-		{
-			DrawCursor(sys_settings[SSET_CURSOR_VER], SubEditorData[SED_MOUSE_X], SubEditorData[SED_MOUSE_Y]);
-		}
+		DrawCursor();
 		
 		if(Input->Key[KEY_G])
 		{
@@ -748,11 +742,37 @@ namespace Venrob::SubscreenEditor
 			}
 		}
 	}
+	void DrawCursor()
+	{
+		DrawCursor(SubEditorData[SED_MOUSE_X], SubEditorData[SED_MOUSE_Y]);
+	}
+	void DrawCursor(bitmap b, int x, int y)
+	{
+		if(sys_settings[SSET_CURSORTILE] > 0)
+		{
+			b->FastTile(7, x, y, sys_settings[SSET_CURSORTILE], sys_settings[SSET_CURSORCSET], OP_OPAQUE);
+		}
+		else
+		{
+			DrawCursor(b, x, y, sys_settings[SSET_CURSOR_VER]);
+		}
+	}
+	void DrawCursor(int x, int y)
+	{
+		if(sys_settings[SSET_CURSORTILE] > 0)
+		{
+			Screen->FastTile(7, x, y, sys_settings[SSET_CURSORTILE], sys_settings[SSET_CURSORCSET], OP_OPAQUE);
+		}
+		else
+		{
+			DrawCursor(x, y, sys_settings[SSET_CURSOR_VER]);
+		}
+	}
 	enum CursorType
 	{
 		CT_BASIC, CT_STICK
 	};
-	void DrawCursor(CursorType type, int x, int y)
+	void DrawCursor(int x, int y, CursorType type)
 	{
 		switch(type)
 		{
@@ -765,6 +785,22 @@ namespace Venrob::SubscreenEditor
 			default:
 				Screen->Triangle(7, x, y, x+4, y, x, y+4, 0, 0, PAL[COL_CURSOR], 0, 0, 0);
 				Screen->Line(7, x, y, x+5, y+5, PAL[COL_CURSOR], 1, 0, 0, 0, OP_OPAQUE);
+				break;
+		}
+	}
+	void DrawCursor(bitmap b, int x, int y, CursorType type)
+	{
+		switch(type)
+		{
+			case CT_STICK:
+				b->Line(7, x, y, x+3, y, PAL[COL_CURSOR], 1, 0, 0, 0, OP_OPAQUE);
+				b->Line(7, x, y, x, y+3, PAL[COL_CURSOR], 1, 0, 0, 0, OP_OPAQUE);
+				b->Line(7, x, y, x+4, y+4, PAL[COL_CURSOR], 1, 0, 0, 0, OP_OPAQUE);
+				break;
+			case CT_BASIC:
+			default:
+				b->Triangle(7, x, y, x+4, y, x, y+4, 0, 0, PAL[COL_CURSOR], 0, 0, 0, NULL);
+				b->Line(7, x, y, x+5, y+5, PAL[COL_CURSOR], 1, 0, 0, 0, OP_OPAQUE);
 				break;
 		}
 	}
