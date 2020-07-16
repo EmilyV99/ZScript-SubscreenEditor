@@ -3,6 +3,7 @@
 #option HEADER_GUARD on
 #include "std.zh"
 #include "std_zh/dmapgrid.zh"
+#include "Time.zh"
 
 /*
 DEV NOTES
@@ -149,7 +150,7 @@ namespace Venrob::Subscreen
 	{
 		MASK_CNTR_ALIGN = FLAG1 | FLAG2,
 		FLAG_CNTR_SPECIAL = FLAG3,
-		FLAG_CNTR_SHADOWED = FLAG4,
+		//FLAG4 no longer used
 		FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO = FLAG5
 	};
 	enum //Special Counter Types
@@ -163,6 +164,10 @@ namespace Venrob::Subscreen
 	enum //Minitile
 	{
 		MASK_MINITL_CRN = FLAG1 | FLAG2
+	};
+	enum //ItemName
+	{
+		MASK_ITEMNM_ALIGN = FLAG1 | FLAG2
 	};
 	//start Clearing/Init
 	void init()
@@ -258,10 +263,12 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_TILEBLOCK, //FORMAT: {META..., TILE, CSET, WID, HEI}
 		MODULE_TYPE_HEART, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM}
 		MODULE_TYPE_HEARTROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}
-		MODULE_TYPE_COUNTER, //FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, MINDIG, TXTCOL, BGCOL, SHADCOL}
+		MODULE_TYPE_COUNTER, //FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, MINDIG, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}
 		MODULE_TYPE_MINITILE, //FORMAT: {META..., TILE, CSET}
 		MODULE_TYPE_NONSEL_ITEM_ID, //FORMAT: {META..., ITEMID}
 		MODULE_TYPE_NONSEL_ITEM_CLASS, //FORMAT: {META..., ITEMCLASS}
+		MODULE_TYPE_CLOCK, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}
+		MODULE_TYPE_ITEMNAME, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE, MAXWID, VSPACE}
 		MODULE_TYPE_MAX
 	};
 	
@@ -298,11 +305,10 @@ namespace Venrob::Subscreen
 					g_arr[ACTIVE_SELECTED_INDEX] = -1;
 					for(int i = 1; i < g_arr[NUM_ACTIVE_MODULES]; ++i)
 					{
-						untyped buf[MODULE_BUF_SIZE];
-						memcpy(buf, 0, activeData, activeModules[i], activeData[activeModules[i]]);
-						if(canSelect(buf))
+						int indx = activeModules[i];
+						if(canSelect(activeData, indx))
 						{
-							g_arr[ACTIVE_SELECTED_INDEX] = buf[P2];
+							g_arr[ACTIVE_SELECTED_INDEX] = activeData[indx+P2];
 							break;
 						}
 					}
@@ -552,6 +558,64 @@ namespace Venrob::Subscreen
 			case MODULE_TYPE_MINITILE: //start
 			{
 				minitile(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], module_arr[M_FLAGS1]&MASK_MINITL_CRN);
+				break;
+			} //end
+			case MODULE_TYPE_CLOCK: //start
+			{
+				char32 buf[32];
+				sprintf(buf, "%02d:%02d:%02d",time::Hours(),time::Minutes(),time::Seconds());
+				int bg = module_arr[P3];
+				int shd = module_arr[P4];
+				int shd_t = module_arr[P5];
+				unless(bg) bg = -1;
+				unless(shd) shd_t = SHD_NORMAL;
+				bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, TF_NORMAL, buf, OP_OPAQUE, shd_t, shd);
+				break;
+			} //end
+			case MODULE_TYPE_ITEMNAME: //start
+			{
+				unless(active) break; //Not allowed on passive
+				
+				itemdata itm;
+				if(g_arr[ACTIVE_SELECTED_INDEX] == -1)
+					break;
+				else //start find selected module
+				{
+					for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES]; ++q)
+					{
+						int indx = activeModules[q];
+						if(isSelectable(activeData[indx+M_TYPE]))
+						{
+							if(activeData[indx+P2] == g_arr[ACTIVE_SELECTED_INDEX])
+							{
+								switch(activeData[indx+M_TYPE])
+								{
+									case MODULE_TYPE_SEL_ITEM_ID:
+										itm = Game->LoadItemData(activeData[indx+P1]);
+										break;
+									case MODULE_TYPE_SEL_ITEM_CLASS:
+										int id = get_item_of_class(activeData[indx+P1]);
+										if(id > -1) itm = Game->LoadItemData(id);
+										break;
+								}
+								break;
+							}
+						}
+					}
+				} //end
+				unless(itm) break; //No item loaded
+				char32 buf[64];
+				itm->GetName(buf);
+				int bg = module_arr[P3];
+				int shd = module_arr[P4];
+				unless(bg) bg = -1;
+				int shd_t = module_arr[P5];
+				unless(shd) shd_t = SHD_NORMAL;
+				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				if(module_arr[P6])
+					DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[P7], module_arr[P6]);
+				else
+					bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd);
 				break;
 			} //end
 			//case :
@@ -838,17 +902,15 @@ namespace Venrob::Subscreen
 		}
 		//buf now contains the proper counter value
 		int bg = arr[P7];
-		int wid = Text->StringWidth(buf, arr[P1]);
-		if(arr[M_FLAGS1] & FLAG_CNTR_SHADOWED && arr[P8]) //Draw shadow
-		{
-			if(bg) bit->Rectangle(layer, x, y, x+wid, y+Text->FontHeight(arr[P1])-1, bg, 1, 0, 0, 0, true, OP_OPAQUE);
-			bg = -1;
-			bit->DrawString(layer, x+1, y+1, arr[P1], arr[P8], -1, arr[M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE);
-		}
+		int shd = arr[P8];
+		int shd_t = arr[P9];
 		unless(bg) bg = -1;
+		unless(shd) shd_t = SHD_NORMAL;
+		int wid = Text->StringWidth(buf, arr[P1]) + (shd_t?1:0);
+		
 		if(arr[P6])
-			bit->DrawString(layer, x, y, arr[P1], arr[P6], bg, arr[M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE);
-		return wid + ((arr[M_FLAGS1] & FLAG_CNTR_SHADOWED)?1:0);
+			bit->DrawString(layer, x, y, arr[P1], arr[P6], bg, arr[M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE, arr[P9], shd);
+		return wid + ((arr[P9])?1:0);
 	}
 	//end Counter
 	//end Handler Functions
@@ -999,11 +1061,29 @@ namespace Venrob::Subscreen
 	}
 	int incModX(int mod_indx, bool active, int x_off)
 	{
-		return (active ? (activeData[activeModules[mod_indx]+M_X]+=x_off) : (passiveData[passiveModules[mod_indx]+M_X]+=x_off));
+		if(active)
+		{
+			activeData[activeModules[mod_indx]+M_X]+=x_off;
+			return activeData[activeModules[mod_indx]+M_X];
+		}
+		else
+		{
+			passiveData[passiveModules[mod_indx]+M_X]+=x_off;
+			return passiveData[passiveModules[mod_indx]+M_X];
+		}
 	}
 	int incModY(int mod_indx, bool active, int y_off)
 	{
-		return (active ? (activeData[activeModules[mod_indx]+M_Y]+=y_off) : (passiveData[passiveModules[mod_indx]+M_Y]+=y_off));
+		if(active)
+		{
+			activeData[activeModules[mod_indx]+M_Y]+=y_off;
+			return activeData[activeModules[mod_indx]+M_Y];
+		}
+		else
+		{
+			passiveData[passiveModules[mod_indx]+M_Y]+=y_off;
+			return passiveData[passiveModules[mod_indx]+M_Y];
+		}
 	}
 	//end
 	
@@ -1155,7 +1235,7 @@ namespace Venrob::Subscreen
 			}
 		}
 		
-		bool canSelect(untyped module_arr)
+		bool canSelect(untyped module_arr) //start
 		{
 			switch(module_arr[M_TYPE])
 			{
@@ -1173,7 +1253,26 @@ namespace Venrob::Subscreen
 				default:
 					return isSelectable(module_arr[M_TYPE]);
 			}
-		}
+		} //end
+		bool canSelect(untyped module_arr, int offs) //start
+		{
+			switch(module_arr[offs+M_TYPE])
+			{
+				case MODULE_TYPE_SEL_ITEM_ID:
+				{
+					int itmid = module_arr[offs+P1];
+					return (itmid >= 0 && hasItem(itmid));
+				}
+				case MODULE_TYPE_SEL_ITEM_CLASS:
+				{
+					int itmid = get_item_of_class(module_arr[offs+P1]);
+					return (itmid >= 0 && hasItem(itmid));
+				}
+				
+				default:
+					return isSelectable(module_arr[offs+M_TYPE]);
+			}
+		} //end
 		
 	} //end Internal
 }

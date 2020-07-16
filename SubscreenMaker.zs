@@ -36,10 +36,12 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_TILEBLOCK = 1;
 	DEFINE MVER_HEART = 1;
 	DEFINE MVER_HEARTROW = 1;
-	DEFINE MVER_COUNTER = 1;
+	DEFINE MVER_COUNTER = 2;
 	DEFINE MVER_MINITILE = 1;
 	DEFINE MVER_NONSEL_ITEM_ID = 1;
 	DEFINE MVER_NONSEL_ITEM_CLASS = 1;
+	DEFINE MVER_CLOCK = 1;
+	DEFINE MVER_ITEMNAME = 1;
 	//end Versioning
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false};
@@ -304,7 +306,7 @@ namespace Venrob::SubscreenEditor
 			saveModule(buf, q, false);
 			runFauxModule(q, buf, false, interactive);
 		}
-		handleDragging(false);
+		if(interactive) handleDragging(false);
 		runPreparedSelector(false);
 	}
 
@@ -314,7 +316,7 @@ namespace Venrob::SubscreenEditor
 		bitmap bit = getSubscreenBitmap(active);
 		switch(module_arr[M_TYPE])
 		{
-			case MODULE_TYPE_BGCOLOR:
+			case MODULE_TYPE_BGCOLOR: //start
 			{
 				//Cannot drag
 				if(active)
@@ -330,10 +332,10 @@ namespace Venrob::SubscreenEditor
 						editorCursor(module_arr[M_LAYER], 0, 0, 254, 55, mod_indx, active, true);
 				}
 				break;
-			}
+			} //end
 			
 			case MODULE_TYPE_ABUTTONITEM:
-			case MODULE_TYPE_BBUTTONITEM:
+			case MODULE_TYPE_BBUTTONITEM: //start
 			{
 				int itmid = module_arr[M_TYPE] == MODULE_TYPE_ABUTTONITEM ? Hero->ItemA : Hero->ItemB;
 				itemdata id = Game->LoadItemData(itmid);
@@ -353,12 +355,12 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], tx, ty, twid, thei, mod_indx, active);
 				}
 				break;
-			}
+			} //end
 			
 			case MODULE_TYPE_NONSEL_ITEM_ID:
 			case MODULE_TYPE_NONSEL_ITEM_CLASS:
 			case MODULE_TYPE_SEL_ITEM_ID:
-			case MODULE_TYPE_SEL_ITEM_CLASS:
+			case MODULE_TYPE_SEL_ITEM_CLASS: //start
 			{
 				bool nonsel = module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
 				unless(active || nonsel) break; //Not allowed on passive
@@ -384,9 +386,9 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], tx, ty, twid, thei, mod_indx, active);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_PASSIVESUBSCREEN:
+			case MODULE_TYPE_PASSIVESUBSCREEN: //start
 			{
 				bit->BlitTo(module_arr[M_LAYER], getSubscreenBitmap(false), 0, 0, 256, 56, module_arr[M_X], module_arr[M_Y], 256, 56, 0, 0, 0, 0, 0, true);
 				if(interactive)
@@ -394,9 +396,9 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 255, 55, mod_indx, active, true);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_MINIMAP:
+			case MODULE_TYPE_MINIMAP: //start
 			{
 				minimap(module_arr, bit, active);
 				if(interactive)
@@ -404,9 +406,9 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 5*16-1, 3*16-1, mod_indx, active, true);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_TILEBLOCK:
+			case MODULE_TYPE_TILEBLOCK: //start
 			{
 				bit->DrawTile(0,  module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P3], module_arr[P4], module_arr[P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
 				if(interactive)
@@ -414,9 +416,9 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3]*16-1, module_arr[P4]*16-1, mod_indx, active, true);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_HEART:
+			case MODULE_TYPE_HEART: //start
 			{
 				heart(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
 				if(interactive)
@@ -424,9 +426,9 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_HEARTROW:
+			case MODULE_TYPE_HEARTROW: //start
 			{
 				if(module_arr[M_FLAGS1] & FLAG_HROW_RTOL)
 					invheartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
@@ -437,9 +439,9 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5], 7, mod_indx, active, true);
 				}
 				break;
-			}
+			} //end
 			
-			case MODULE_TYPE_COUNTER:
+			case MODULE_TYPE_COUNTER: //start
 			{
 				int wid = counter(module_arr, bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y]);
 				if(wid < 8) //Ensure there's a hitbox to grab for repositioning
@@ -458,11 +460,11 @@ namespace Venrob::SubscreenEditor
 				} //end
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X]+xoff, module_arr[M_Y], wid-1, Text->FontHeight(module_arr[P1])-1, mod_indx, active, true);
+					editorCursor(module_arr[M_LAYER], module_arr[M_X]+xoff-1, module_arr[M_Y]-1, wid, Text->FontHeight(module_arr[P1]), mod_indx, active, true);
 				}
 				break;
-			}
-			case MODULE_TYPE_MINITILE:
+			} //end
+			case MODULE_TYPE_MINITILE: //start
 			{
 				minitile(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], module_arr[M_FLAGS1]&MASK_MINITL_CRN);
 				if(interactive)
@@ -470,7 +472,97 @@ namespace Venrob::SubscreenEditor
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
 				}
 				break;
-			}
+			} //end
+			case MODULE_TYPE_CLOCK: //start
+			{
+				char32 buf[32];
+				sprintf(buf, "%02d:%02d:%02d",time::Hours(),time::Minutes(),time::Seconds());
+				int bg = module_arr[P3];
+				int shd = module_arr[P4];
+				unless(bg) bg = -1;
+				int shd_t = module_arr[P5];
+				unless(shd) shd_t = SHD_NORMAL;
+				bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, TF_NORMAL, buf, OP_OPAQUE, shd_t, shd);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X]-1, module_arr[M_Y]-1, 1+Text->StringWidth(buf, module_arr[P1]) - (shd_t ? 0 : 1), 1+Text->FontHeight(module_arr[P1])-1, mod_indx, active, true);
+				}
+				break;
+			} //end
+			case MODULE_TYPE_ITEMNAME: //start
+			{
+				char32 buf[64];
+				itemdata itm;
+				if(SubEditorData[SED_SELECTED] > 0) //start Figure out temp item
+				{
+					untyped modbuf[MODULE_BUF_SIZE];
+					saveModule(modbuf, SubEditorData[SED_SELECTED], active);
+					switch(modbuf[M_TYPE])
+					{
+						case MODULE_TYPE_SEL_ITEM_ID:
+						case MODULE_TYPE_NONSEL_ITEM_ID:
+						{
+							itm = Game->LoadItemData(modbuf[P1]);
+							break;
+						}
+						case MODULE_TYPE_SEL_ITEM_CLASS:
+						case MODULE_TYPE_NONSEL_ITEM_CLASS:
+						{
+							int id = get_item_of_class(modbuf[P1]);
+							if(id < 0) id = get_item_of_class(module_arr[P1], true);
+							if(id >= 0)
+							{
+								itm = Game->LoadItemData(id);
+								break;
+							}
+							//fallthrough
+						}
+						default:
+							if(Hero->ItemA)
+								itm = Game->LoadItemData(Hero->ItemA);
+							else if(Hero->ItemB)
+								itm = Game->LoadItemData(Hero->ItemB);
+							else itm = Game->LoadItemData(0);
+							break;
+					}
+				} //end
+				itm->GetName(buf);
+				int bg = module_arr[P3];
+				int shd = module_arr[P4];
+				unless(bg) bg = -1;
+				int shd_t = module_arr[P5];
+				unless(shd) shd_t = SHD_NORMAL;
+				int edwid, edhei;
+				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				if(module_arr[P6])
+				{
+					DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[P7], module_arr[P6]);
+					edwid = module_arr[P6];
+					edhei = DrawStringsCount(module_arr[P1], buf, module_arr[P6]) * (Text->FontHeight(module_arr[P1])+module_arr[P7]) - module_arr[P7];
+				}
+				else
+				{
+					bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd);
+					edwid = Text->StringWidth(buf, module_arr[P1]);
+					edhei = Text->FontHeight(module_arr[P1]);
+				}
+				int xoff;
+				switch(tf) //start Calculate offsets based on alignment
+				{
+					case TF_NORMAL: break;
+					case TF_CENTERED:
+						xoff = -edwid/2;
+						break;
+					case TF_RIGHT:
+						xoff = -edwid;
+						break;
+				} //end
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X]-1+xoff, module_arr[M_Y]-1, edwid + (shd_t ? 1 : 0), edhei, mod_indx, active, true);
+				}
+				break;
+			} //end
 			
 			//case :
 		}
@@ -867,6 +959,12 @@ namespace Venrob::SubscreenEditor
 				return 256-wid;
 			case MODULE_TYPE_MINITILE:
 				return 256-8;
+			case MODULE_TYPE_CLOCK:
+				char32 buf[32];
+				sprintf(buf, "%02d:%02d:%02d",time::Hours(),time::Minutes(),time::Seconds());
+				return 256-Text->StringWidth(buf,module_arr[P1]);
+			case MODULE_TYPE_ITEMNAME:
+				return 255;
 		}
 		return 256-16;
 	}
@@ -937,10 +1035,12 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_HEARTROW:
 			case MODULE_TYPE_HEART:
 				return _BOTTOM - 8;
-			case MODULE_TYPE_COUNTER:
-				return _BOTTOM - Text->FontHeight(module_arr[P1]);
 			case MODULE_TYPE_MINITILE:
 				return _BOTTOM - 8;
+			case MODULE_TYPE_COUNTER:
+			case MODULE_TYPE_CLOCK:
+			case MODULE_TYPE_ITEMNAME:
+				return _BOTTOM - Text->FontHeight(module_arr[P1]);
 		}
 		return _BOTTOM-16;
 	}
@@ -1407,10 +1507,24 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_COUNTER: //start
 			{
-				if(module_arr[M_SIZE]!=P8+1)
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_SIZE] = P9+1;
+						if(module_arr[M_FLAGS1] & FLAG4)
+						{
+							module_arr[P9] = SHD_SHADOWED;
+							module_arr[M_FLAGS1] ~= FLAG4;
+						}
+						//fallthrough
+					} //end
+				}
+				if(module_arr[M_SIZE]!=P9+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_COUNTER (%d) must have argument size (8) in format: {META..., FONT, CNTR, INFITEM, INFCHAR, MINDIG, TXTCOL, BGCOL, SHADCOL}; argument size %d found", MODULE_TYPE_COUNTER, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_COUNTER (%d) must have argument size (9) in format: {META..., FONT, CNTR, INFITEM, INFCHAR, MINDIG, TXTCOL, BGCOL, SHADCOL, SHADTYPE}; argument size %d found", MODULE_TYPE_COUNTER, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
 				if(module_arr[P1] < 0 || module_arr[P1] % 1)
@@ -1491,6 +1605,14 @@ namespace Venrob::SubscreenEditor
 					}
 					return false;
 				}
+				if(module_arr[P9] < 0 || module_arr[P9] > 0xFF || (module_arr[P9]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_COUNTER (%d) argument 9 (SHADOWTYPE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_COUNTER, SHD_MAX, module_arr[P8]);
+					}
+					return false;
+				}
 				return true;
 			} //end
 			
@@ -1520,6 +1642,122 @@ namespace Venrob::SubscreenEditor
 				}
 				return true;
 			} //end
+			case MODULE_TYPE_CLOCK: //start
+			{
+				if(module_arr[M_SIZE]!=P5+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_CLOCK (%d) must have argument size (5) in format: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}; argument size %d found", MODULE_TYPE_CLOCK, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] % 1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CLOCK (%d) argument 1 (FONT) must be a positive integer; found %d", MODULE_TYPE_CLOCK, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 0xFF || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CLOCK (%d) argument 2 (TXTCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_CLOCK, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || module_arr[P3] > 0xFF || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CLOCK (%d) argument 3 (BGCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_CLOCK, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] > 0xFF || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CLOCK (%d) argument 4 (SHADCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_CLOCK, module_arr[P4]);
+					}
+					return false;
+				}
+				if(module_arr[P5] < 0 || module_arr[P5] > 0xFF || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CLOCK (%d) argument 5 (SHADOWTYPE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_CLOCK, SHD_MAX, module_arr[P8]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_ITEMNAME: //start
+			{
+				if(module_arr[M_SIZE]!=P7+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_ITEMNAME (%d) must have argument size (7) in format: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE, MAXWID, VSPACE}; argument size %d found", MODULE_TYPE_ITEMNAME, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] % 1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_ITEMNAME (%d) argument 1 (FONT) must be a positive integer; found %d", MODULE_TYPE_ITEMNAME, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 0xFF || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_ITEMNAME (%d) argument 2 (TXTCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_ITEMNAME, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || module_arr[P3] > 0xFF || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_ITEMNAME (%d) argument 3 (BGCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_ITEMNAME, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] > 0xFF || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_ITEMNAME (%d) argument 4 (SHADCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_ITEMNAME, module_arr[P4]);
+					}
+					return false;
+				}
+				if(module_arr[P5] < 0 || module_arr[P5] > 0xFF || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_ITEMNAME (%d) argument 5 (SHADOWTYPE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_ITEMNAME, SHD_MAX, module_arr[P5]);
+					}
+					return false;
+				}
+				if(module_arr[P6] < 0 || module_arr[P6] > 256 || (module_arr[P6]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_ITEMNAME (%d) argument 6 (WIDTH) must be an integer between (0) and (256), inclusive; found %d", MODULE_TYPE_ITEMNAME, module_arr[P6]);
+					}
+					return false;
+				}
+				if(module_arr[P7] < 0 || module_arr[P7] > 16 || (module_arr[P7]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_ITEMNAME (%d) argument 7 (VSPACE) must be an integer between (0) and (16), inclusive; found %d", MODULE_TYPE_ITEMNAME, module_arr[P7]);
+					}
+					return false;
+				}
+				return true;
+			} //end
 			default:
 			{
 				if(DEBUG)
@@ -1541,6 +1779,11 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_SEL_ITEM_CLASS:
 			{
 				if(DEBUG) error("Selectable items cannot be placed on the passive subscreen!");
+				return false;
+			}
+			case MODULE_TYPE_ITEMNAME:
+			{
+				if(DEBUG) error("Selected Item Name cannot be placed on the passive subscreen!");
 				return false;
 			}
 			
@@ -1916,7 +2159,7 @@ namespace Venrob::SubscreenEditor
 	void MakeCounter(untyped buf_arr)
 	{
 		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = P8+1;
+		buf_arr[M_SIZE] = P9+1;
 		buf_arr[M_TYPE] = MODULE_TYPE_COUNTER;
 		buf_arr[M_VER] = MVER_COUNTER;
 		
@@ -1925,6 +2168,7 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P5] = 2;
 		buf_arr[P6] = 0x01;
 		buf_arr[P8] = 0x0F;
+		buf_arr[P9] = SHD_SHADOWED;
 	}
 	
 	void MakeMinitile(untyped buf_arr)
@@ -1933,6 +2177,31 @@ namespace Venrob::SubscreenEditor
 		buf_arr[M_SIZE] = P2+1;
 		buf_arr[M_TYPE] = MODULE_TYPE_MINITILE;
 		buf_arr[M_VER] = MVER_MINITILE;
+	}
+	
+	void MakeClock(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P5+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_CLOCK;
+		buf_arr[M_VER] = MVER_CLOCK;
+		
+		buf_arr[P2] = 0x01;
+		buf_arr[P4] = 0x0F;
+		buf_arr[P5] = SHD_SHADOWED;
+	}
+	void MakeItemName(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P7+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_ITEMNAME;
+		buf_arr[M_VER] = MVER_ITEMNAME;
+		
+		buf_arr[P2] = 0x01;
+		buf_arr[P4] = 0x0F;
+		buf_arr[P5] = SHD_SHADOWED;
+		buf_arr[P6] = 256;
+		buf_arr[P7] = 0;
 	}
 	//end Constructors
 	//start FileIO

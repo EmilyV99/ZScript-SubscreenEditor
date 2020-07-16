@@ -1313,7 +1313,6 @@ namespace Venrob::SubscreenEditor
 					
 					case MODULE_TYPE_COUNTER: //start
 					{
-						//FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, TODO MINDIG, TXTCOL, BGCOL, SHADCOL}
 						char32 buf1[] = "Font:";
 						text(bit, FRAME_X, FRAME_Y+12+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
 						arr[P1] = dropdown_proc(bit, FRAME_X+Text->StringWidth(buf1, DIA_FONT)+2, FRAME_Y+12, DDWN_WID_FONT, arr[P1], data, SSL_FONT, -1, 6, lastframe, 0);
@@ -1335,12 +1334,12 @@ namespace Venrob::SubscreenEditor
 							arr[P2] = Max(atoi(argbuf2), 0);
 						}
 						char32 buf4[] = "Min Digits:";
-						titled_inc_text_field(bit, FRAME_X+70+Text->StringWidth(buf3, DIA_FONT)+Text->StringWidth(buf4, DIA_FONT), FRAME_Y+24, 20, argbuf5, 2, false, data, 5, 0, 0, 5, buf4);
+						titled_inc_text_field(bit, FRAME_X+70+Text->StringWidth(buf3, DIA_FONT)+Text->StringWidth(buf4, DIA_FONT), FRAME_Y+24, 20, argbuf5, 2, false, data, 6, 0, 0, 5, buf4);
 						arr[P5] = atoi(argbuf5);
 						
 						
 						
-						switch(titled_checkbox(bit, FRAME_X, FRAME_Y + 37 + (10 * 0), 7, arr[M_FLAGS1]&FLAG_CNTR_SPECIAL, data, 0, "Special Counter"))
+						switch(titled_checkbox(bit, FRAME_X, FRAME_Y + 50 + (10 * 0), 7, arr[M_FLAGS1]&FLAG_CNTR_SPECIAL, data, 0, "Special Counter"))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_CNTR_SPECIAL;
@@ -1352,7 +1351,8 @@ namespace Venrob::SubscreenEditor
 								arr[P2] = 0;
 								break;
 						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 37 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_CNTR_SHADOWED, data, 0, "Shadow", "Counter text displays a shadow."))
+						arr[P9] = dropdown_proc(bit, FRAME_X, FRAME_Y + 37, 80, arr[P9], data, SSL_SHADOWTYPE, -1, 11, lastframe, 0);
+						/*switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 37 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_CNTR_SHADOWED, data, 0, "Shadow", "Counter text displays a shadow."))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_CNTR_SHADOWED;
@@ -1360,8 +1360,8 @@ namespace Venrob::SubscreenEditor
 							case PROC_UPDATED_TRUE:
 								arr[M_FLAGS1]|=FLAG_CNTR_SHADOWED;
 								break;
-						}
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 37 + (10 * 2), 7, arr[M_FLAGS1]&FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO, data, 0, "Hide Leading Zeros", "Leading zeros will be replaced with spaces."))
+						}*/
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 50 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO, data, 0, "Hide Leading Zeros", "Leading zeros will be replaced with spaces."))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO;
@@ -1388,13 +1388,13 @@ namespace Venrob::SubscreenEditor
 						//
 						DEFINE P_C_X = WIDTH/2;
 						DEFINE P_BMP_WID = 64;
-						int p_hei = Text->FontHeight(arr[P1])+1;
+						int p_hei = Text->FontHeight(arr[P1])+2;
 						DEFINE P_Y = ABOVE_BOTTOM_Y - p_hei;
 						line(bit, P_C_X, P_Y - 3, P_C_X, P_Y + p_hei + 2, PAL[COL_NULL]);
 						bitmap sub = create(P_BMP_WID, p_hei+1);
 						int al = arr[M_FLAGS1] & MASK_CNTR_ALIGN;
 						arr[M_FLAGS1] ~= MASK_CNTR_ALIGN;
-						int p_wid = counter(arr, sub, 1, 1, 1);
+						int p_wid = 1+counter(arr, sub, 1, 2, 2);
 						arr[M_FLAGS1] |= al;
 						frame_rect(sub, 0, 0, ++p_wid, p_hei++, 1);
 						switch(al)
@@ -1426,6 +1426,104 @@ namespace Venrob::SubscreenEditor
 						frame_rect(bit, (WIDTH/2)-4, PREVY-1, (WIDTH/2)+4, PREVY+8, 1);
 						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
 						minitile(bit, (WIDTH/2)-3, PREVY, arr[P1], arr[P2], arr[M_FLAGS1]&MASK_MINITL_CRN);
+						break;
+					} //end
+					case MODULE_TYPE_CLOCK: //start
+					{
+						char32 buf1[] = "Font:";
+						text(bit, FRAME_X, FRAME_Y+12+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						arr[P1] = dropdown_proc(bit, FRAME_X+Text->StringWidth(buf1, DIA_FONT)+2, FRAME_Y+12, DDWN_WID_FONT, arr[P1], data, SSL_FONT, -1, 6, lastframe, 0);
+						
+						arr[P5] = dropdown_proc(bit, FRAME_X, FRAME_Y + 25, 80, arr[P5], data, SSL_SHADOWTYPE, -1, 11, lastframe, 0);
+						
+						DEFINE TEXT_OFFSET = WIDTH - FRAME_X - 20;
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*0), TF_RIGHT, "Text:", PAL[COL_TEXT_MAIN]);
+						arr[P2] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, arr[P2], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*1), TF_RIGHT, "BG:", PAL[COL_TEXT_MAIN]);
+						arr[P3] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, arr[P3], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Shadow:", PAL[COL_TEXT_MAIN]);
+						arr[P4] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, arr[P4], data);
+							
+						//
+						DEFINE P_C_X = WIDTH/2;
+						int p_hei = Text->FontHeight(arr[P1])+1;
+						DEFINE P_Y = ABOVE_BOTTOM_Y - p_hei;
+						//
+						char32 clkbuf[32];
+						sprintf(clkbuf, "%02d:%02d:%02d",time::Hours(),time::Minutes(),time::Seconds());
+						int p_wid = Text->StringWidth(clkbuf, arr[P1])+1;
+						int bg = arr[P3];
+						int shd = arr[P4];
+						int shd_t = arr[P5];
+						unless(bg) bg = -1;
+						unless(shd) shd_t = SHD_NORMAL;
+						frame_rect(bit, P_C_X-(p_wid/2)-1, P_Y-2, P_C_X+(p_wid/2)+1, P_Y+p_hei+1, 1);
+						bit->DrawString(0, P_C_X-(p_wid/2)+1,P_Y, arr[P1], arr[P2], bg, TF_NORMAL, clkbuf, OP_OPAQUE, shd_t, shd);
+						break;
+					} //end
+					case MODULE_TYPE_ITEMNAME: //start
+					{
+						char32 buf1[] = "Font:";
+						text(bit, FRAME_X, FRAME_Y+12+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						arr[P1] = dropdown_proc(bit, FRAME_X+Text->StringWidth(buf1, DIA_FONT)+2, FRAME_Y+12, DDWN_WID_FONT, arr[P1], data, SSL_FONT, -1, 6, lastframe, 0);
+						
+						arr[P5] = dropdown_proc(bit, FRAME_X, FRAME_Y + 37, 80, arr[P5], data, SSL_SHADOWTYPE, -1, 11, lastframe, 0);
+						
+						DEFINE TEXT_OFFSET = WIDTH - FRAME_X - 20;
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*0), TF_RIGHT, "Text:", PAL[COL_TEXT_MAIN]);
+						arr[P2] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, arr[P2], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*1), TF_RIGHT, "BG:", PAL[COL_TEXT_MAIN]);
+						arr[P3] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, arr[P3], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Shadow:", PAL[COL_TEXT_MAIN]);
+						arr[P4] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, arr[P4], data);
+						
+						
+						char32 buf2[] = "Align:";
+						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
+						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_ITEMNM_ALIGN)
+						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_ITEMNM_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
+						
+						char32 buf3[] = "Width:";
+						titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 32, argbuf6, 3, false, data, 5, 0, 0, 256, buf3);
+						arr[P6] = VBound(atoi(argbuf6), 256, 0);
+						char32 buf4[] = "VSpace:";
+						titled_inc_text_field(bit, FRAME_X+38+Text->StringWidth(buf3, DIA_FONT)+Text->StringWidth(buf4, DIA_FONT), FRAME_Y+24, 32, argbuf7, 2, false, data, 6, 0, 0, 16, buf4);
+						arr[P7] = VBound(atoi(argbuf7), 16, 0);
+						
+						//
+						int bg = arr[P3];
+						int shd = arr[P4];
+						int shd_t = arr[P5];
+						unless(bg) bg = -1;
+						unless(shd) shd_t = SHD_NORMAL;
+						//
+						char32 testbuf[64] = "Example Name";
+						DEFINE P_C_X = WIDTH/2;
+						int p_hei = (arr[P6] > 0)
+						            ? (DrawStringsCount(arr[P1], testbuf, arr[P6]) * (Text->FontHeight(arr[P1])+arr[P7]) - arr[P7])
+						            : (Text->FontHeight(arr[P1])+1);
+						DEFINE P_Y = ABOVE_BOTTOM_Y - p_hei;
+						line(bit, P_C_X, P_Y - 6, P_C_X, P_Y + p_hei + 3, PAL[COL_NULL]);
+						//
+						int p_wid = (arr[P6] > 0)
+						            ? DrawStringsWid(arr[P1], testbuf, arr[P6])
+						            : Text->StringWidth(testbuf, arr[P1])+1;
+						int xoff;
+						int tf = arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+						switch(tf) //start Calculate offsets based on alignment
+						{
+							case TF_NORMAL: break;
+							case TF_CENTERED:
+								xoff = -p_wid/2;
+								break;
+							case TF_RIGHT:
+								xoff = -p_wid;
+								break;
+						} //end
+						frame_rect(bit, P_C_X+xoff, P_Y-2, P_C_X+1+p_wid+xoff, P_Y+p_hei+1, 1);
+						if(arr[P6])
+							DrawStringsBitmap(bit, 0, P_C_X+1+(tf==TF_NORMAL?1:0), P_Y, arr[P1], arr[P2], bg, tf, testbuf, OP_OPAQUE, shd_t, shd, arr[P7], arr[P6]);
+						else bit->DrawString(0, P_C_X+1+(tf==TF_NORMAL?1:0), P_Y, arr[P1], arr[P2], bg, tf, testbuf, OP_OPAQUE, shd_t, shd);
 						break;
 					} //end
 					default:
@@ -2006,7 +2104,6 @@ namespace Venrob::SubscreenEditor
 			bit->Free();
 			gen_final();
 		} //end
-		
 		//end
 		//start Options
 		void opt_dlg(bool active)
@@ -2228,8 +2325,8 @@ namespace Venrob::SubscreenEditor
 			//end
 			untyped proc_data[1];
 			int indx;
-			int aval[] = {2,3,13,14,4,5,6,7,8,9,10,11,12};
-			int pval[] = {13,14,4,5,7,8,9,10,11,12,13,14};
+			int aval[] = {2,3,16,13,14,4,5,6,7,8,9,10,11,12,15};
+			int pval[] = {13,14,4,5,7,8,9,10,11,12,15};
 			int val = active ? aval : pval;
 			while(running)
 			{
@@ -2244,8 +2341,8 @@ namespace Venrob::SubscreenEditor
 				
 				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data,
 				                     active
-				                     ? {"Sel. Item (ID)", "Sel. Item (Type)", "Item (ID)", "Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
-				                     : {"Item (ID)", "Item (Type)", "A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile"}
+				                     ? {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name", "Item (ID)", "Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile", "Clock"}
+				                     : {"Item (ID)", "Item (Type)", "A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile", "Clock"}
 				                     , -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
@@ -2301,6 +2398,14 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_NONSEL_ITEM_CLASS:
 						{
 							MakeNonSelectableItemClass(module_arr); break;
+						}
+						case MODULE_TYPE_CLOCK:
+						{
+							MakeClock(module_arr); break;
+						}
+						case MODULE_TYPE_ITEMNAME:
+						{
+							MakeItemName(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -3518,6 +3623,14 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Item (Class)"); break;
 				}
+				case MODULE_TYPE_CLOCK:
+				{
+					strcat(buf, "Clock"); break;
+				}
+				case MODULE_TYPE_ITEMNAME:
+				{
+					strcat(buf, "Item Name"); break;
+				}
 			}
 		} //end
 		
@@ -3586,6 +3699,14 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_NONSEL_ITEM_CLASS:
 				{
 					strcat(buf, "Draws the highest item in the inventory of a specific item class."); break;
+				}
+				case MODULE_TYPE_CLOCK:
+				{
+					strcat(buf, "Displays the current playtime, in 'hh:mm:ss' format."); break;
+				}
+				case MODULE_TYPE_ITEMNAME:
+				{
+					strcat(buf, "Displays the name of the currently selected item."); break;
 				}
 			}
 		} //end
@@ -3685,7 +3806,8 @@ namespace Venrob::SubscreenEditor
 		{
 			SSL_FONT = -1,
 			SSL_ALIGNMENT = -2,
-			SSL_ITEM = -3
+			SSL_ITEM = -3,
+			SSL_SHADOWTYPE = -4
 		};
 		DEFINE DDWN_WID_FONT = 107;
 		DEFINE DDWN_WID_ALIGN = 39;
@@ -3713,6 +3835,35 @@ namespace Venrob::SubscreenEditor
 					itemdata id = Game->LoadItemData(indx);
 					id->GetName(buf);
 					return;
+				case SSL_SHADOWTYPE:
+					switch(indx)
+					{
+						case SHD_NORMAL:
+							strcpy(buf, "No Shadow"); break;
+						//These draw ONLY a shadow: no actual text
+						case SHD_SHADOW:
+							strcpy(buf, "Shadow"); break;
+						case SHD_SHADOWU:
+							strcpy(buf, "Shadow - U"); break;
+						case SHD_OUTLINE8:
+							strcpy(buf, "Shadow - O"); break;
+						case SHD_OUTLINEPLUS:
+							strcpy(buf, "Shadow - +"); break;
+						case SHD_OUTLINEX:
+							strcpy(buf, "Shadow - X"); break;
+						//These draw a shadow behind the actual text
+						case SHD_SHADOWED:
+							strcpy(buf, "Shadowed"); break;
+						case SHD_SHADOWEDU:
+							strcpy(buf, "Shadowed - U"); break;
+						case SHD_OUTLINED8:
+							strcpy(buf, "Shadowed - O"); break;
+						case SHD_OUTLINEDPLUS:
+							strcpy(buf, "Shadowed - +"); break;
+						case SHD_OUTLINEDX:
+							strcpy(buf, "Shadowed - X"); break;
+					}
+					return;
 			}
 			strcpy(buf, "UNKNOWN LIST ACCESS");
 		}
@@ -3726,6 +3877,8 @@ namespace Venrob::SubscreenEditor
 					return 3;
 				case SSL_ITEM:
 					return MAX_ITEMDATA+1;
+				case SSL_SHADOWTYPE:
+					return SHD_MAX;
 			}
 			return 1;
 		}
