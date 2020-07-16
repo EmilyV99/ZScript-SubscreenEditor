@@ -1530,6 +1530,76 @@ namespace Venrob::SubscreenEditor
 						else bit->DrawString(0, P_C_X+1+(tf==TF_NORMAL?1:0), P_Y, arr[P1], arr[P2], bg, tf, testbuf, OP_OPAQUE, shd_t, shd);
 						break;
 					} //end
+					case MODULE_TYPE_DMTITLE: //start
+					{
+						char32 buf1[] = "Font:";
+						text(bit, FRAME_X, FRAME_Y+12+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						arr[P1] = dropdown_proc(bit, FRAME_X+Text->StringWidth(buf1, DIA_FONT)+2, FRAME_Y+12, DDWN_WID_FONT, arr[P1], data, SSL_FONT, -1, 6, lastframe, 0);
+						
+						arr[P5] = dropdown_proc(bit, FRAME_X, FRAME_Y + 25, 80, arr[P5], data, SSL_SHADOWTYPE, -1, 11, lastframe, 0);
+						
+						DEFINE TEXT_OFFSET = WIDTH - FRAME_X - 20;
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*0), TF_RIGHT, "Text:", PAL[COL_TEXT_MAIN]);
+						arr[P2] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, arr[P2], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*1), TF_RIGHT, "BG:", PAL[COL_TEXT_MAIN]);
+						arr[P3] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, arr[P3], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Shadow:", PAL[COL_TEXT_MAIN]);
+						arr[P4] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, arr[P4], data);
+						
+						
+						char32 buf2[] = "Align:";
+						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
+						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_ITEMNM_ALIGN)
+						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_ITEMNM_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
+						
+						//
+						int bg = arr[P3];
+						int shd = arr[P4];
+						int shd_t = arr[P5];
+						unless(bg) bg = -1;
+						unless(shd) shd_t = SHD_NORMAL;
+						//
+						
+						char32 testbuf[22];
+						getDMapTitle(testbuf);
+						int tstindx;
+						for(tstindx = 0; tstindx < 22; ++tstindx)
+						{
+							switch(testbuf[tstindx])
+							{
+								case 0: case ' ': case '\n':
+									break;
+								default:
+									tstindx = 50;
+							}
+						}
+						if(tstindx < 50)
+						{
+							strcpy(testbuf, "  Test    \n    Name  ");
+						}
+						else TraceS("No testname\n");
+						DEFINE P_C_X = WIDTH/2;
+						int p_hei = DrawStringsCount(arr[P1], testbuf, 256) * Text->FontHeight(arr[P1]);
+						DEFINE P_Y = ABOVE_BOTTOM_Y - p_hei;
+						line(bit, P_C_X, P_Y - 6, P_C_X, P_Y + p_hei + 3, PAL[COL_NULL]);
+						//
+						int p_wid = DrawStringsWid(arr[P1], testbuf, 256);
+						int xoff;
+						int tf = arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+						switch(tf) //start Calculate offsets based on alignment
+						{
+							case TF_NORMAL: break;
+							case TF_CENTERED:
+								xoff = -p_wid/2;
+								break;
+							case TF_RIGHT:
+								xoff = -p_wid;
+								break;
+						} //end
+						frame_rect(bit, P_C_X+xoff-1, P_Y-2, P_C_X+2+p_wid+xoff, P_Y+p_hei+1, 1);
+						DrawStringsBitmap(bit, 0, P_C_X+1+(tf==TF_NORMAL?1:0), P_Y, arr[P1], arr[P2], bg, tf, testbuf, OP_OPAQUE, shd_t, shd, 0, 256);
+						break;
+					} //end
 					default:
 					{
 						text(bit, WIDTH/2, ((HEIGHT-(Text->FontHeight(DIA_FONT)*((1*3)+(0.5*2))))/2), TF_CENTERED, "WIP UNDER CONSTRUCTION", PAL[COL_TEXT_MAIN], 1);
@@ -2329,9 +2399,30 @@ namespace Venrob::SubscreenEditor
 			//end
 			untyped proc_data[1];
 			int indx;
-			int aval[] = {2,3,16,13,14,4,5,6,7,8,9,10,11,12,15};
-			int pval[] = {13,14,4,5,7,8,9,10,11,12,15};
+			//start val/string setup
+			int aval[] = {MODULE_TYPE_SEL_ITEM_ID, MODULE_TYPE_SEL_ITEM_CLASS, MODULE_TYPE_ITEMNAME,
+				MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
+				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_PASSIVESUBSCREEN, MODULE_TYPE_MINIMAP,
+				MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW,
+				MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK,
+				MODULE_TYPE_DMTITLE};
+			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
+				"Item (ID)", "Item (Type)", "A Item",
+				"B Item", "Passive Subscreen", "MiniMap",
+				"Tile Block", "Heart", "Heart Row",
+				"Counter", "Minitile", "Clock",
+				"DMap Title"};
+			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
+				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK,
+				MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW, MODULE_TYPE_COUNTER,
+				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
+			char32 pstrs[] = {"Item (ID)", "Item (Type)", "A Item",
+				"B Item", "MiniMap", "Tile Block",
+				"Heart", "Heart Row", "Counter",
+				"Minitile", "Clock", "DMap Title"};
+			//end
 			int val = active ? aval : pval;
+			char32 strs = active ? astrs : pstrs;
 			while(running)
 			{
 				lastframe->Clear(0);
@@ -2343,11 +2434,7 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, "Create Object", data, "Create a new object of a given type, at it's default settings.\nAfter creating the object, it's editing window will open.")==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data,
-				                     active
-				                     ? {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name", "Item (ID)", "Item (Type)", "A Item", "B Item", "Passive Subscreen", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile", "Clock"}
-				                     : {"Item (ID)", "Item (Type)", "A Item", "B Item", "MiniMap", "Tile Block", "Heart", "Heart Row", "Counter", "Minitile", "Clock"}
-				                     , -1/*Auto*/, 10, lastframe, 0);
+				indx = dropdown_proc(bit, FRAME_X, FRAME_Y, WIDTH - (FRAME_X*2), indx, data, strs, -1/*Auto*/, 10, lastframe, 0);
 				
 				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 10;
 				if(PROC_CONFIRM==button(bit, (WIDTH/2)-(BUTTON_WIDTH/2), HEIGHT-BUTTON_HEIGHT-3, BUTTON_WIDTH, BUTTON_HEIGHT, "Create", data, proc_data, 0, FLAG_DEFAULT))
@@ -2411,6 +2498,10 @@ namespace Venrob::SubscreenEditor
 						{
 							MakeItemName(module_arr); break;
 						}
+						case MODULE_TYPE_DMTITLE:
+						{
+							MakeDMTitle(module_arr); break;
+						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
 						{
@@ -2454,58 +2545,7 @@ namespace Venrob::SubscreenEditor
 		//start Main Menu
 		void MainMenu() //start
 		{
-			/*
-			//start OLD MENU CODE
-			int editing = 1;
-			Input->DisableKey[KEY_ESC] = editing!=0;
-			while(true)
-			{
-				switch(editing)
-				{
-					case 0:
-						if(Input->Press[CB_START])
-						{
-							runActiveSubscreen();
-						}
-						runPassiveSubscreen();
-						break;
-					case 1:
-						runFauxActiveSubscreen();
-						if(SubEditorData[SED_QUEUED_DELETION])
-						{
-							if(SubEditorData[SED_QUEUED_DELETION]<0) //passive
-							{
-								remove_passive_module(-SubEditorData[SED_QUEUED_DELETION]);
-							}
-							else //active
-							{
-								remove_active_module(SubEditorData[SED_QUEUED_DELETION]);
-							}
-							SubEditorData[SED_QUEUED_DELETION]=0;
-						}
-						KillButtons();
-						break;
-					case 2:
-						runFauxPassiveSubscreen(true);
-						runPreparedSelector(false);
-						ColorScreen(7, PAL[COL_NULL], true);
-						getSubscreenBitmap(false)->Blit(7, RT_SCREEN, 0, 0, 256, 56, 0, PASSIVE_EDITOR_TOP, 256, 56, 0, 0, 0, 0, 0, true);
-						clearPassive1frame();
-						KillButtons();
-						break;
-				}
-				if(handle_data_pane(editing==1)) continue;
-				if(editing) DIALOG::runGUI(editing==1);
-				if(Input->ReadKey[KEY_P])
-				{
-					++editing;
-					editing %= 3;
-					Input->DisableKey[KEY_ESC] = editing!=0;
-				}
-				subscr_Waitframe();
-			}
-			//end OLD MENU CODE
-			*/
+			Game->Cheat = 4;
 			gen_startup();
 			//start setup
 			DEFINE WIDTH = 256
@@ -3635,6 +3675,10 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Item Name"); break;
 				}
+				case MODULE_TYPE_DMTITLE:
+				{
+					strcat(buf, "DMap Title"); break;
+				}
 			}
 		} //end
 		
@@ -3711,6 +3755,10 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_ITEMNAME:
 				{
 					strcat(buf, "Displays the name of the currently selected item."); break;
+				}
+				case MODULE_TYPE_DMTITLE:
+				{
+					strcat(buf, "Displays the name of the current DMap."); break;
 				}
 			}
 		} //end

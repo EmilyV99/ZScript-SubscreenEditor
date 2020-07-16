@@ -269,6 +269,22 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_NONSEL_ITEM_CLASS, //FORMAT: {META..., ITEMCLASS}
 		MODULE_TYPE_CLOCK, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}
 		MODULE_TYPE_ITEMNAME, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE, MAXWID, VSPACE}
+		MODULE_TYPE_DMTITLE, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}
+		/* TODO
+		Complex Modules:
+		LARGE MAP (Active only)
+		MAGIC (PIECE)
+		MAGIC BAR
+		MAGIC METER (%)
+		TEXT (Will be a large module, to store the char data)
+		TRIFORCE FRAME
+		TRIFORCE PIECE
+
+		Shapes:
+		RECTANGLE
+		TRIANGLE
+		CIRCLE
+		*/
 		MODULE_TYPE_MAX
 	};
 	
@@ -616,6 +632,19 @@ namespace Venrob::Subscreen
 					DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[P7], module_arr[P6]);
 				else
 					bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd);
+				break;
+			} //end
+			case MODULE_TYPE_DMTITLE: //start
+			{
+				char32 buf[22];
+				getDMapTitle(buf);
+				int bg = module_arr[P3];
+				int shd = module_arr[P4];
+				unless(bg) bg = -1;
+				int shd_t = module_arr[P5];
+				unless(shd) shd_t = SHD_NORMAL;
+				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
 				break;
 			} //end
 			//case :
@@ -999,10 +1028,17 @@ namespace Venrob::Subscreen
 		<bitmap>(g_arr[MINITILE_BITMAP])->FastTile(0, 0, 0, tile, cset, OP_OPAQUE);
 		<bitmap>(g_arr[MINITILE_BITMAP])->Blit(layer, bit, (corner&01b)?8:0, (corner&10b)?8:0, 8, 8, x, y, 8, 8, 0, 0, 0, 0, 0, true);
 	} //end
-	bool hasItem(int itmid)
+	bool hasItem(int itmid) //start
 	{
 		return Hero->Item[itmid] && !(Game->DisableItem[itmid]);
-	}
+	} //end
+	void getDMapTitle(char32 buf) //start
+	{
+		Game->GetDMapTitle(Game->GetCurDMap(), buf);
+		for(int q = 21; q > 10; --q)
+			buf[q] = buf[q-1];
+		buf[10] = '\n';
+	} //end
 	bitmap getSubscreenBitmap(bool active) //start
 	{
 		if(active)

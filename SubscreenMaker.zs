@@ -42,6 +42,7 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_NONSEL_ITEM_CLASS = 1;
 	DEFINE MVER_CLOCK = 1;
 	DEFINE MVER_ITEMNAME = 1;
+	DEFINE MVER_DMTITLE = 1;
 	//end Versioning
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false};
@@ -563,6 +564,51 @@ namespace Venrob::SubscreenEditor
 				}
 				break;
 			} //end
+			case MODULE_TYPE_DMTITLE: //start
+			{
+				char32 buf[22];
+				getDMapTitle(buf);
+				int tstindx;
+				for(tstindx = 0; tstindx < 22; ++tstindx)
+				{
+					switch(buf[tstindx])
+					{
+						case 0: case ' ': case '\n':
+							break;
+						default:
+							tstindx = 50;
+					}
+				}
+				if(tstindx < 50)
+				{
+					strcpy(buf, "  Test    \n    Name  ");
+				}
+				int bg = module_arr[P3];
+				int shd = module_arr[P4];
+				unless(bg) bg = -1;
+				int shd_t = module_arr[P5];
+				unless(shd) shd_t = SHD_NORMAL;
+				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
+				int edwid = DrawStringsWid(module_arr[P1], buf, 256);
+				int edhei = DrawStringsCount(module_arr[P1], buf, 256) * (Text->FontHeight(module_arr[P1])+0) - 0;
+				int xoff;
+				switch(tf) //start Calculate offsets based on alignment
+				{
+					case TF_NORMAL: break;
+					case TF_CENTERED:
+						xoff = -edwid/2;
+						break;
+					case TF_RIGHT:
+						xoff = -edwid;
+						break;
+				} //end
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X]-1+xoff, module_arr[M_Y]-1, edwid + (shd_t ? 1 : 0), edhei, mod_indx, active, true);
+				}
+				break;
+			} //end
 			
 			//case :
 		}
@@ -964,6 +1010,7 @@ namespace Venrob::SubscreenEditor
 				sprintf(buf, "%02d:%02d:%02d",time::Hours(),time::Minutes(),time::Seconds());
 				return 256-Text->StringWidth(buf,module_arr[P1]);
 			case MODULE_TYPE_ITEMNAME:
+			case MODULE_TYPE_DMTITLE:
 				return 255;
 		}
 		return 256-16;
@@ -1041,6 +1088,8 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_CLOCK:
 			case MODULE_TYPE_ITEMNAME:
 				return _BOTTOM - Text->FontHeight(module_arr[P1]);
+			case MODULE_TYPE_DMTITLE:
+				return _BOTTOM - (Text->FontHeight(module_arr[P1])*2);
 		}
 		return _BOTTOM-16;
 	}
@@ -1758,6 +1807,56 @@ namespace Venrob::SubscreenEditor
 				}
 				return true;
 			} //end
+			case MODULE_TYPE_DMTITLE: //start
+			{
+				if(module_arr[M_SIZE]!=P5+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_DMTITLE (%d) must have argument size (5) in format: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}; argument size %d found", MODULE_TYPE_DMTITLE, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] % 1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_DMTITLE (%d) argument 1 (FONT) must be a positive integer; found %d", MODULE_TYPE_DMTITLE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 0xFF || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_DMTITLE (%d) argument 2 (TXTCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_DMTITLE, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || module_arr[P3] > 0xFF || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_DMTITLE (%d) argument 3 (BGCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_DMTITLE, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] > 0xFF || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_DMTITLE (%d) argument 4 (SHADCOL) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_DMTITLE, module_arr[P4]);
+					}
+					return false;
+				}
+				if(module_arr[P5] < 0 || module_arr[P5] > 0xFF || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_DMTITLE (%d) argument 5 (SHADOWTYPE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_DMTITLE, SHD_MAX, module_arr[P5]);
+					}
+					return false;
+				}
+				return true;
+			} //end
 			default:
 			{
 				if(DEBUG)
@@ -2202,6 +2301,17 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P5] = SHD_SHADOWED;
 		buf_arr[P6] = 256;
 		buf_arr[P7] = 0;
+	}
+	void MakeDMTitle(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P5+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_DMTITLE;
+		buf_arr[M_VER] = MVER_DMTITLE;
+		
+		buf_arr[P2] = 0x01;
+		buf_arr[P4] = 0x0F;
+		buf_arr[P5] = SHD_SHADOWED;
 	}
 	//end Constructors
 	//start FileIO
