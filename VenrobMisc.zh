@@ -1026,7 +1026,10 @@ namespace Venrob
 			else pos = Min(lastEmptyPos,endpos);
 			if(pos<0) //No newline
 			{
-				return runningWid ? runningWid : Text->StringWidth(ptr, font);
+				int w = Text->StringWidth(cpyptr, font);
+				if(w > runningWid)
+					return w;
+				return runningWid;
 			}
 			if(pos && !(endpos == pos && pos <= 1))
 			{
