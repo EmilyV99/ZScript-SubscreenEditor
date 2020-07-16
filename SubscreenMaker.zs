@@ -757,6 +757,7 @@ namespace Venrob::SubscreenEditor
 	
 	bool handle_data_pane(bool active)
 	{
+		Game->ClickToFreezeEnabled = false;
 		int pane = SubEditorData[SED_ACTIVE_PANE];
 		unless(pane) return false;
 		int panetype = SubEditorData[SED_PANE_MENU_TYPE];

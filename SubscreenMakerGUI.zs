@@ -1786,15 +1786,9 @@ namespace Venrob::SubscreenEditor
 				{
 					open_data_pane(DLG_OPTIONS, PANE_T_SYSTEM);
 				}
-				/*if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Save", data, main_proc_data, 4))
-				{
-					ret = GUIRET_SAVE;
-					//open_data_pane(DLG_SAVEAS, PANE_T_SYSTEM);
-				}*/
-				/*if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*1), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "", data, main_proc_data, 5))
-				{
-					//open_data_pane(DLG_LOAD, PANE_T_SYSTEM);
-				}*/
+				Game->ClickToFreezeEnabled = DLGCursorBox(LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0)+BUTTON_WIDTH-1,FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE)+BUTTON_HEIGHT-1, data); 
+				if(insta_button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "ZC Menu", data, 0))
+				{}
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, main_proc_data, 6))
 				{
 					open_data_pane(DLG_SYSTEM, PANE_T_SYSTEM);
@@ -1805,6 +1799,7 @@ namespace Venrob::SubscreenEditor
 				}
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*3), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "Exit", data, main_proc_data, 8))
 				{
+					Game->ClickToFreezeEnabled = false;
 					ret = GUIRET_EXIT;
 				}
 				//end BUTTONS
@@ -2826,6 +2821,7 @@ namespace Venrob::SubscreenEditor
 				if(mode) gret = DIALOG::runGUI(mode==1);
 				if(Input->ReadKey[KEY_ESC] || gret == GUIRET_EXIT)
 				{
+					Game->ClickToFreezeEnabled = false;
 					if(mode)
 					{
 						ProcRet r = yesno_dlg("Exiting Edit Mode", "Would you like to save your changes?" ,"Save", "Revert");
