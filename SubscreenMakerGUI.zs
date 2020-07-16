@@ -938,7 +938,7 @@ namespace Venrob::SubscreenEditor
 			int LItem = Game->LItems[Game->GetCurLevel()];
 			Game->LItems[Game->GetCurLevel()] = LI_COMPASS | LI_MAP;
 			int prev = 0;
-			int foo1, foo2, foo3;
+			untyped d[1]; //Dummy vals
 			while(running)
 			{
 				lastframe->Clear(0);
@@ -1116,10 +1116,10 @@ namespace Venrob::SubscreenEditor
 					
 					case MODULE_TYPE_ABUTTONITEM:
 					case MODULE_TYPE_BBUTTONITEM:
-					case MODULE_TYPE_PASSIVESUBSCREEN:
+					case MODULE_TYPE_PASSIVESUBSCREEN: //start
 					{
 						break;
-					}
+					} //end
 					
 					case MODULE_TYPE_MINIMAP: //start
 					{
@@ -1497,7 +1497,11 @@ namespace Venrob::SubscreenEditor
 						unless(bg) bg = -1;
 						unless(shd) shd_t = SHD_NORMAL;
 						//
-						char32 testbuf[64] = "Example Name";
+						
+						text(bit, WIDTH-FRAME_X-133, FRAME_Y+12 + (18*3)-Text->FontHeight(DIA_FONT), TF_NORMAL, "Preview Item:", PAL[COL_TEXT_MAIN]);
+						d[0] = dropdown_inc_text_combo(bit, WIDTH-FRAME_X-133, FRAME_Y+12 + (18*3), 104, d[0], data, SSL_ITEM, -1, 10, lastframe, 0, 28, 3, false, 7, MIN_ITEMDATA, MAX_ITEMDATA, true);
+						char32 testbuf[64];
+						Game->LoadItemData(d[0])->GetName(testbuf);
 						DEFINE P_C_X = WIDTH/2;
 						int p_hei = (arr[P6] > 0)
 						            ? (DrawStringsCount(arr[P1], testbuf, arr[P6]) * (Text->FontHeight(arr[P1])+arr[P7]) - arr[P7])
@@ -1520,7 +1524,7 @@ namespace Venrob::SubscreenEditor
 								xoff = -p_wid;
 								break;
 						} //end
-						frame_rect(bit, P_C_X+xoff, P_Y-2, P_C_X+1+p_wid+xoff, P_Y+p_hei+1, 1);
+						frame_rect(bit, P_C_X+xoff-1, P_Y-2, P_C_X+2+p_wid+xoff, P_Y+p_hei+1, 1);
 						if(arr[P6])
 							DrawStringsBitmap(bit, 0, P_C_X+1+(tf==TF_NORMAL?1:0), P_Y, arr[P1], arr[P2], bg, tf, testbuf, OP_OPAQUE, shd_t, shd, arr[P7], arr[P6]);
 						else bit->DrawString(0, P_C_X+1+(tf==TF_NORMAL?1:0), P_Y, arr[P1], arr[P2], bg, tf, testbuf, OP_OPAQUE, shd_t, shd);
@@ -1682,7 +1686,7 @@ namespace Venrob::SubscreenEditor
 						break;
 					}
 				}
-				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Clone", data, main_proc_data, 2, can_clone ? FLAG_DEFAULT : FLAG_DISABLE))
+				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 0*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "%Clone", data, main_proc_data, 2, can_clone ? 0 : FLAG_DISABLE))
 				{
 					unless(SubEditorData[SED_JUST_CLONED]) //Don't clone every frame it's held, just the first frame pressed!
 					{
