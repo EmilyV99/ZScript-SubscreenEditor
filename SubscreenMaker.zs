@@ -2009,7 +2009,7 @@ namespace Venrob::SubscreenEditor
 				if(module_arr[M_SIZE]!=P5+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_CRPIECE (%d) must have argument size (3) in format {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT}; argument size %d found", MODULE_TYPE_CRPIECE, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_CRPIECE (%d) must have argument size (5) in format {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT, COUNTER, PER_CONT}; argument size %d found", MODULE_TYPE_CRPIECE, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
 				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
@@ -2059,7 +2059,7 @@ namespace Venrob::SubscreenEditor
 				if(module_arr[M_SIZE]!=P7+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_CRROW (%d) must have argument size (5) in format {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}; argument size %d found", MODULE_TYPE_CRROW, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_CRROW (%d) must have argument size (7) in format {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT, COUNT, SPACING}; argument size %d found", MODULE_TYPE_CRROW, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
 				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
