@@ -47,7 +47,7 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_MAGICROW = 1;
 	//end Versioning
 	//start SubEditorData
-	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false};
+	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false, false};
 	enum
 	{
 		SED_SELECTED,
@@ -74,7 +74,8 @@ namespace Venrob::SubscreenEditor
 		SED_GUI_BMP,
 		SED_QUEUED_DELETION,
 		SED_GLOBAL_TIMER,
-		SED_JUST_CLONED
+		SED_JUST_CLONED,
+		SED_ZCM_BTN
 	}; //end
 	//start Module Edit Flags
 	untyped mod_flags[MAX_INT];
@@ -211,11 +212,11 @@ namespace Venrob::SubscreenEditor
 		//end
 		loadSysSettings();
 		f->Free();
-		for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = 60;
+		/*for(int q = 0; q < CR_SCRIPT1; ++q) Game->Counter[q] = Game->MCounter[q] = 60;
 		Hero->MaxHP = HP_PER_HEART * 10;
 		Hero->HP = Hero->MaxHP;
 		Hero->MaxMP = MP_PER_BLOCK * 8;
-		Hero->MP = Hero->MaxMP;
+		Hero->MP = Hero->MaxMP;*/
 	} //end Init
 	
 	int count_subs(bool passive) //start

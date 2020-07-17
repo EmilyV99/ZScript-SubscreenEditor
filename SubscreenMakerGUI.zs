@@ -1862,13 +1862,17 @@ namespace Venrob::SubscreenEditor
 				{
 					open_data_pane(DLG_OPTIONS, PANE_T_SYSTEM);
 				}
-				bool hoveringZCMenuBtn = DLGCursorBox(LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0)+BUTTON_WIDTH-1,FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE)+BUTTON_HEIGHT-1, data); 
-				Game->ClickToFreezeEnabled = hoveringZCMenuBtn;
-				if(hoveringZCMenuBtn)
+				Game->ClickToFreezeEnabled = SubEditorData[SED_ZCM_BTN];
+				if(SubEditorData[SED_ZCM_BTN] && (Input->KeyRaw[KEY_ESC] || Input->Mouse[MOUSE_LEFT]))
 				{
 					SubEditorData[SED_LCLICKED] = false;
-					killkey(KEY_ESC);
+					pollKeys(); pollKeys(); //Poll twice to destroy any `Press` states
 				}
+				bool zcm_btn = DLGCursorBox(LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0)+BUTTON_WIDTH-1,FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE)+BUTTON_HEIGHT-1, data); 
+				if(zcm_btn)
+					SubEditorData[SED_ZCM_BTN] = 2;
+				else if(SubEditorData[SED_ZCM_BTN])
+					--SubEditorData[SED_ZCM_BTN];
 				if(insta_button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "ZC Menu", data, 0))
 				{}
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, main_proc_data, 6))
