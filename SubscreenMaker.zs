@@ -45,6 +45,8 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_DMTITLE = 1;
 	DEFINE MVER_MAGIC = 1;
 	DEFINE MVER_MAGICROW = 1;
+	DEFINE MVER_CRPIECE = 1;
+	DEFINE MVER_CRROW = 1;
 	//end Versioning
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false, false};
@@ -467,6 +469,29 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5], 7, mod_indx, active, true);
+				}
+				break;
+			} //end
+			
+			case MODULE_TYPE_CRPIECE: //start
+			{
+				crpiece(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
+				}
+				break;
+			} //end
+			
+			case MODULE_TYPE_CRROW: //start
+			{
+				if(module_arr[M_FLAGS1] & FLAG_CRROW_RTOL)
+					invmiscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
+				else
+					miscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P6]) * (7 + module_arr[P7])+8-module_arr[P7], 7, mod_indx, active, true);
 				}
 				break;
 			} //end
@@ -1018,10 +1043,13 @@ namespace Venrob::SubscreenEditor
 				return 256 - (16 * module_arr[P3]);
 			case MODULE_TYPE_HEART:
 			case MODULE_TYPE_MAGIC:
+			case MODULE_TYPE_CRPIECE:
 				return 256 - 8;
 			case MODULE_TYPE_HEARTROW:
 			case MODULE_TYPE_MAGICROW:
 				return 256 - ((module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5]);
+			case MODULE_TYPE_CRROW:
+				return 256 - ((module_arr[P6]) * (7 + module_arr[P7])+8-module_arr[P7]);
 			case MODULE_TYPE_COUNTER:
 				char32 buf[6];
 				for(int q = module_arr[P5]-1; q>=0; --q)
@@ -1115,6 +1143,8 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_HEART:
 			case MODULE_TYPE_MAGICROW:
 			case MODULE_TYPE_MAGIC:
+			case MODULE_TYPE_CRROW:
+			case MODULE_TYPE_CRPIECE:
 			case MODULE_TYPE_MINITILE:
 				return _BOTTOM - 8;
 			case MODULE_TYPE_COUNTER:
@@ -1573,15 +1603,15 @@ namespace Venrob::SubscreenEditor
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_HEARTROW (%d) argument 4 (COUNT) must be an integer between (1) and (32), inclusive; found %d", MODULE_TYPE_HEARTROW, module_arr[P3]);
+						error("MODULE_TYPE_HEARTROW (%d) argument 4 (COUNT) must be an integer between (1) and (32), inclusive; found %d", MODULE_TYPE_HEARTROW, module_arr[P4]);
 					}
 					return false;
 				}
-				if(module_arr[P4]%1)
+				if(module_arr[P5]%1)
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_HEARTROW (%d) argument 5 (SPACING) must be an integer; found %d", MODULE_TYPE_HEARTROW, module_arr[P3]);
+						error("MODULE_TYPE_HEARTROW (%d) argument 5 (SPACING) must be an integer; found %d", MODULE_TYPE_HEARTROW, module_arr[P5]);
 					}
 					return false;
 				}
@@ -1960,15 +1990,131 @@ namespace Venrob::SubscreenEditor
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_MAGICROW (%d) argument 4 (COUNT) must be an integer between (1) and (32), inclusive; found %d", MODULE_TYPE_MAGICROW, module_arr[P3]);
+						error("MODULE_TYPE_MAGICROW (%d) argument 4 (COUNT) must be an integer between (1) and (32), inclusive; found %d", MODULE_TYPE_MAGICROW, module_arr[P4]);
 					}
 					return false;
 				}
-				if(module_arr[P4]%1)
+				if(module_arr[P5]%1)
 				{
 					if(DEBUG)
 					{
-						error("MODULE_TYPE_MAGICROW (%d) argument 5 (SPACING) must be an integer; found %d", MODULE_TYPE_MAGICROW, module_arr[P3]);
+						error("MODULE_TYPE_MAGICROW (%d) argument 5 (SPACING) must be an integer; found %d", MODULE_TYPE_MAGICROW, module_arr[P5]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_CRPIECE: //start
+			{
+				if(module_arr[M_SIZE]!=P5+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_CRPIECE (%d) must have argument size (3) in format {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT}; argument size %d found", MODULE_TYPE_CRPIECE, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRPIECE (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_CRPIECE, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRPIECE (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_CRPIECE, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRPIECE (%d) argument 3 (CONTAINER_NUM) must be an integer above (0); found %d", MODULE_TYPE_CRPIECE, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] % 1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRPIECE (%d) argument 4 (COUNTER) must be a positive integer; found %d", MODULE_TYPE_CRPIECE, module_arr[P4]);
+					}
+					return false;
+				}
+				if(module_arr[P5] <= 0 || module_arr[P5] % 1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRPIECE (%d) argument 5 (PER_CONT) must be an integer above (0); found %d", MODULE_TYPE_CRPIECE, module_arr[P5]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_CRROW: //start
+			{
+				if(module_arr[M_SIZE]!=P7+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_CRROW (%d) must have argument size (5) in format {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}; argument size %d found", MODULE_TYPE_CRROW, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRROW (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_CRROW, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRROW (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_CRROW, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRROW (%d) argument 3 (CONTAINER_NUM) must be an integer above (0); found %d", MODULE_TYPE_CRROW, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] % 1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRROW (%d) argument 4 (COUNTER) must be a positive integer; found %d", MODULE_TYPE_CRROW, module_arr[P4]);
+					}
+					return false;
+				}
+				if(module_arr[P5] <= 0 || module_arr[P5] % 1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRROW (%d) argument 5 (PER_CONT) must be an integer above (0); found %d", MODULE_TYPE_CRROW, module_arr[P5]);
+					}
+					return false;
+				}
+				if(module_arr[P6] < 1 || module_arr[P6] > 32 || (module_arr[P6]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRROW (%d) argument 6 (COUNT) must be an integer between (1) and (32), inclusive; found %d", MODULE_TYPE_CRROW, module_arr[P6]);
+					}
+					return false;
+				}
+				if(module_arr[P7]%1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CRROW (%d) argument 7 (SPACING) must be an integer; found %d", MODULE_TYPE_CRROW, module_arr[P7]);
 					}
 					return false;
 				}
@@ -2448,6 +2594,25 @@ namespace Venrob::SubscreenEditor
 		buf_arr[M_VER] = MVER_MAGICROW;
 		
 		buf_arr[P4] = 10;
+	}
+	void MakeCRPiece(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P5+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_CRPIECE;
+		buf_arr[M_VER] = MVER_CRPIECE;
+	}
+	
+	void MakeCRRow(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P7+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_CRROW;
+		buf_arr[M_VER] = MVER_CRROW;
+		
+		buf_arr[P4] = CR_LIFE;
+		buf_arr[P5] = HP_PER_HEART;
+		buf_arr[P6] = 10;
 	}
 	//end Constructors
 	//start FileIO

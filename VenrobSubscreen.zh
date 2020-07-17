@@ -142,6 +142,10 @@ namespace Venrob::Subscreen
 	{
 		FLAG_MROW_RTOL = FLAG1
 	};
+	enum //Magic Row
+	{
+		FLAG_CRROW_RTOL = FLAG1
+	};
 	enum //Magic
 	{
 		FLAG_MAG_ISHALF = FLAG1
@@ -280,12 +284,12 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_DMTITLE, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}
 		MODULE_TYPE_MAGIC, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM}
 		MODULE_TYPE_MAGICROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}
+		MODULE_TYPE_CRPIECE, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT}
+		MODULE_TYPE_CRROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT, COUNT, SPACING}
 		/* TODO
 		Complex Modules:
 		LARGE MAP (Active only)
-		MAGIC (PIECE)
-		MAGIC BAR
-		MAGIC METER (%)
+		COUNTER METER (%)
 		TEXT (Will be a large module, to store the char data)
 		TRIFORCE FRAME
 		TRIFORCE PIECE
@@ -294,6 +298,7 @@ namespace Venrob::Subscreen
 		RECTANGLE
 		TRIANGLE
 		CIRCLE
+		LINE
 		*/
 		MODULE_TYPE_MAX
 	};
@@ -591,6 +596,21 @@ namespace Venrob::Subscreen
 					invmagicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
 				else
 					magicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				break;
+			} //end
+			
+			case MODULE_TYPE_CRPIECE: //start
+			{
+				crpiece(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				break;
+			} //end
+			
+			case MODULE_TYPE_CRROW: //start
+			{
+				if(module_arr[M_FLAGS1] & FLAG_CRROW_RTOL)
+					invmiscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
+				else
+					miscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
 				break;
 			} //end
 			
@@ -896,7 +916,7 @@ namespace Venrob::Subscreen
 		}
 		else
 		{
-			minitile(bit, layer, x, y, baseTile+1+Div(Game->Counter[cr] % contSZ, contSZ/4), cset, Game->Counter[cr] % (contSZ/4));
+			minitile(bit, layer, x, y, baseTile+1+Div(Game->Counter[cr] % contSZ, 4), cset, (Game->Counter[cr] % contSZ) % 4);
 		}
 	} //end
 	//end Misc Meter

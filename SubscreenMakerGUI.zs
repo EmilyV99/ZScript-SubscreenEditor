@@ -1094,10 +1094,8 @@ namespace Venrob::SubscreenEditor
 						strcpy(buf, class ? "Class:" : "Item:");
 						if(class)
 						{
-							char32 valbuf[4];
-							itoa(valbuf, arr[P1]);
-							titled_inc_text_field(bit, FRAME_X + Text->StringWidth(buf, DIA_FONT)+2, FRAME_Y+12, FIELD_WID, valbuf, 3, false, data, 5, 0, MIN_ITEMDATA, MAX_ITEMDATA, buf);
-							arr[P1] = VBound(atoi(valbuf), MAX_ITEMDATA, MIN_ITEMDATA);
+							titled_inc_text_field(bit, FRAME_X + Text->StringWidth(buf, DIA_FONT)+2, FRAME_Y+12, FIELD_WID, argbuf1, 3, false, data, 5, 0, MIN_ITEMDATA, MAX_ITEMDATA, buf);
+							arr[P1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
 							DEFINE ITMX = (FRAME_X + 2), ITMY = FRAME_Y+25;
 							frame_rect(bit, ITMX-1, ITMY-1, ITMX+16, ITMY+16, 1);
 							int itmid = get_item_of_class(arr[P1]);
@@ -1283,6 +1281,7 @@ namespace Venrob::SubscreenEditor
 					//fallthrough
 					case MODULE_TYPE_HEART: //start
 					{
+						bool isSingle = arr[M_TYPE] == MODULE_TYPE_HEART;
 						char32 buftl[] = "Tile:";
 						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
@@ -1294,9 +1293,9 @@ namespace Venrob::SubscreenEditor
 						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, 5, 0, 0, MAX_INT, buf3);
 						arr[P3] = Max(atoi(argbuf3), 0);
 						//start Preview
-						DEFINE PREVIEW_WID = 17*8;
+						DEFINE PREVIEW_WID = 16*8;
 						DEFINE PREVIEW_X = (WIDTH/2) - (PREVIEW_WID/2) + 1;
-						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-8;
+						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-16;
 						frame_rect(bit, (WIDTH/2) - (PREVIEW_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_WID/2)+1, ABOVE_BOTTOM_Y, 1);
 						for(int tl = 0; tl < 4; ++tl)
 						{
@@ -1305,7 +1304,12 @@ namespace Venrob::SubscreenEditor
 								minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y, arr[P1]+tl+1, arr[P2], crn);
 							}
 						}
-						minitile(bit, PREVIEW_X + 16*8, PREVIEW_Y, arr[P1], arr[P2], 0);
+						minitile(bit, (WIDTH/2)-4, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 0);
+						unless(isSingle)
+						{
+							minitile(bit, (WIDTH/2)-12, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 2);
+							minitile(bit, (WIDTH/2)+4, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 3);
+						}
 						text(bit, WIDTH/2, PREVIEW_Y-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
 						//end Preview
 						break;
@@ -1360,27 +1364,108 @@ namespace Venrob::SubscreenEditor
 						}
 						
 						//start Preview
-						DEFINE PREVIEW_WID = 17*8;
+						DEFINE PREVIEW_WID = 16*8;
 						DEFINE PREVIEW_HALF_WID = 1*8;
 						DEFINE PREVIEW_X = (WIDTH/2) - (PREVIEW_WID/2) + 1;
 						DEFINE PREVIEW_HALF_X = (WIDTH/2) - (PREVIEW_HALF_WID/2) + 1;
-						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-8;
+						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-24;
 						if(isHalf)
 						{
-							frame_rect(bit, (WIDTH/2) - (PREVIEW_HALF_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_HALF_WID/2), ABOVE_BOTTOM_Y, 1);
-							minitile(bit, PREVIEW_HALF_X, PREVIEW_Y, arr[P1], arr[P2], 1);
+							frame_rect(bit, (WIDTH/2) - (PREVIEW_HALF_WID/2), ABOVE_BOTTOM_Y-9, (WIDTH/2) + (PREVIEW_HALF_WID/2), ABOVE_BOTTOM_Y, 1);
+							minitile(bit, PREVIEW_HALF_X, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 1);
 						}
 						else
 						{
 							frame_rect(bit, (WIDTH/2) - (PREVIEW_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_WID/2)+1, ABOVE_BOTTOM_Y, 1);
-							for(int tl = 0; tl < 4; ++tl)
+							for(int row = 0; row < 2; ++row)
 							{
-								for(int crn = 0; crn < 4; ++crn)
+								for(int tl = 0; tl < 4; ++tl)
 								{
-									minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y, arr[P1]+tl+1, arr[P2], crn);
+									for(int crn = 0; crn < 4; ++crn)
+									{
+										minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y+(row*8), arr[P1]+(tl+(row*4))+1, arr[P2], crn);
+									}
 								}
 							}
-							minitile(bit, PREVIEW_X + 16*8, PREVIEW_Y, arr[P1], arr[P2], 0);
+							minitile(bit, (WIDTH/2)-4, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 0);
+							unless(isSingle)
+							{
+								minitile(bit, (WIDTH/2)-12, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 2);
+								minitile(bit, (WIDTH/2)+4, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 3);
+							}
+						}
+						text(bit, WIDTH/2, PREVIEW_Y-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
+						//end Preview
+						break;
+					} //end
+					
+					case MODULE_TYPE_CRROW: //start
+					{
+						char32 buf1[] = "Piece Count:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39+14, 28, argbuf6, 2, false, data, 8, 0, 0, MAX_INT, buf1);
+						arr[P6] = VBound(atoi(argbuf6), 32, 1);
+						char32 buf2[] = "Spacing:";
+						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39+14, 28, argbuf7, 2, false, data, 9, 0, buf2);
+						arr[P7] = atoi(argbuf7);
+						
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53+14, 7, arr[M_FLAGS1]&FLAG_CRROW_RTOL, data, 0, "Right to Left", "This row of magics fills from right to left, instead of left to right."))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_CRROW_RTOL;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_CRROW_RTOL;
+								break;
+						}
+					} //end
+					//fallthrough
+					case MODULE_TYPE_CRPIECE: //start
+					{
+						bool isSingle = arr[M_TYPE] == MODULE_TYPE_CRPIECE;
+						
+						char32 buftl[] = "Tile:";
+						int tlarr[2] = {arr[P1], arr[P2]};
+						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
+						arr[P1] = tlarr[0];
+						arr[P2] = tlarr[1];
+						
+						char32 buf3[] = "Piece Num:";
+						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, 5, 0, 0, MAX_INT, buf3);
+						arr[P3] = Max(atoi(argbuf3), 0);
+						
+						char32 buf1[] = "Counter:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39, 28, argbuf4, 2, false, data, 6, 0, MIN_COUNTER_INDX, MAX_COUNTER_INDX, buf1);
+						arr[P4] = VBound(atoi(argbuf4), 32, 1);
+						char32 buf2[] = "Per Container:";
+						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39, 40, argbuf5, 5, false, data, 7, 0, 1, MAX_COUNTER, buf2);
+						arr[P5] = atoi(argbuf5);
+						
+						//start Preview
+						DEFINE PREVIEW_WID = Min(arr[P5],16)*8;
+						DEFINE PREVIEW_NUM_ROW = Ceiling(arr[P5]/16);
+						DEFINE PREVIEW_X = (WIDTH/2) - (PREVIEW_WID/2) + 1;
+						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-((PREVIEW_NUM_ROW+1)*8);
+						DEFINE PREV_RECT_WID = Max(PREVIEW_WID, 24);
+						frame_rect(bit, (WIDTH/2) - (PREV_RECT_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREV_RECT_WID/2)+1, ABOVE_BOTTOM_Y, 1);
+						for(int row = 0; row < PREVIEW_NUM_ROW; ++row)
+						{
+							if(row*16 > arr[P5]) break;
+							for(int tl = 0; tl < 4; ++tl)
+							{
+								if(row*16 + tl*4 > arr[P5]) break;
+								for(int crn = 0; crn < 4; ++crn)
+								{
+									if(row*16 + tl*4 + crn > arr[P5]) break;
+									minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y+(row*8), arr[P1]+(tl+(row*4))+1, arr[P2], crn);
+								}
+							}
+						}
+						minitile(bit, (WIDTH/2)-4, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 0);
+						unless(isSingle)
+						{
+							minitile(bit, (WIDTH/2)-12, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 2);
+							minitile(bit, (WIDTH/2)+4, ABOVE_BOTTOM_Y-8, arr[P1], arr[P2], 3);
 						}
 						text(bit, WIDTH/2, PREVIEW_Y-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
 						//end Preview
@@ -1406,7 +1491,7 @@ namespace Venrob::SubscreenEditor
 						}
 						else
 						{
-							titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 64, argbuf2, 2, false, data, 5, 0, 0, MAX_INT, buf3);
+							titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 64, argbuf2, 2, false, data, 5, 0, MIN_COUNTER_INDX, MAX_COUNTER_INDX, buf3);
 							arr[P2] = Max(atoi(argbuf2), 0);
 						}
 						char32 buf4[] = "Min Digits:";
@@ -1708,7 +1793,7 @@ namespace Venrob::SubscreenEditor
 					case MODULE_TYPE_SEL_ITEM_CLASS:
 					case MODULE_TYPE_SEL_ITEM_ID:
 					{
-						arr[P1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
+						//arr[P1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
 						arr[P2] = VBound(atoi(argbuf2), MAX_MODULES, -1);
 						arr[P3] = VBound(atoi(argbuf3), MAX_MODULES, -1);
 						arr[P4] = VBound(atoi(argbuf4), MAX_MODULES, -1);
@@ -2485,24 +2570,28 @@ namespace Venrob::SubscreenEditor
 				MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
 				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_PASSIVESUBSCREEN, MODULE_TYPE_MINIMAP,
 				MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW,
-				MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW, MODULE_TYPE_COUNTER,
-				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
+				MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE,
+				MODULE_TYPE_CRROW, MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE,
+				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
 			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
 				"Item (ID)", "Item (Type)", "A Item",
 				"B Item", "Passive Subscreen", "MiniMap",
 				"Tile Block", "Heart", "Heart Row",
-				"Magic", "Magic Row", "Counter",
-				"Minitile", "Clock", "DMap Title"};
+				"Magic", "Magic Row", "Counter Meter (Piece)",
+				"Counter Meter (Row)", "Counter", "Minitile",
+				"Clock", "DMap Title"};
 			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
 				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK,
 				MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC,
-				MODULE_TYPE_MAGICROW, MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE,
-				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
+				MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE, MODULE_TYPE_CRROW,
+				MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK,
+				MODULE_TYPE_DMTITLE};
 			char32 pstrs[] = {"Item (ID)", "Item (Type)", "A Item",
 				"B Item", "MiniMap", "Tile Block",
 				"Heart", "Heart Row", "Magic",
-				"Magic Row", "Counter", "Minitile",
-				"Clock", "DMap Title"};
+				"Magic Row", "Counter Meter (Piece)", "Counter Meter (Row)",
+				"Counter", "Minitile", "Clock",
+				"DMap Title"};
 			//end
 			int val = active ? aval : pval;
 			char32 strs = active ? astrs : pstrs;
@@ -2592,6 +2681,14 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_MAGICROW:
 						{
 							MakeMagicRow(module_arr); break;
+						}
+						case MODULE_TYPE_CRPIECE:
+						{
+							MakeCRPiece(module_arr); break;
+						}
+						case MODULE_TYPE_CRROW:
+						{
+							MakeCRRow(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -2931,7 +3028,11 @@ namespace Venrob::SubscreenEditor
 					}
 				}
 				if(mode) subscr_Waitframe();
-				else Waitframe();
+				else
+				{
+					Waitframe();
+					pollKeys();
+				}
 			}
 		} //end
 		void disableKeys(bool dis)
@@ -3751,6 +3852,14 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Magic Row"); break;
 				}
+				case MODULE_TYPE_CRPIECE:
+				{
+					strcat(buf, "Counter Meter (Piece)"); break;
+				}
+				case MODULE_TYPE_CRROW:
+				{
+					strcat(buf, "Counter Meter (Row)"); break;
+				}
 				case MODULE_TYPE_COUNTER:
 				{
 					strcat(buf, "Counter"); break;
@@ -3837,6 +3946,14 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_MAGICROW:
 				{
 					strcat(buf, "A row of magic containers."); break;
+				}
+				case MODULE_TYPE_CRPIECE:
+				{
+					strcat(buf, "A single unit of a meter."); break;
+				}
+				case MODULE_TYPE_CRROW:
+				{
+					strcat(buf, "A row of a meter."); break;
 				}
 			
 				case MODULE_TYPE_COUNTER:
