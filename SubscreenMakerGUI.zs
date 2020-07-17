@@ -1297,7 +1297,7 @@ namespace Venrob::SubscreenEditor
 						DEFINE PREVIEW_WID = 17*8;
 						DEFINE PREVIEW_X = (WIDTH/2) - (PREVIEW_WID/2) + 1;
 						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-8;
-						frame_rect(bit, (WIDTH/2) - (PREVIEW_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_WID/2), ABOVE_BOTTOM_Y, 1);
+						frame_rect(bit, (WIDTH/2) - (PREVIEW_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_WID/2)+1, ABOVE_BOTTOM_Y, 1);
 						for(int tl = 0; tl < 4; ++tl)
 						{
 							for(int crn = 0; crn < 4; ++crn)
@@ -1306,6 +1306,82 @@ namespace Venrob::SubscreenEditor
 							}
 						}
 						minitile(bit, PREVIEW_X + 16*8, PREVIEW_Y, arr[P1], arr[P2], 0);
+						text(bit, WIDTH/2, PREVIEW_Y-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
+						//end Preview
+						break;
+					} //end
+					
+					case MODULE_TYPE_MAGICROW: //start
+					{
+						char32 buf1[] = "Magic Count:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39, 28, argbuf4, 2, false, data, 6, 0, 0, MAX_INT, buf1);
+						arr[P4] = VBound(atoi(argbuf4), 32, 1);
+						char32 buf2[] = "Spacing:";
+						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39, 28, argbuf5, 2, false, data, 7, 0, buf2);
+						arr[P5] = atoi(argbuf5);
+						
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53, 7, arr[M_FLAGS1]&FLAG_MROW_RTOL, data, 0, "Right to Left", "This row of magics fills from right to left, instead of left to right."))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MROW_RTOL;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MROW_RTOL;
+								break;
+						}
+					} //end
+					//fallthrough
+					case MODULE_TYPE_MAGIC: //start
+					{
+						bool isSingle = arr[M_TYPE] == MODULE_TYPE_MAGIC;
+						bool isHalf = isSingle && (arr[M_FLAGS1] & FLAG_MAG_ISHALF);
+						char32 buftl[] = "Tile:";
+						int tlarr[2] = {arr[P1], arr[P2]};
+						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
+						arr[P1] = tlarr[0];
+						arr[P2] = tlarr[1];
+						
+						char32 buf3[] = "Magic Num:";
+						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, 5, isHalf ? FLAG_DISABLE : 0, 0, MAX_INT, buf3);
+						arr[P3] = Max(atoi(argbuf3), 0);
+						
+						if(isSingle)
+						{
+							switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 39, 7, arr[M_FLAGS1]&FLAG_MAG_ISHALF, data, 0, "Is Half", "This magic unit is not a normal unit, but instead is the half magic icon."))
+							{
+								case PROC_UPDATED_FALSE:
+									arr[M_FLAGS1]~=FLAG_MAG_ISHALF;
+									break;
+								case PROC_UPDATED_TRUE:
+									arr[M_FLAGS1]|=FLAG_MAG_ISHALF;
+									break;
+							}
+						}
+						
+						//start Preview
+						DEFINE PREVIEW_WID = 17*8;
+						DEFINE PREVIEW_HALF_WID = 1*8;
+						DEFINE PREVIEW_X = (WIDTH/2) - (PREVIEW_WID/2) + 1;
+						DEFINE PREVIEW_HALF_X = (WIDTH/2) - (PREVIEW_HALF_WID/2) + 1;
+						DEFINE PREVIEW_Y = ABOVE_BOTTOM_Y-8;
+						if(isHalf)
+						{
+							frame_rect(bit, (WIDTH/2) - (PREVIEW_HALF_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_HALF_WID/2), ABOVE_BOTTOM_Y, 1);
+							minitile(bit, PREVIEW_HALF_X, PREVIEW_Y, arr[P1], arr[P2], 1);
+						}
+						else
+						{
+							frame_rect(bit, (WIDTH/2) - (PREVIEW_WID/2), PREVIEW_Y-1, (WIDTH/2) + (PREVIEW_WID/2)+1, ABOVE_BOTTOM_Y, 1);
+							for(int tl = 0; tl < 4; ++tl)
+							{
+								for(int crn = 0; crn < 4; ++crn)
+								{
+									minitile(bit, PREVIEW_X + ((crn+(tl*4))*8), PREVIEW_Y, arr[P1]+tl+1, arr[P2], crn);
+								}
+							}
+							minitile(bit, PREVIEW_X + 16*8, PREVIEW_Y, arr[P1], arr[P2], 0);
+						}
 						text(bit, WIDTH/2, PREVIEW_Y-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
 						//end Preview
 						break;
@@ -1786,7 +1862,13 @@ namespace Venrob::SubscreenEditor
 				{
 					open_data_pane(DLG_OPTIONS, PANE_T_SYSTEM);
 				}
-				Game->ClickToFreezeEnabled = DLGCursorBox(LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0)+BUTTON_WIDTH-1,FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE)+BUTTON_HEIGHT-1, data); 
+				bool hoveringZCMenuBtn = DLGCursorBox(LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0)+BUTTON_WIDTH-1,FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE)+BUTTON_HEIGHT-1, data); 
+				Game->ClickToFreezeEnabled = hoveringZCMenuBtn;
+				if(hoveringZCMenuBtn)
+				{
+					SubEditorData[SED_LCLICKED] = false;
+					killkey(KEY_ESC);
+				}
 				if(insta_button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*0), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "ZC Menu", data, 0))
 				{}
 				if(PROC_CONFIRM==button(bit, LEFT_MARGIN+((BUTTON_WIDTH+BUTTON_HSPACE)*2), FIRSTROW_HEIGHT + 1*(BUTTON_HEIGHT+BUTTON_VSPACE), BUTTON_WIDTH, BUTTON_HEIGHT, "S%ystem", data, main_proc_data, 6))
@@ -2399,22 +2481,24 @@ namespace Venrob::SubscreenEditor
 				MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
 				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_PASSIVESUBSCREEN, MODULE_TYPE_MINIMAP,
 				MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW,
-				MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK,
-				MODULE_TYPE_DMTITLE};
+				MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW, MODULE_TYPE_COUNTER,
+				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
 			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
 				"Item (ID)", "Item (Type)", "A Item",
 				"B Item", "Passive Subscreen", "MiniMap",
 				"Tile Block", "Heart", "Heart Row",
-				"Counter", "Minitile", "Clock",
-				"DMap Title"};
+				"Magic", "Magic Row", "Counter",
+				"Minitile", "Clock", "DMap Title"};
 			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
 				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK,
-				MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW, MODULE_TYPE_COUNTER,
-				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
+				MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC,
+				MODULE_TYPE_MAGICROW, MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE,
+				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
 			char32 pstrs[] = {"Item (ID)", "Item (Type)", "A Item",
 				"B Item", "MiniMap", "Tile Block",
-				"Heart", "Heart Row", "Counter",
-				"Minitile", "Clock", "DMap Title"};
+				"Heart", "Heart Row", "Magic",
+				"Magic Row", "Counter", "Minitile",
+				"Clock", "DMap Title"};
 			//end
 			int val = active ? aval : pval;
 			char32 strs = active ? astrs : pstrs;
@@ -2496,6 +2580,14 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_DMTITLE:
 						{
 							MakeDMTitle(module_arr); break;
+						}
+						case MODULE_TYPE_MAGIC:
+						{
+							MakeMagic(module_arr); break;
+						}
+						case MODULE_TYPE_MAGICROW:
+						{
+							MakeMagicRow(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -2819,7 +2911,7 @@ namespace Venrob::SubscreenEditor
 				if(handle_data_pane(mode==1)) continue;
 				int gret = GUIRET_NULL;
 				if(mode) gret = DIALOG::runGUI(mode==1);
-				if(Input->ReadKey[KEY_ESC] || gret == GUIRET_EXIT)
+				if(keyprocp(KEY_ESC) || gret == GUIRET_EXIT)
 				{
 					Game->ClickToFreezeEnabled = false;
 					if(mode)
@@ -3647,6 +3739,14 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Heart Row"); break;
 				}
+				case MODULE_TYPE_MAGIC:
+				{
+					strcat(buf, "Magic"); break;
+				}
+				case MODULE_TYPE_MAGICROW:
+				{
+					strcat(buf, "Magic Row"); break;
+				}
 				case MODULE_TYPE_COUNTER:
 				{
 					strcat(buf, "Counter"); break;
@@ -3725,6 +3825,14 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_HEARTROW:
 				{
 					strcat(buf, "A row of heart containers."); break;
+				}
+				case MODULE_TYPE_MAGIC:
+				{
+					strcat(buf, "A single magic container."); break;
+				}
+				case MODULE_TYPE_MAGICROW:
+				{
+					strcat(buf, "A row of magic containers."); break;
 				}
 			
 				case MODULE_TYPE_COUNTER:

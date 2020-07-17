@@ -138,6 +138,14 @@ namespace Venrob::Subscreen
 	{
 		FLAG_HROW_RTOL = FLAG1
 	};
+	enum //Magic Row
+	{
+		FLAG_MROW_RTOL = FLAG1
+	};
+	enum //Magic
+	{
+		FLAG_MAG_ISHALF = FLAG1
+	};
 	enum //A_STTNG_FLAGS1
 	{
 		FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR = FLAG1
@@ -270,6 +278,8 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_CLOCK, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}
 		MODULE_TYPE_ITEMNAME, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE, MAXWID, VSPACE}
 		MODULE_TYPE_DMTITLE, //FORMAT: {META..., FONT, TXTCOL, BGCOL, SHADCOL, SHADOWTYPE}
+		MODULE_TYPE_MAGIC, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM}
+		MODULE_TYPE_MAGICROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}
 		/* TODO
 		Complex Modules:
 		LARGE MAP (Active only)
@@ -565,6 +575,24 @@ namespace Venrob::Subscreen
 					heartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
 				break;
 			} //end
+			case MODULE_TYPE_MAGIC: //start
+			{
+				if(module_arr[M_FLAGS1] & FLAG_MAG_ISHALF)
+					halfmagic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2]);
+				else
+					magic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+				
+				break;
+			} //end
+			
+			case MODULE_TYPE_MAGICROW: //start
+			{
+				if(module_arr[M_FLAGS1] & FLAG_MROW_RTOL)
+					invmagicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				else
+					magicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				break;
+			} //end
 			
 			case MODULE_TYPE_COUNTER: //start
 			{
@@ -781,16 +809,16 @@ namespace Venrob::Subscreen
 		}
 	} //end Minimap
 	//start Life Bar
-	void heartrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing)
+	void heartrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing) //start
 	{
 		for(int q = 0; q < count; ++q)
 			heart(bit, layer, x + (q*(8+spacing)), y, num+q, baseTile, cset);
-	}
-	void invheartrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing)
+	} //end
+	void invheartrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing) //start
 	{
 		for(int q = count-1; q >= 0; --q)
 			heart(bit, layer, x + (q*(8+spacing)), y, num+(count-q-1), baseTile, cset);
-	}
+	} //end
 	void heart(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset) //start
 	{
 		if(Game->MCounter[CR_LIFE] < (num*HP_PER_HEART+1)) return;
@@ -808,6 +836,50 @@ namespace Venrob::Subscreen
 		}
 	} //end
 	//end Life Bar
+	//start Magic Meter
+	void magicrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing) //start
+	{
+		for(int q = 0; q < count; ++q)
+			magic(bit, layer, x + (q*(8+spacing)), y, num+q, baseTile, cset);
+	} //end
+	void invmagicrow(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset, int count, int spacing) //start
+	{
+		for(int q = count-1; q >= 0; --q)
+			magic(bit, layer, x + (q*(8+spacing)), y, num+(count-q-1), baseTile, cset);
+	} //end
+	void halfmagic(bitmap bit, int layer, int x, int y, int baseTile, int cset) //start
+	{
+		if(Game->Generic[GEN_MAGICDRAINRATE] < 2)
+		{
+			minitile(bit, layer, x, y, baseTile, cset, 1);
+		}
+	} //end
+	
+	void magic(bitmap bit, int layer, int x, int y, int num, int baseTile, int cset) //start
+	{
+		unless(num)
+		{
+			minitile(bit, layer, x-8, y, baseTile, cset, 2); //Left cap
+		}
+		else if(Game->MCounter[CR_MAGIC] == (num+1)*MP_PER_BLOCK)
+		{
+			minitile(bit, layer, x+8, y, baseTile, cset, 3); //Right cap
+		}
+		if(Game->MCounter[CR_MAGIC] < (num*MP_PER_BLOCK+1)) return;
+		if(Game->Counter[CR_MAGIC] >= (num+1)*MP_PER_BLOCK)
+		{
+			minitile(bit, layer, x, y, baseTile, cset, 0);
+		}
+		else if(Game->Counter[CR_MAGIC] < (num*MP_PER_BLOCK+1))
+		{
+			minitile(bit, layer, x, y, baseTile+1, cset, 0);
+		}
+		else
+		{
+			minitile(bit, layer, x, y, baseTile+1+Div(Game->Counter[CR_MAGIC] % MP_PER_BLOCK, MP_PER_BLOCK/4), cset, Game->Counter[CR_MAGIC] % (MP_PER_BLOCK/4));
+		}
+	} //end
+	//end Magic Meter
 	//start Counter
 	bool hasInfItem(int cr) //start
 	{

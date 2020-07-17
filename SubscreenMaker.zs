@@ -43,6 +43,8 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_CLOCK = 1;
 	DEFINE MVER_ITEMNAME = 1;
 	DEFINE MVER_DMTITLE = 1;
+	DEFINE MVER_MAGIC = 1;
+	DEFINE MVER_MAGICROW = 1;
 	//end Versioning
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false};
@@ -442,6 +444,32 @@ namespace Venrob::SubscreenEditor
 				break;
 			} //end
 			
+			case MODULE_TYPE_MAGIC: //start
+			{
+				if(module_arr[M_FLAGS1] & FLAG_MAG_ISHALF)
+					halfmagic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2]);
+				else
+					magic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
+				}
+				break;
+			} //end
+			
+			case MODULE_TYPE_MAGICROW: //start
+			{
+				if(module_arr[M_FLAGS1] & FLAG_MROW_RTOL)
+					invmagicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				else
+					magicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				if(interactive)
+				{
+					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5], 7, mod_indx, active, true);
+				}
+				break;
+			} //end
+			
 			case MODULE_TYPE_COUNTER: //start
 			{
 				int wid = counter(module_arr, bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y]);
@@ -757,9 +785,9 @@ namespace Venrob::SubscreenEditor
 	
 	bool handle_data_pane(bool active)
 	{
-		Game->ClickToFreezeEnabled = false;
 		int pane = SubEditorData[SED_ACTIVE_PANE];
 		unless(pane) return false;
+		Game->ClickToFreezeEnabled = false;
 		int panetype = SubEditorData[SED_PANE_MENU_TYPE];
 		untyped module_arr[MODULE_BUF_SIZE];
 		close_data_pane(); //here, so that the pane can open another from inside.
@@ -988,8 +1016,10 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_TILEBLOCK:
 				return 256 - (16 * module_arr[P3]);
 			case MODULE_TYPE_HEART:
+			case MODULE_TYPE_MAGIC:
 				return 256 - 8;
 			case MODULE_TYPE_HEARTROW:
+			case MODULE_TYPE_MAGICROW:
 				return 256 - ((module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5]);
 			case MODULE_TYPE_COUNTER:
 				char32 buf[6];
@@ -1082,7 +1112,8 @@ namespace Venrob::SubscreenEditor
 				return _BOTTOM - (16 * module_arr[P4]);
 			case MODULE_TYPE_HEARTROW:
 			case MODULE_TYPE_HEART:
-				return _BOTTOM - 8;
+			case MODULE_TYPE_MAGICROW:
+			case MODULE_TYPE_MAGIC:
 			case MODULE_TYPE_MINITILE:
 				return _BOTTOM - 8;
 			case MODULE_TYPE_COUNTER:
@@ -1858,6 +1889,91 @@ namespace Venrob::SubscreenEditor
 				}
 				return true;
 			} //end
+			case MODULE_TYPE_MAGIC: //start
+			{
+				if(module_arr[M_SIZE]!=P3+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_MAGIC (%d) must have argument size (3) in format {META..., TILE, CSET, CONTAINER_NUM}; argument size %d found", MODULE_TYPE_MAGIC, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGIC (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MAGIC, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGIC (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MAGIC, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGIC (%d) argument 3 (CONTAINER_NUM) must be an integer above (0); found %d", MODULE_TYPE_MAGIC, module_arr[P3]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_MAGICROW: //start
+			{
+				if(module_arr[M_SIZE]!=P5+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_MAGICROW (%d) must have argument size (5) in format {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}; argument size %d found", MODULE_TYPE_MAGICROW, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > MAX_TILE || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGICROW (%d) argument 1 (TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_MAGICROW, MAX_TILE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGICROW (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_MAGICROW, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGICROW (%d) argument 3 (CONTAINER_NUM) must be an integer above (0); found %d", MODULE_TYPE_MAGICROW, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 1 || module_arr[P4] > 32 || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGICROW (%d) argument 4 (COUNT) must be an integer between (1) and (32), inclusive; found %d", MODULE_TYPE_MAGICROW, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4]%1)
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_MAGICROW (%d) argument 5 (SPACING) must be an integer; found %d", MODULE_TYPE_MAGICROW, module_arr[P3]);
+					}
+					return false;
+				}
+				return true;
+			} //end
+			
 			default:
 			{
 				if(DEBUG)
@@ -2313,6 +2429,24 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P2] = 0x01;
 		buf_arr[P4] = 0x0F;
 		buf_arr[P5] = SHD_SHADOWED;
+	}
+	
+	void MakeMagic(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P3+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_MAGIC;
+		buf_arr[M_VER] = MVER_MAGIC;
+	}
+	
+	void MakeMagicRow(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P5+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_MAGICROW;
+		buf_arr[M_VER] = MVER_MAGICROW;
+		
+		buf_arr[P4] = 10;
 	}
 	//end Constructors
 	//start FileIO
