@@ -281,6 +281,26 @@ namespace Venrob::SubscreenEditor
 		}
 	} //end
 	
+	dmapdata script TestingPassiveSub
+	{
+		void run()
+		{
+			while(true)
+			{
+				runPassiveSubscreen();
+				Waitframe();
+			}
+		}
+	}
+	dmapdata script TestingActiveSub
+	{
+		void run()
+		{
+			runActiveSubscreen();
+			runPassiveSubscreen();
+		}
+	}
+	
 	void setRules() //start
 	{
 		Game->FFRules[qr_OLD_PRINTF_ARGS] = false;

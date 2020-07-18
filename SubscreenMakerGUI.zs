@@ -3058,6 +3058,9 @@ namespace Venrob::SubscreenEditor
 			disableKeys(true);
 			while(true)
 			{
+				dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
+				dm->ASubScript = 0;
+				dm->PSubScript = 0;
 				lastframe->Clear(0);
 				fullblit(0, lastframe, bit);
 				bit->ClearToColor(0, PAL[COL_NULL]);
@@ -3208,6 +3211,8 @@ namespace Venrob::SubscreenEditor
 				null_screen();
 				draw_dlg(bit, data);
 				KillButtons();
+				dm->ASubScript = 0;
+				dm->PSubScript = 0;
 				subscr_Waitframe();
 			}
 			/* Unreachable
@@ -3237,18 +3242,22 @@ namespace Venrob::SubscreenEditor
 					memset(mod_flags, 0, g_arr[NUM_PASSIVE_MODULES]);
 					break;
 			}
-			
+			int ex_active_script = Game->GetDMapScript("TestingActiveSub");
+			int ex_passive_script = Game->GetDMapScript("TestingPassiveSub");
 			while(true)
 			{
+				dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
 				switch(mode)
 				{
 					case 0:
-						dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
+						dm->ASubScript = ex_active_script;
+						dm->PSubScript = ex_passive_script;
+						/*
 						if(Input->Press[CB_START])
 						{
 							runActiveSubscreen();
 						}
-						runPassiveSubscreen();
+						runPassiveSubscreen();*/
 						break;
 					case 1:
 						runFauxActiveSubscreen();

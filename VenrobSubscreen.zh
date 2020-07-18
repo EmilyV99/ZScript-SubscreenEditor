@@ -1392,7 +1392,7 @@ namespace Venrob::Subscreen
 	void shuffle_button(int btn, int dir, bool forceNew) //start Move a button to the next available position
 	{
 		int pos = btn_data[BTNPOS+btn];
-		unless(pos) return;
+		unless(pos > -1) return;
 		bool visited[MAX_INT];
 		visited[pos] = true;
 		for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES]; ++q)
