@@ -374,7 +374,7 @@ namespace Venrob::SubscreenEditor
 			} //end
 			//end
 			//start Deco: Special
-			void corner_border_effect(bitmap bit, int corner_x, int corner_y, int len, int corner_dir, int color)
+			void corner_border_effect(bitmap bit, int corner_x, int corner_y, int len, int corner_dir, int color) //start
 			{	//A triangle, with a curve cut out of the hypotenuse. Right, Equilateral triangles only.
 				int x1 = corner_x + (remY(corner_dir)==DIR_RIGHT ? -len : len),
 				    y1 = corner_y,
@@ -386,8 +386,8 @@ namespace Venrob::SubscreenEditor
 				circ(sub, x1, y2, len, 0x00);
 				fullblit(0, bit, sub);
 				sub->Free();
-			}
-			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol, int ULCol, int DRCol)
+			} //end
+			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol, int ULCol, int DRCol) //start
 			{
 				rect(bit, x1, y1, x1+(margin-1), y2, ULCol);
 				rect(bit, x2, y2, x1, y2-(margin-1), DRCol);
@@ -395,23 +395,23 @@ namespace Venrob::SubscreenEditor
 				rect(bit, x1, y1, x2, y1+(margin-1), ULCol);
 				
 				rect(bit, x1+margin, y1+margin, x2-margin, y2-margin, FillCol);
-			}
-			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol)
+			} //end
+			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol) //start
 			{
 				frame_rect(bit, x1, y1, x2, y2, margin, FillCol, PAL[COL_BODY_MAIN_LIGHT], PAL[COL_BODY_MAIN_DARK]);
-			}
-			void inv_frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol)
+			} //end
+			void inv_frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol) //start
 			{
 				frame_rect(bit, x1, y1, x2, y2, margin, FillCol, PAL[COL_BODY_MAIN_DARK], PAL[COL_BODY_MAIN_LIGHT]);
-			}
-			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin)
+			} //end
+			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin) //start
 			{
 				frame_rect(bit, x1, y1, x2, y2, margin, PAL[COL_BODY_MAIN_MED]);
-			}
-			void inv_frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin)
+			} //end
+			void inv_frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin) //start
 			{
 				inv_frame_rect(bit, x1, y1, x2, y2, margin, PAL[COL_BODY_MAIN_MED]);
-			}
+			} //end
 			//end
 			//Active type procs: functional
 			//start components
@@ -518,6 +518,28 @@ namespace Venrob::SubscreenEditor
 			ProcRet button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, untyped proc_data, int proc_indx)
 			{
 				button(bit, x, y, wid, hei, btnText, dlgdata, proc_data, proc_indx, 0);
+			} //end
+			ProcRet radio(bitmap bit, int x, int y, int rad, untyped dlgdata, untyped proc_data, int proc_indx, int rad_indx, int flags) //start
+			{
+				bool disabled = flags&FLAG_DISABLE;
+				ProcRet ret = PROC_NULL;
+				//Dark BG circle
+				circ(bit, x, y, rad, PAL[COL_BODY_MAIN_DARK]);
+				//UL 3 sections
+				circ(bit, x-1, y-1, rad-1, PAL[COL_BODY_MAIN_LIGHT]);
+				circ(bit, x-1, y, rad-1, PAL[COL_BODY_MAIN_LIGHT]);
+				circ(bit, x, y-1, rad-1, PAL[COL_BODY_MAIN_LIGHT]);
+				//Main Circle
+				circ(bit, x, y, rad-1, disabled ? PAL[COL_BODY_MAIN_MED] : PAL[COL_FIELD_BG]);
+				if(SubEditorData[SED_LCLICKED] && DLGCursorRad(x, y, rad, dlgdata))
+				{
+					ret = PROC_CONFIRM;
+					proc_data[proc_indx] = rad_indx;
+				}
+				if(proc_data[proc_indx] == rad_indx) //Selected
+				{
+					circ(bit, x, y, Div(rad,2), disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+				}
 			} //end
 			Color pal_swatch(bitmap bit, int x, int y, int wid, int hei, Color swatch_color, untyped dlgdata) //start
 			{
@@ -838,6 +860,11 @@ namespace Venrob::SubscreenEditor
 					msg_dlg("Information", info);
 				}
 			} //end
+			ProcRet titled_radio(bitmap bit, int x, int y, int rad, untyped dlgdata, untyped proc_data, int proc_indx, int rad_indx, int flags, char32 title) //start
+			{
+				text(bit, x+rad+3, y - Div(Text->FontHeight(DIA_FONT), 2), TF_NORMAL, title, (flags&FLAG_DISABLE ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
+				return radio(bit, x, y, rad, dlgdata, proc_data, proc_indx, rad_indx, flags);
+			} //end
 			//end
 		} //end
 		//Flagsets
@@ -935,8 +962,9 @@ namespace Venrob::SubscreenEditor
 			bool do_save_changes = false;
 			//end
 			untyped proc_data[MAX_INT];
-			int LItem = Game->LItems[Game->GetCurLevel()];
-			Game->LItems[Game->GetCurLevel()] = LI_COMPASS | LI_MAP;
+			int curlvl = Game->GetCurLevel();
+			int LItem = Game->LItems[curlvl];
+			Game->LItems[curlvl] = LI_COMPASS | LI_MAP;
 			int prev = 0;
 			untyped d[1]; //Dummy vals
 			while(running)
@@ -1112,8 +1140,22 @@ namespace Venrob::SubscreenEditor
 						break;
 					} //end
 					
-					case MODULE_TYPE_ABUTTONITEM:
-					case MODULE_TYPE_BBUTTONITEM:
+					case MODULE_TYPE_BUTTONITEM: //start
+					{
+						DEFINE RADIO_RAD = 5;
+						DEFINE RAD_X = FRAME_X + RADIO_RAD;
+						DEFINE RAD_Y = FRAME_Y + 12 + RADIO_RAD;
+						DEFINE RAD_YDIFF = RADIO_RAD*2 + 3;
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*0), RADIO_RAD, data, arr, P1, CB_A, 0, "A");
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*1), RADIO_RAD, data, arr, P1, CB_B, 0, "B");
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*2), RADIO_RAD, data, arr, P1, CB_L, 0, "L");
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*3), RADIO_RAD, data, arr, P1, CB_R, 0, "R");
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*4), RADIO_RAD, data, arr, P1, CB_EX1, 0, "EX1");
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*5), RADIO_RAD, data, arr, P1, CB_EX2, 0, "EX2");
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*6), RADIO_RAD, data, arr, P1, CB_EX3, 0, "EX3");
+						titled_radio(bit, RAD_X, RAD_Y + (RAD_YDIFF*7), RADIO_RAD, data, arr, P1, CB_EX4, 0, "EX4");
+						break;
+					} //end
 					case MODULE_TYPE_PASSIVESUBSCREEN: //start
 					{
 						break;
@@ -1782,8 +1824,8 @@ namespace Venrob::SubscreenEditor
 				KillButtons();
 				subscr_Waitframe();
 			}
-			Game->LItems[Game->GetCurLevel()] = LItem;
-			if(do_save_changes)
+			Game->LItems[curlvl] = LItem;
+			if(do_save_changes) //start
 			{
 				arr[M_X] = VBound(atoi(buf_x), max_x(arr), min_x(arr));
 				arr[M_Y] = VBound(atoi(buf_y), max_y(arr, active), min_y(arr));
@@ -1821,7 +1863,7 @@ namespace Venrob::SubscreenEditor
 					mod_flags[mod_indx] = f | MODFLAG_SELECTED;
 					SubEditorData[SED_SELECTED] = mod_indx;
 				}
-			}
+			} //end
 			
 			bit->Free();
 			gen_final();
@@ -2346,7 +2388,7 @@ namespace Venrob::SubscreenEditor
 		} //end
 		//end
 		//start Options
-		void opt_dlg(bool active)
+		void opt_dlg(bool active) //start
 		{
 			gen_startup();
 			//start setup
@@ -2360,7 +2402,7 @@ namespace Venrob::SubscreenEditor
 			bitmap bit = create(WIDTH, HEIGHT);
 			bit->ClearToColor(0, PAL[COL_NULL]);
 			//
-			untyped settings_arr[NUM_SETTINGS + MODULE_META_SIZE];
+			untyped settings_arr[SZ_SETTINGS];
 			saveModule(settings_arr, 0, active);
 			//
 			char32 title[128];
@@ -2439,14 +2481,21 @@ namespace Venrob::SubscreenEditor
 					DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
 					//Confirm / Reset
 					{
-						if(PROC_CONFIRM==button(bit, FRAME_X+BUTTON_WIDTH+3, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 1))
-						{
-							running = false;
-						}
-						if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 2, FLAG_DEFAULT))
+						if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*0), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 2, FLAG_DEFAULT))
 						{
 							running = false;
 							do_save_changes = true;
+						}
+						if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*1), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 1))
+						{
+							running = false;
+						}
+						if(active)
+						{
+							if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*2), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Btn Config", data, proc_data, 3))
+							{
+								do_btnsettings(settings_arr);
+							}
 						}
 					}
 				}
@@ -2529,7 +2578,239 @@ namespace Venrob::SubscreenEditor
 			
 			bit->Free();
 			gen_final();
-		}
+		} //end
+		
+		void do_btnsettings(untyped old_settings_arr) //start (Active settings only)
+		{
+			gen_startup();
+			//start setup
+			DEFINE WIDTH = 112
+			     , HEIGHT = 112
+				 , BAR_HEIGHT = 11
+				 , MARGIN_WIDTH = 1
+				 , FRAME_X = MARGIN_WIDTH+2
+				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
+				 ;
+			bitmap bit = create(WIDTH, HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			//
+			untyped settings_arr[SZ_SETTINGS];
+			memcpy(settings_arr, old_settings_arr, SZ_SETTINGS);
+			//
+			char32 title[128] = "Button Settings";
+			char32 desc_str[512] = "If a button is 'enabled', it can have an item assigned which will be used when pressed.\n"
+			                       "If a button is 'assignable', any item can be placed on the button in the active subscreen.\n"
+								   "If the 'A' button is enabled, but not assignable, it will automatically assign to the current Sword.\n"
+								   "If any other button is enabled, but not assignable, it can only be assigned to via a different script.\n";
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			//
+			null_screen();
+			draw_dlg(bit, data);
+			KillButtons();
+			Waitframe();
+			//
+			center_dlg(bit, data);
+			
+			bool running = true;
+			bool do_save_changes = false;
+			//end
+			untyped proc_data[6];
+			DEFINE FLAGS_HEIGHT = 7;
+			DEFINE ENABLED_X = (WIDTH/2) - (FLAGS_HEIGHT+1);
+			DEFINE ASSIGNABLE_X = (WIDTH/2);
+			while(running)
+			{
+				bit->ClearToColor(0, PAL[COL_NULL]);
+				//Deco
+				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
+				//Func
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, desc_str)==PROC_CANCEL || CancelButtonP())
+					running = false;
+				//
+				text(bit, WIDTH/2, FRAME_Y, TF_CENTERED, "   Enabled | Assignable", PAL[COL_TEXT_MAIN]);
+				//start Enabled
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*0), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_A), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_A);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_A);
+						break;
+				}
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*1), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_B), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_B);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_B);
+						break;
+				}
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*2), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_L), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_L);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_L);
+						break;
+				}
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*3), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_R), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_R);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_R);
+						break;
+				}
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*4), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX1), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX1);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX1);
+						break;
+				}
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*5), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX2), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX2);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX2);
+						break;
+				}
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*6), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX3), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX3);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX3);
+						break;
+				}
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*7), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX4), data, 0))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX4);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX4);
+						break;
+				}
+				//end Enabled
+				//start Assignable
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*0), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A), data, 0, "A"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_A);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_A);
+						break;
+				}
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*1), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_B), data, 0, "B"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_B);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_B);
+						break;
+				}
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*2), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_L), data, 0, "L"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_L);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_L);
+						break;
+				}
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*3), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_R), data, 0, "R"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_R);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_R);
+						break;
+				}
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*4), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX1), data, 0, "EX1"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX1);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX1);
+						break;
+				}
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*5), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX2), data, 0, "EX2"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX2);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX2);
+						break;
+				}
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*6), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX3), data, 0, "EX3"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX3);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX3);
+						break;
+				}
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*7), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX4), data, 0, "EX4"))
+				{
+					case PROC_UPDATED_FALSE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX4);
+						break;
+					case PROC_UPDATED_TRUE:
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX4);
+						break;
+				}
+				//end Assignable
+				//
+				DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+				if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*0), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Accept", data, proc_data, 2, FLAG_DEFAULT))
+				{
+					running = false;
+					do_save_changes = true;
+				}
+				if(PROC_CONFIRM==button(bit, FRAME_X+((BUTTON_WIDTH+3)*1), HEIGHT-MARGIN_WIDTH-2-BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", data, proc_data, 1))
+				{
+					running = false;
+				}
+				//
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
+			{
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			if(do_save_changes)
+			{
+				memcpy(old_settings_arr, settings_arr, SZ_SETTINGS);
+			}
+			
+			bit->Free();
+			gen_final();
+		} //end
 		//end
 		//start New Object
 		void new_obj(bool active)
@@ -2567,31 +2848,29 @@ namespace Venrob::SubscreenEditor
 			int indx;
 			//start val/string setup
 			int aval[] = {MODULE_TYPE_SEL_ITEM_ID, MODULE_TYPE_SEL_ITEM_CLASS, MODULE_TYPE_ITEMNAME,
-				MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
-				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_PASSIVESUBSCREEN, MODULE_TYPE_MINIMAP,
-				MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW,
-				MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE,
-				MODULE_TYPE_CRROW, MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE,
-				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
-			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
-				"Item (ID)", "Item (Type)", "A Item",
-				"B Item", "Passive Subscreen", "MiniMap",
-				"Tile Block", "Heart", "Heart Row",
-				"Magic", "Magic Row", "Counter Meter (Piece)",
-				"Counter Meter (Row)", "Counter", "Minitile",
-				"Clock", "DMap Title"};
-			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_ABUTTONITEM,
-				MODULE_TYPE_BBUTTONITEM, MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK,
+				MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_BUTTONITEM,
+				MODULE_TYPE_PASSIVESUBSCREEN, MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK,
 				MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC,
 				MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE, MODULE_TYPE_CRROW,
 				MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK,
 				MODULE_TYPE_DMTITLE};
-			char32 pstrs[] = {"Item (ID)", "Item (Type)", "A Item",
-				"B Item", "MiniMap", "Tile Block",
+			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
+				"Item (ID)", "Item (Type)", "Button Item",
+				"Passive Subscreen", "MiniMap", "Tile Block",
 				"Heart", "Heart Row", "Magic",
 				"Magic Row", "Counter Meter (Piece)", "Counter Meter (Row)",
 				"Counter", "Minitile", "Clock",
 				"DMap Title"};
+			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_BUTTONITEM,
+				MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART,
+				MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW,
+				MODULE_TYPE_CRPIECE, MODULE_TYPE_CRROW, MODULE_TYPE_COUNTER,
+				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
+			char32 pstrs[] = {"Item (ID)", "Item (Type)", "Button Item",
+				"MiniMap", "Tile Block", "Heart",
+				"Heart Row", "Magic", "Magic Row",
+				"Counter Meter (Piece)", "Counter Meter (Row)", "Counter",
+				"Minitile", "Clock", "DMap Title"};
 			//end
 			int val = active ? aval : pval;
 			char32 strs = active ? astrs : pstrs;
@@ -2622,13 +2901,9 @@ namespace Venrob::SubscreenEditor
 						{
 							MakeSelectableItemClass(module_arr); break;
 						}
-						case MODULE_TYPE_ABUTTONITEM:
+						case MODULE_TYPE_BUTTONITEM:
 						{
-							MakeAButtonItem(module_arr); break;
-						}
-						case MODULE_TYPE_BBUTTONITEM:
-						{
-							MakeBButtonItem(module_arr); break;
+							MakeButtonItem(module_arr); break;
 						}
 						case MODULE_TYPE_MINIMAP:
 						{
@@ -2968,6 +3243,7 @@ namespace Venrob::SubscreenEditor
 				switch(mode)
 				{
 					case 0:
+						dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
 						if(Input->Press[CB_START])
 						{
 							runActiveSubscreen();
@@ -3494,7 +3770,7 @@ namespace Venrob::SubscreenEditor
 			
 			//start setup
 			DEFINE MARGIN_WIDTH = 1
-			     , WIDTH = 162
+			     , WIDTH = 192
 				 , TXTWID = WIDTH - ((MARGIN_WIDTH+1)*2)
 				 , NUM_ROWS_TEXT = DrawStringsCount(DIA_FONT, msg, TXTWID)
 				 , BAR_HEIGHT = 11
@@ -3816,13 +4092,9 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Selectable Item (Type)"); break;
 				}
-				case MODULE_TYPE_ABUTTONITEM:
+				case MODULE_TYPE_BUTTONITEM:
 				{
-					strcat(buf, "A Item"); break;
-				}
-				case MODULE_TYPE_BBUTTONITEM:
-				{
-					strcat(buf, "B Item"); break;
+					strcat(buf, "Button Item"); break;
 				}
 				case MODULE_TYPE_PASSIVESUBSCREEN:
 				{
@@ -3911,13 +4183,9 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "A selectable object representing the highest item in the inventory of a specific item class.\n\nSelectable objects have an 'Index' value. They also have 4 'Direction' values. Setting these direction values to the 'Index' of another selectable indicates where to select when a direction is pressed."); break;
 				}
-				case MODULE_TYPE_ABUTTONITEM:
+				case MODULE_TYPE_BUTTONITEM:
 				{
-					strcat(buf, "Displays the currently equipped A-Button item."); break;
-				}
-				case MODULE_TYPE_BBUTTONITEM:
-				{
-					strcat(buf, "Displays the currently equipped B-Button item."); break;
+					strcat(buf, "Displays the currently equipped item of a given button."); break;
 				}
 				case MODULE_TYPE_PASSIVESUBSCREEN:
 				{
@@ -4042,6 +4310,24 @@ namespace Venrob::SubscreenEditor
 			int xoffs = -dlgdata[DLG_DATA_XOFFS], yoffs = -dlgdata[DLG_DATA_YOFFS];
 			return SubEditorData[SED_MOUSE_X] + xoffs >= x && SubEditorData[SED_MOUSE_X] + xoffs <= x2
 				&& SubEditorData[SED_MOUSE_Y] + yoffs >= y && SubEditorData[SED_MOUSE_Y] + yoffs <= y2;
+		} //end
+		
+		bool DLGCursorRad(int x, int y, int radius, int xoffs, int yoffs) //start Automatically handle dlg offsets when reading the cursor's position
+		{
+			float tx = (x-(SubEditorData[SED_MOUSE_X]+xoffs));
+			float ty = (y-(SubEditorData[SED_MOUSE_Y]+yoffs));
+			float factor = (tx*tx)+(ty*ty);
+			if ( factor < 0 ) return true;
+			else return Sqrt(factor) < radius;
+		} //end
+		bool DLGCursorRad(int x, int y, int radius, untyped dlgdata) //start Automatically handle dlg offsets when reading the cursor's position
+		{
+			int xoffs = -dlgdata[DLG_DATA_XOFFS], yoffs = -dlgdata[DLG_DATA_YOFFS];
+			float tx = (x-(SubEditorData[SED_MOUSE_X]+xoffs));
+			float ty = (y-(SubEditorData[SED_MOUSE_Y]+yoffs));
+			float factor = (tx*tx)+(ty*ty);
+			if ( factor < 0 ) return true;
+			else return Sqrt(factor) < radius;
 		} //end
 		
 		int DLGMouseX(untyped dlgdata) //start

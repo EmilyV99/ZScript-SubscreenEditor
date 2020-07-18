@@ -29,8 +29,7 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_BGCOLOR = 1;
 	DEFINE MVER_SEL_ITEM_ID = 1;
 	DEFINE MVER_SEL_ITEM_CLASS = 1;
-	DEFINE MVER_ABUTTONITEM = 1;
-	DEFINE MVER_BBUTTONITEM = 1;
+	DEFINE MVER_BUTTONITEM = 2;
 	DEFINE MVER_PASSIVESUBSCREEN = 1;
 	DEFINE MVER_MINIMAP = 1;
 	DEFINE MVER_TILEBLOCK = 1;
@@ -199,13 +198,15 @@ namespace Venrob::SubscreenEditor
 		}
 		else
 		{
-			MakeBButtonItem(buf);
+			MakeButtonItem(buf);
 			buf[M_X] = 128;
 			buf[M_Y] = 24;
+			buf[P1] = CB_B;
 			add_passive_module(buf);
-			MakeAButtonItem(buf);
+			MakeButtonItem(buf);
 			buf[M_X] = 144;
 			buf[M_Y] = 24;
+			buf[P1] = CB_A;
 			add_passive_module(buf);
 			f->Create("SubEditor/tmpfiles/001.z_psub");
 			save_passive_file(f);
@@ -340,10 +341,9 @@ namespace Venrob::SubscreenEditor
 				break;
 			} //end
 			
-			case MODULE_TYPE_ABUTTONITEM:
-			case MODULE_TYPE_BBUTTONITEM: //start
+			case MODULE_TYPE_BUTTONITEM: //start
 			{
-				int itmid = module_arr[M_TYPE] == MODULE_TYPE_ABUTTONITEM ? Hero->ItemA : Hero->ItemB;
+				int itmid = get_btn_itm(module_arr[P1]);
 				itemdata id = Game->LoadItemData(itmid);
 				int frm = Div(g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
 				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
@@ -1017,13 +1017,12 @@ namespace Venrob::SubscreenEditor
 		itemdata id;
 		switch(module_arr[M_TYPE])
 		{
-			case MODULE_TYPE_ABUTTONITEM:
-			case MODULE_TYPE_BBUTTONITEM:
+			case MODULE_TYPE_BUTTONITEM:
 			case MODULE_TYPE_NONSEL_ITEM_ID:
 			case MODULE_TYPE_NONSEL_ITEM_CLASS:
 			case MODULE_TYPE_SEL_ITEM_ID:
 			case MODULE_TYPE_SEL_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?Hero->ItemA:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?Hero->ItemB:((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID)?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_BUTTONITEM?get_btn_itm(module_arr[P1]):((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return 256-16;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -1081,11 +1080,10 @@ namespace Venrob::SubscreenEditor
 		itemdata id;
 		switch(module_arr[M_TYPE])
 		{
-			case MODULE_TYPE_ABUTTONITEM:
-			case MODULE_TYPE_BBUTTONITEM:
+			case MODULE_TYPE_BUTTONITEM:
 			case MODULE_TYPE_SEL_ITEM_ID:
 			case MODULE_TYPE_SEL_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_BUTTONITEM?get_btn_itm(module_arr[P1]):((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return 0;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -1115,13 +1113,12 @@ namespace Venrob::SubscreenEditor
 		DEFINE _BOTTOM = (active ? 224 : 56);
 		switch(module_arr[M_TYPE])
 		{
-			case MODULE_TYPE_ABUTTONITEM:
-			case MODULE_TYPE_BBUTTONITEM:
+			case MODULE_TYPE_BUTTONITEM:
 			case MODULE_TYPE_NONSEL_ITEM_ID:
 			case MODULE_TYPE_NONSEL_ITEM_CLASS:
 			case MODULE_TYPE_SEL_ITEM_ID:
 			case MODULE_TYPE_SEL_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?Hero->ItemA:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?Hero->ItemB:((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID)?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_BUTTONITEM?get_btn_itm(module_arr[P1]):((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return _BOTTOM-16;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -1162,11 +1159,10 @@ namespace Venrob::SubscreenEditor
 		itemdata id;
 		switch(module_arr[M_TYPE])
 		{
-			case MODULE_TYPE_ABUTTONITEM:
-			case MODULE_TYPE_BBUTTONITEM:
+			case MODULE_TYPE_BUTTONITEM:
 			case MODULE_TYPE_SEL_ITEM_ID:
 			case MODULE_TYPE_SEL_ITEM_CLASS:
-				int itm = (module_arr[M_TYPE]==MODULE_TYPE_ABUTTONITEM?I_SWORD1:(module_arr[M_TYPE]==MODULE_TYPE_BBUTTONITEM?I_CANDLE1:(module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
+				int itm = (module_arr[M_TYPE]==MODULE_TYPE_BUTTONITEM?get_btn_itm(module_arr[P1]):((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return 0;
 				itemdata id = Game->LoadItemData(itm);
 				//
@@ -1193,7 +1189,7 @@ namespace Venrob::SubscreenEditor
 	bool validate_active_module(untyped module_arr) //start
 	{
 		moduleType type = module_arr[M_TYPE];
-		if(module_arr[M_META_SIZE] < MODULE_META_SIZE) //Versioning!
+		if(module_arr[M_META_SIZE] < MODULE_META_SIZE) //start Versioning!
 		{
 			switch(module_arr[M_META_SIZE])
 			{
@@ -1206,7 +1202,7 @@ namespace Venrob::SubscreenEditor
 					++module_arr[M_META_SIZE];
 					++module_arr[M_SIZE];
 			}
-		}
+		} //end
 		switch(type)
 		{
 			case MODULE_TYPE_BGCOLOR: //start
@@ -1394,8 +1390,6 @@ namespace Venrob::SubscreenEditor
 				return module_arr[M_SIZE] >= MODULE_META_SIZE;
 			}
 			
-			case MODULE_TYPE_ABUTTONITEM:
-			case MODULE_TYPE_BBUTTONITEM:
 			case MODULE_TYPE_PASSIVESUBSCREEN:
 				return true;
 			
@@ -2121,6 +2115,47 @@ namespace Venrob::SubscreenEditor
 				return true;
 			} //end
 			
+			case DEPR_MODULE_TYPE_BBUTTONITEM: //start
+			{
+				module_arr[M_TYPE] = MODULE_TYPE_BUTTONITEM;
+				module_arr[M_VER] = 2;
+				module_arr[M_SIZE] = P1+1;
+				module_arr[P1] = CB_B;
+			} //end
+			//fallthrough
+			case MODULE_TYPE_BUTTONITEM: //start
+			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_SIZE] = P1+1;
+						module_arr[P1] = CB_A;
+						//fallthrough
+					} //end
+				}
+				if(module_arr[M_SIZE]!=P1+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_BUTTONITEM (%d) must have argument size (1) in format {BUTTON}; argument size %d found", MODULE_TYPE_BUTTONITEM, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				switch(module_arr[P1])
+				{
+					case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
+						break;
+					default:
+					{
+						if(DEBUG)
+						{
+							error("MODULE_TYPE_BUTTONITEM (%d) argument 1 (BUTTON) must be from the list: {CB_A,CB_B,CB_L,CB_R,CB_EX1,CB_EX2,CB_EX3,CB_EX4}; found %d", MODULE_TYPE_BUTTONITEM, module_arr[P1]);
+						}
+						return false;
+					}
+				}
+				return true;
+			} //end
 			default:
 			{
 				if(DEBUG)
@@ -2356,7 +2391,7 @@ namespace Venrob::SubscreenEditor
 		memset(activeData, 0, SUBSCR_STORAGE_SIZE);
 		memset(activeModules, 0, MAX_MODULES);
 		g_arr[NUM_ACTIVE_MODULES] = 1;
-		g_arr[SZ_ACTIVE_DATA] = NUM_SETTINGS + MODULE_META_SIZE;
+		g_arr[SZ_ACTIVE_DATA] = SZ_SETTINGS;
 		activeModules[1] = g_arr[SZ_ACTIVE_DATA];
 		load_active_settings(NULL);
 		
@@ -2371,7 +2406,7 @@ namespace Venrob::SubscreenEditor
 		memset(passiveData, 0, SUBSCR_STORAGE_SIZE);
 		memset(passiveModules, 0, MAX_MODULES);
 		g_arr[NUM_PASSIVE_MODULES] = 1;
-		g_arr[SZ_PASSIVE_DATA] = NUM_SETTINGS + MODULE_META_SIZE;
+		g_arr[SZ_PASSIVE_DATA] = SZ_SETTINGS;
 		passiveModules[1] = g_arr[SZ_PASSIVE_DATA];
 		load_passive_settings(NULL);
 		
@@ -2454,20 +2489,14 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P1] = 0;
 	}
 	
-	void MakeAButtonItem(untyped buf_arr)
+	void MakeButtonItem(untyped buf_arr)
 	{
 		MakeModule(buf_arr);
 		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_TYPE] = MODULE_TYPE_ABUTTONITEM;
-		buf_arr[M_VER] = MVER_ABUTTONITEM;
-	}
-	
-	void MakeBButtonItem(untyped buf_arr)
-	{
-		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = MODULE_META_SIZE;
-		buf_arr[M_TYPE] = MODULE_TYPE_BBUTTONITEM;
-		buf_arr[M_VER] = MVER_BBUTTONITEM;
+		buf_arr[M_TYPE] = MODULE_TYPE_BUTTONITEM;
+		buf_arr[M_VER] = MVER_BUTTONITEM;
+		
+		buf_arr[P1] = CB_B;
 	}
 	
 	void MakePassiveSubscreen(untyped buf_arr)
