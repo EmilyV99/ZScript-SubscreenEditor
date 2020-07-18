@@ -3252,18 +3252,16 @@ namespace Venrob::SubscreenEditor
 					case 0:
 						dm->ASubScript = ex_active_script;
 						dm->PSubScript = ex_passive_script;
-						/*
-						if(Input->Press[CB_START])
-						{
-							runActiveSubscreen();
-						}
-						runPassiveSubscreen();*/
 						break;
 					case 1:
+						dm->ASubScript = 0;
+						dm->PSubScript = 0;
 						runFauxActiveSubscreen();
 						KillButtons();
 						break;
 					case 2:
+						dm->ASubScript = 0;
+						dm->PSubScript = 0;
 						runFauxPassiveSubscreen(true);
 						runPreparedSelector(false);
 						ColorScreen(7, PAL[COL_NULL], true);
