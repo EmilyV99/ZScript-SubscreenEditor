@@ -202,6 +202,12 @@ namespace Venrob::Subscreen
 		CNTR_LKEY,
 		CNTR_ABTN,
 		CNTR_BBTN,
+		CNTR_LBTN,
+		CNTR_RBTN,
+		CNTR_EX1BTN,
+		CNTR_EX2BTN,
+		CNTR_EX3BTN,
+		CNTR_EX4BTN,
 		CNTR_MAX_SPECIAL
 	};
 	enum //Minitile
@@ -300,6 +306,28 @@ namespace Venrob::Subscreen
 		memcpy(activeData, START_SETTINGS, settings, START_SETTINGS, NUM_SETTINGS);
 		activeData[M_SIZE] = SZ_SETTINGS;
 		activeData[M_TYPE] = MODULE_TYPE_SETTINGS;
+		
+		int b = activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] | activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS];
+		for(int q = 0; q < CB_MAX; ++q) //start Wipe unused buttons
+		{
+			switch(q)
+			{
+				case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
+				{
+					unless(b & (1b<<q))
+						dequp_btn(q);
+					else if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
+						dequp_btn(q);
+					else if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP] && (q == CB_EX3 || q == CB_EX4))
+						dequp_btn(q);
+					continue;
+				}
+				default: continue;
+			}
+		} //end
+		//Hardcode a non-assignable CB_A to IC_SWORD
+		unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A))
+			equp_btn_itmclass(CB_A, IC_SWORD);
 	} //end
 	
 	void load_passive_settings(untyped settings_arr) //start
@@ -327,7 +355,7 @@ namespace Venrob::Subscreen
 			settings[A_STTNG_SELECTOR_VALUE2] = 0;
 			settings[A_STTNG_SELECTOR_SFX] = SFX_CURSOR;
 			settings[A_STTNG_BUTTON_ITEM_ENABLED_BITS] = (1b<<CB_A) | (1b<<CB_B);
-			settings[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] = (1b<<CB_B);
+			settings[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] = (Game->FFRules[qr_SELECTAWPN] ? (1b<<CB_A) : 0) | (1b<<CB_B);
 		}
 		else
 		{
@@ -466,7 +494,7 @@ namespace Venrob::Subscreen
 			case MODULE_TYPE_BUTTONITEM: //start
 			{
 				int itid = get_btn_itm(module_arr[P1]);
-				if(itid)
+				if(itid > -1)
 				{
 					itemdata id = Game->LoadItemData(itid);
 					unless(id->ASpeed) id->ASpeed = 1;
@@ -508,7 +536,7 @@ namespace Venrob::Subscreen
 						{
 							case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 							{
-								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1<<q))
+								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<q))
 									continue;
 								if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
 									continue;
@@ -1045,22 +1073,30 @@ namespace Venrob::Subscreen
 						val += Game->LKeys[Game->GetCurLevel()];
 						if(hasInfItem(CR_KEYS)) infinite = true;
 						break;
-					case CNTR_ABTN:
-						unless(Hero->ItemA > 0) return 0;
-						itemdata id = Game->LoadItemData(Hero->ItemA);
+					case CNTR_ABTN: case CNTR_BBTN: case CNTR_LBTN: case CNTR_RBTN:
+					case CNTR_EX1BTN: case CNTR_EX2BTN: case CNTR_EX3BTN: case CNTR_EX4BTN: //start
+					{
+						int btn;
+						switch(arr[P2]) //start calc button
+						{
+							case CNTR_ABTN: btn = CB_A; break;
+							case CNTR_BBTN: btn = CB_B; break;
+							case CNTR_LBTN: btn = CB_L; break;
+							case CNTR_RBTN: btn = CB_R; break;
+							case CNTR_EX1BTN: btn = CB_EX1; break;
+							case CNTR_EX2BTN: btn = CB_EX2; break;
+							case CNTR_EX3BTN: btn = CB_EX3; break;
+							case CNTR_EX4BTN: btn = CB_EX4; break;
+						} //end calc button
+						int itmid = get_btn_itm(btn);
+						unless(itmid > -1) return 0;
+						itemdata id = Game->LoadItemData(itmid);
 						int cr = getCost(id);
 						if(cr > CR_CUSTOM25 || cr < 0) return 0;
 						if(hasInfItem(cr)) infinite = true;
 						val = Game->Counter[cr];
 						break;
-					case CNTR_BBTN:
-						unless(Hero->ItemB > 0) return 0;
-						itemdata id = Game->LoadItemData(Hero->ItemB);
-						int cr = getCost(id);
-						if(cr > CR_CUSTOM25 || cr < 0) return 0;
-						if(hasInfItem(cr)) infinite = true;
-						val = Game->Counter[cr];
-						break;
+					} //end
 				}
 			} //end
 			else
@@ -1273,7 +1309,7 @@ namespace Venrob::Subscreen
 		{
 			return val;
 		}
-		else if(val < -1000)
+		else if(val <= -1000)
 		{
 			return get_item_of_class(-val -1000);
 		}
@@ -1286,18 +1322,54 @@ namespace Venrob::Subscreen
 		if(pos < 0) return;
 		for(int q = 0; q < CB_MAX; ++q) //start
 		{
+			if(q == btn) continue;
 			switch(q) //start Filter out unused buttons
 			{
 				case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 				{
-					unless(activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1<<q))
+					unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<q))
 						continue;
+					if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
+						continue;
+					if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP] && (q == CB_EX3 || q == CB_EX4))
+						continue;
+					break;
 				}
 				default: continue;
 			} //end
 			if(btn_data[BTNPOS+q] == pos)
 			{
 				btn_data[BTNPOS+q] = oldpos;
+				if(oldpos > -1) //start Assign item from pos
+				{
+					for(int m = 1; m < g_arr[NUM_ACTIVE_MODULES]; ++m)
+					{
+						int indx = activeModules[m];
+						if(isSelectable(activeData[indx+M_TYPE]))
+						{
+							if(activeData[indx+P2] == oldpos)
+							{
+								int try_itm = -1;
+								int try_class = -1;
+								if(activeData[indx+M_TYPE] == MODULE_TYPE_SEL_ITEM_ID)
+									try_itm = activeData[indx+P1];
+								else if(activeData[indx+M_TYPE] == MODULE_TYPE_SEL_ITEM_CLASS)
+								{
+									try_class = activeData[indx+P1];
+									try_itm = get_item_of_class(try_class);
+								}
+								if(try_itm > -1 && hasItem(try_itm))
+								{
+									if(try_class > -1)
+										equp_btn_itmclass(q, try_class);
+									else equp_btn_itm(q, try_itm);
+								}
+								else dequp_btn(q);
+								break;
+							}
+						}
+					}
+				} //end
 				oldpos = -1;
 			}
 		} //end
@@ -1325,7 +1397,7 @@ namespace Venrob::Subscreen
 				case CB_L:
 					unless(Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1<<CB_B))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_B))
 							shuffle_button(CB_B, DIR_LEFT, false);
 						continue;
 					}
@@ -1333,7 +1405,7 @@ namespace Venrob::Subscreen
 				case CB_R:
 					unless(Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1<<CB_B))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_B))
 							shuffle_button(CB_B, DIR_RIGHT, false);
 						continue;
 					}
@@ -1341,7 +1413,7 @@ namespace Venrob::Subscreen
 				case CB_EX3:
 					if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1<<CB_A))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A))
 							shuffle_button(CB_A, DIR_LEFT, false);
 						continue;
 					}
@@ -1349,7 +1421,7 @@ namespace Venrob::Subscreen
 				case CB_EX4:
 					if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1<<CB_A))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A))
 							shuffle_button(CB_A, DIR_RIGHT, false);
 						continue;
 					}
@@ -1359,7 +1431,11 @@ namespace Venrob::Subscreen
 			{
 				case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 				{
-					unless(activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1<<q))
+					unless(activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<q))
+						continue;
+					if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
+						continue;
+					if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP] && (q == CB_EX3 || q == CB_EX4))
 						continue;
 					break;
 				}
@@ -1434,12 +1510,12 @@ namespace Venrob::Subscreen
 	} //end
 	void init_buttons() //start
 	{
-		btn_data[BTNITM_A] = Hero->ItemA;
-		btn_data[BTNITM_B] = Hero->ItemB;
 		for(int q = 0; q < CB_MAX; ++q)
 		{
+			btn_data[BTNITMS+q] = -1;
 			btn_data[BTNPOS+q] = -1;
 		}
+		equp_btn_itmclass(CB_A, IC_SWORD);
 	} //end
 	//end Button Item stuff
 	//start getters/setters

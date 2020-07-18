@@ -1529,7 +1529,7 @@ namespace Venrob::SubscreenEditor
 						if(arr[M_FLAGS1]&FLAG_CNTR_SPECIAL)
 						{
 							text(bit, FRAME_X, FRAME_Y+26, TF_NORMAL, buf3, PAL[COL_TEXT_MAIN]);
-							arr[P2] = dropdown_proc(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 64, arr[P2], data, {"Any Keys", "Level Keys", "A Btn Cost", "B Btn Cost"}, -1, 4, lastframe, 0);
+							arr[P2] = dropdown_proc(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 64, arr[P2], data, SSL_SP_CNTR, -1, 10, lastframe, 0);
 						}
 						else
 						{
@@ -3174,6 +3174,7 @@ namespace Venrob::SubscreenEditor
 						} //end
 						if(PROC_CONFIRM==button(bit, ACOL_X+BUTTON_XOFF, FRAME_Y + 8 + ((BUTTON_HEIGHT + BUTTON_SPACING) * 4), BUTTON_WIDTH, BUTTON_HEIGHT, "Edit", data, proc_data, 8)) //start
 						{
+							load_passive_file(passive_indx+1);
 							load_active_file(active_indx+1);
 							if(runEditor(1))
 								save_active_file(active_indx+1);
@@ -4377,7 +4378,8 @@ namespace Venrob::SubscreenEditor
 			SSL_FONT = -1,
 			SSL_ALIGNMENT = -2,
 			SSL_ITEM = -3,
-			SSL_SHADOWTYPE = -4
+			SSL_SHADOWTYPE = -4,
+			SSL_SP_CNTR = -5
 		};
 		DEFINE DDWN_WID_FONT = 107;
 		DEFINE DDWN_WID_ALIGN = 39;
@@ -4406,7 +4408,7 @@ namespace Venrob::SubscreenEditor
 					id->GetName(buf);
 					return;
 				case SSL_SHADOWTYPE:
-					switch(indx)
+					switch(indx) //start
 					{
 						case SHD_NORMAL:
 							strcpy(buf, "No Shadow"); break;
@@ -4432,10 +4434,46 @@ namespace Venrob::SubscreenEditor
 							strcpy(buf, "Shadowed - +"); break;
 						case SHD_OUTLINEDX:
 							strcpy(buf, "Shadowed - X"); break;
+					} //end
+					return;
+				case SSL_SP_CNTR:
+					switch(indx) //start
+					{
+						case CNTR_ANYKEY:
+							strcpy(buf, "Any Keys");
+							break;
+						case CNTR_LKEY:
+							strcpy(buf, "Level Keys");
+							break;
+						case CNTR_ABTN:
+							strcpy(buf, "A Btn Cost");
+							break;
+						case CNTR_BBTN:
+							strcpy(buf, "B Btn Cost");
+							break;
+						case CNTR_LBTN:
+							strcpy(buf, "L Btn Cost");
+							break;
+						case CNTR_RBTN:
+							strcpy(buf, "R Btn Cost");
+							break;
+						case CNTR_EX1BTN:
+							strcpy(buf, "Ex1 Btn Cost");
+							break;
+						case CNTR_EX2BTN:
+							strcpy(buf, "Ex2 Btn Cost");
+							break;
+						case CNTR_EX3BTN:
+							strcpy(buf, "Ex3 Btn Cost");
+							break;
+						case CNTR_EX4BTN:
+							strcpy(buf, "Ex4 Btn Cost");
+							break;
 					}
 					return;
+				default:
+					strcpy(buf, "UNKNOWN LIST ACCESS");
 			}
-			strcpy(buf, "UNKNOWN LIST ACCESS");
 		}
 		int getSpecialStringCount(int val)
 		{
@@ -4449,6 +4487,8 @@ namespace Venrob::SubscreenEditor
 					return MAX_ITEMDATA+1;
 				case SSL_SHADOWTYPE:
 					return SHD_MAX;
+				case SSL_SP_CNTR:
+					return CNTR_MAX_SPECIAL;
 			}
 			return 1;
 		}

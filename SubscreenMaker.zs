@@ -287,6 +287,24 @@ namespace Venrob::SubscreenEditor
 		{
 			while(true)
 			{
+				if(Input->Press[CB_MAP])
+				{
+					Input->Press[CB_MAP] = false; Input->Button[CB_MAP] = false;
+					for(int q = 0; q < CB_MAX; ++q)
+					{
+						switch(q) //start Filter out unused buttons
+						{
+							case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
+							{
+								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1<<q))
+									continue;
+								break;
+							}
+							default: continue;
+						} //end
+						printf("Btn %d: pos %d, val %d (%d)\n",q,btn_data[BTNPOS+q],btn_data[BTNITMS+q],get_btn_itm(q));
+					}
+				}
 				runPassiveSubscreen();
 				Waitframe();
 			}
@@ -364,6 +382,7 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_BUTTONITEM: //start
 			{
 				int itmid = get_btn_itm(module_arr[P1]);
+				unless(itmid > -1) itmid = 0;
 				itemdata id = Game->LoadItemData(itmid);
 				int frm = Div(g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
 				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
