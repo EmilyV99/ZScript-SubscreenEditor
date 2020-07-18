@@ -332,7 +332,7 @@ namespace Venrob::SubscreenEditor
 		{
 			untyped buf[MODULE_BUF_SIZE];
 			saveModule(buf, q, true);
-			runFauxModule(q, buf, true, true);
+			runFauxModule(q, activeData, activeModules[q], true, true);
 		}
 		handleDragging(true);
 		runPreparedSelector(true);
@@ -347,45 +347,43 @@ namespace Venrob::SubscreenEditor
 		g_arr[PASSIVE_TIMER]%=3600;
 		for(int q = 1; q < g_arr[NUM_PASSIVE_MODULES] ; ++q)
 		{
-			untyped buf[MODULE_BUF_SIZE];
-			saveModule(buf, q, false);
-			runFauxModule(q, buf, false, interactive);
+			runFauxModule(q, passiveData, passiveModules[q], false, interactive);
 		}
 		if(interactive) handleDragging(false);
 		runPreparedSelector(false);
 	}
 
-	void runFauxModule(int mod_indx, untyped module_arr, bool active, bool interactive)
+	void runFauxModule(int mod_indx, untyped module_arr, int offs, bool active, bool interactive)
 	{
 		if(active) interactive = true;
 		bitmap bit = getSubscreenBitmap(active);
-		switch(module_arr[M_TYPE])
+		switch(module_arr[offs+M_TYPE])
 		{
 			case MODULE_TYPE_BGCOLOR: //start
 			{
 				//Cannot drag
 				if(active)
 				{
-					bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 224, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], 0, 0, 256, 224, module_arr[offs+P1], 1, 0, 0, 0, true, OP_OPAQUE);
 					if(interactive)
-						editorCursor(module_arr[M_LAYER], 0, 0, 255, 223, mod_indx, active, true);
+						editorCursor(module_arr[offs+M_LAYER], 0, 0, 255, 223, mod_indx, active, true);
 				}
 				else
 				{
-					bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 56, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], 0, 0, 256, 56, module_arr[offs+P1], 1, 0, 0, 0, true, OP_OPAQUE);
 					if(interactive)
-						editorCursor(module_arr[M_LAYER], 0, 0, 254, 55, mod_indx, active, true);
+						editorCursor(module_arr[offs+M_LAYER], 0, 0, 254, 55, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_BUTTONITEM: //start
 			{
-				int itmid = get_btn_itm(module_arr[P1]);
+				int itmid = get_btn_itm(module_arr[offs+P1]);
 				unless(itmid > -1) itmid = 0;
 				itemdata id = Game->LoadItemData(itmid);
 				int frm = Div(g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
-				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
+				bit->FastTile(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				if(interactive)
 				{
 					bool hit = activeData[STTNG_FLAGS1]&FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR;
@@ -393,11 +391,11 @@ namespace Venrob::SubscreenEditor
 					unless(id->HitHeight) id->HitHeight = 16;
 					unless(id->TileWidth) id->TileWidth = 1;
 					unless(id->TileHeight) id->TileHeight = 1;
-					int tx = module_arr[M_X] + (hit ? id->HitXOffset : id->DrawXOffset),
-						ty = module_arr[M_Y] + (hit ? id->HitYOffset : id->DrawYOffset),
+					int tx = module_arr[offs+M_X] + (hit ? id->HitXOffset : id->DrawXOffset),
+						ty = module_arr[offs+M_Y] + (hit ? id->HitYOffset : id->DrawYOffset),
 						twid = (hit ? id->HitWidth : id->TileWidth*16),
 						thei = (hit ? id->HitHeight : id->TileHeight*16);
-					editorCursor(module_arr[M_LAYER], tx, ty, twid, thei, mod_indx, active);
+					editorCursor(module_arr[offs+M_LAYER], tx, ty, twid, thei, mod_indx, active);
 				}
 				break;
 			} //end
@@ -407,16 +405,16 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_SEL_ITEM_ID:
 			case MODULE_TYPE_SEL_ITEM_CLASS: //start
 			{
-				bool nonsel = module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
+				bool nonsel = module_arr[offs+M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID || module_arr[offs+M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
 				unless(active || nonsel) break; //Not allowed on passive
-				bool class = (module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_CLASS || module_arr[M_TYPE]==MODULE_TYPE_NONSEL_ITEM_CLASS);
-				int itmid = (class?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
-				if(itmid < 0) itmid = class ? get_item_of_class(module_arr[P1], true) : 0;
+				bool class = (module_arr[offs+M_TYPE]==MODULE_TYPE_SEL_ITEM_CLASS || module_arr[offs+M_TYPE]==MODULE_TYPE_NONSEL_ITEM_CLASS);
+				int itmid = (class?(get_item_of_class(module_arr[offs+P1])):(module_arr[offs+P1]));
+				if(itmid < 0) itmid = class ? get_item_of_class(module_arr[offs+P1], true) : 0;
 				if(itmid < 0) itmid = 0;
 				
 				itemdata id = Game->LoadItemData(itmid);
 				int frm = Div(g_arr[ACTIVE_TIMER] % (Max(1,id->ASpeed*id->AFrames)),Max(1,id->ASpeed));
-				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
+				bit->FastTile(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				if(interactive)
 				{
 					bool hit = activeData[STTNG_FLAGS1]&FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR;
@@ -424,123 +422,123 @@ namespace Venrob::SubscreenEditor
 					unless(id->HitHeight) id->HitHeight = 16;
 					unless(id->TileWidth) id->TileWidth = 1;
 					unless(id->TileHeight) id->TileHeight = 1;
-					int tx = module_arr[M_X] + (hit ? id->HitXOffset : id->DrawXOffset),
-					    ty = module_arr[M_Y] + (hit ? id->HitYOffset : id->DrawYOffset),
+					int tx = module_arr[offs+M_X] + (hit ? id->HitXOffset : id->DrawXOffset),
+					    ty = module_arr[offs+M_Y] + (hit ? id->HitYOffset : id->DrawYOffset),
 						twid = (hit ? id->HitWidth : id->TileWidth*16),
 						thei = (hit ? id->HitHeight : id->TileHeight*16);
-					editorCursor(module_arr[M_LAYER], tx, ty, twid, thei, mod_indx, active);
+					editorCursor(module_arr[offs+M_LAYER], tx, ty, twid, thei, mod_indx, active);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_PASSIVESUBSCREEN: //start
 			{
-				bit->BlitTo(module_arr[M_LAYER], getSubscreenBitmap(false), 0, 0, 256, 56, module_arr[M_X], module_arr[M_Y], 256, 56, 0, 0, 0, 0, 0, true);
+				bit->BlitTo(module_arr[offs+M_LAYER], getSubscreenBitmap(false), 0, 0, 256, 56, module_arr[offs+M_X], module_arr[offs+M_Y], 256, 56, 0, 0, 0, 0, 0, true);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 255, 55, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], 255, 55, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_MINIMAP: //start
 			{
-				minimap(module_arr, bit, active);
+				minimap(module_arr, offs, bit, active);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 5*16-1, 3*16-1, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], 5*16-1, 3*16-1, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_TILEBLOCK: //start
 			{
-				bit->DrawTile(0,  module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P3], module_arr[P4], module_arr[P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
+				bit->DrawTile(0,  module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P3], module_arr[offs+P4], module_arr[offs+P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3]*16-1, module_arr[P4]*16-1, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3]*16-1, module_arr[offs+P4]*16-1, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_HEART: //start
 			{
-				heart(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+				heart(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2]);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], 7, 7, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_HEARTROW: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_HROW_RTOL)
-					invheartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_HROW_RTOL)
+					invheartrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				else
-					heartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+					heartrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5], 7, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], (module_arr[offs+P4]) * (7 + module_arr[offs+P5])+8-module_arr[offs+P5], 7, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_MAGIC: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_MAG_ISHALF)
-					halfmagic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_MAG_ISHALF)
+					halfmagic(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2]);
 				else
-					magic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+					magic(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2]);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], 7, 7, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_MAGICROW: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_MROW_RTOL)
-					invmagicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_MROW_RTOL)
+					invmagicrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				else
-					magicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+					magicrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P4]) * (7 + module_arr[P5])+8-module_arr[P5], 7, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], (module_arr[offs+P4]) * (7 + module_arr[offs+P5])+8-module_arr[offs+P5], 7, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_CRPIECE: //start
 			{
-				crpiece(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				crpiece(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], 7, 7, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_CRROW: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_CRROW_RTOL)
-					invmiscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_CRROW_RTOL)
+					invmiscrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P6], module_arr[offs+P7], module_arr[offs+P4], module_arr[offs+P5]);
 				else
-					miscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
+					miscrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P6], module_arr[offs+P7], module_arr[offs+P4], module_arr[offs+P5]);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], (module_arr[P6]) * (7 + module_arr[P7])+8-module_arr[P7], 7, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], (module_arr[offs+P6]) * (7 + module_arr[offs+P7])+8-module_arr[offs+P7], 7, mod_indx, active, true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_COUNTER: //start
 			{
-				int wid = counter(module_arr, bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y]);
+				int wid = counter(module_arr, offs, bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y]);
 				if(wid < 8) //Ensure there's a hitbox to grab for repositioning
 					wid = 8;
-				int tf = module_arr[M_FLAGS1] & MASK_CNTR_ALIGN;
+				int tf = module_arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN;
 				int xoff;
 				switch(tf) //start Calculate offsets based on alignment
 				{
@@ -554,16 +552,16 @@ namespace Venrob::SubscreenEditor
 				} //end
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X]+xoff-1, module_arr[M_Y]-1, wid, Text->FontHeight(module_arr[P1]), mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X]+xoff-1, module_arr[offs+M_Y]-1, wid, Text->FontHeight(module_arr[offs+P1]), mod_indx, active, true);
 				}
 				break;
 			} //end
 			case MODULE_TYPE_MINITILE: //start
 			{
-				minitile(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], module_arr[M_FLAGS1]&MASK_MINITL_CRN);
+				minitile(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+M_FLAGS1]&MASK_MINITL_CRN);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], 7, 7, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], 7, 7, mod_indx, active, true);
 				}
 				break;
 			} //end
@@ -571,15 +569,15 @@ namespace Venrob::SubscreenEditor
 			{
 				char32 buf[32];
 				sprintf(buf, "%02d:%02d:%02d",time::Hours(),time::Minutes(),time::Seconds());
-				int bg = module_arr[P3];
-				int shd = module_arr[P4];
+				int bg = module_arr[offs+P3];
+				int shd = module_arr[offs+P4];
 				unless(bg) bg = -1;
-				int shd_t = module_arr[P5];
+				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
-				bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, TF_NORMAL, buf, OP_OPAQUE, shd_t, shd);
+				bit->DrawString(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, TF_NORMAL, buf, OP_OPAQUE, shd_t, shd);
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X]-1, module_arr[M_Y]-1, 1+Text->StringWidth(buf, module_arr[P1]) - (shd_t ? 0 : 1), 1+Text->FontHeight(module_arr[P1])-1, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X]-1, module_arr[offs+M_Y]-1, 1+Text->StringWidth(buf, module_arr[offs+P1]) - (shd_t ? 0 : 1), 1+Text->FontHeight(module_arr[offs+P1])-1, mod_indx, active, true);
 				}
 				break;
 			} //end
@@ -603,7 +601,7 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_NONSEL_ITEM_CLASS:
 						{
 							int id = get_item_of_class(modbuf[P1]);
-							if(id < 0) id = get_item_of_class(module_arr[P1], true);
+							if(id < 0) id = get_item_of_class(module_arr[offs+P1], true);
 							if(id >= 0)
 							{
 								itm = Game->LoadItemData(id);
@@ -621,24 +619,24 @@ namespace Venrob::SubscreenEditor
 					}
 				} //end
 				itm->GetName(buf);
-				int bg = module_arr[P3];
-				int shd = module_arr[P4];
+				int bg = module_arr[offs+P3];
+				int shd = module_arr[offs+P4];
 				unless(bg) bg = -1;
-				int shd_t = module_arr[P5];
+				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
 				int edwid, edhei;
-				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
-				if(module_arr[P6])
+				int tf = module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				if(module_arr[offs+P6])
 				{
-					DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[P7], module_arr[P6]);
-					edwid = module_arr[P6];
-					edhei = DrawStringsCount(module_arr[P1], buf, module_arr[P6]) * (Text->FontHeight(module_arr[P1])+module_arr[P7]) - module_arr[P7];
+					DrawStringsBitmap(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[offs+P7], module_arr[offs+P6]);
+					edwid = module_arr[offs+P6];
+					edhei = DrawStringsCount(module_arr[offs+P1], buf, module_arr[offs+P6]) * (Text->FontHeight(module_arr[offs+P1])+module_arr[offs+P7]) - module_arr[offs+P7];
 				}
 				else
 				{
-					bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd);
-					edwid = Text->StringWidth(buf, module_arr[P1]);
-					edhei = Text->FontHeight(module_arr[P1]);
+					bit->DrawString(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd);
+					edwid = Text->StringWidth(buf, module_arr[offs+P1]);
+					edhei = Text->FontHeight(module_arr[offs+P1]);
 				}
 				int xoff;
 				switch(tf) //start Calculate offsets based on alignment
@@ -653,7 +651,7 @@ namespace Venrob::SubscreenEditor
 				} //end
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X]-1+xoff, module_arr[M_Y]-1, edwid + (shd_t ? 1 : 0), edhei, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X]-1+xoff, module_arr[offs+M_Y]-1, edwid + (shd_t ? 1 : 0), edhei, mod_indx, active, true);
 				}
 				break;
 			} //end
@@ -676,15 +674,15 @@ namespace Venrob::SubscreenEditor
 				{
 					strcpy(buf, "  Test    \n    Name  ");
 				}
-				int bg = module_arr[P3];
-				int shd = module_arr[P4];
+				int bg = module_arr[offs+P3];
+				int shd = module_arr[offs+P4];
 				unless(bg) bg = -1;
-				int shd_t = module_arr[P5];
+				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
-				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
-				DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
-				int edwid = DrawStringsWid(module_arr[P1], buf, 256);
-				int edhei = DrawStringsCount(module_arr[P1], buf, 256) * (Text->FontHeight(module_arr[P1])+0) - 0;
+				int tf = module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				DrawStringsBitmap(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
+				int edwid = DrawStringsWid(module_arr[offs+P1], buf, 256);
+				int edhei = DrawStringsCount(module_arr[offs+P1], buf, 256) * (Text->FontHeight(module_arr[offs+P1])+0) - 0;
 				int xoff;
 				switch(tf) //start Calculate offsets based on alignment
 				{
@@ -698,7 +696,7 @@ namespace Venrob::SubscreenEditor
 				} //end
 				if(interactive)
 				{
-					editorCursor(module_arr[M_LAYER], module_arr[M_X]-1+xoff, module_arr[M_Y]-1, edwid + (shd_t ? 1 : 0), edhei, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X]-1+xoff, module_arr[offs+M_Y]-1, edwid + (shd_t ? 1 : 0), edhei, mod_indx, active, true);
 				}
 				break;
 			} //end

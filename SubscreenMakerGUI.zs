@@ -1271,7 +1271,7 @@ namespace Venrob::SubscreenEditor
 						arr[P10] = tilearr[1];
 						if(prev&1b)
 							Game->LItems[Game->GetCurLevel()] |= LI_BOSS | LI_TRIFORCE;
-						minimap(arr, bit, active, MMX, MMY);
+						minimap(arr, 0, bit, active, MMX, MMY);
 						Game->LItems[Game->GetCurLevel()] ~= LI_BOSS | LI_TRIFORCE;
 						break;
 					} //end
@@ -1597,7 +1597,7 @@ namespace Venrob::SubscreenEditor
 						bitmap sub = create(P_BMP_WID, p_hei+1);
 						int al = arr[M_FLAGS1] & MASK_CNTR_ALIGN;
 						arr[M_FLAGS1] ~= MASK_CNTR_ALIGN;
-						int p_wid = 1+counter(arr, sub, 1, 2, 2);
+						int p_wid = 1+counter(arr, 0, sub, 1, 2, 2);
 						arr[M_FLAGS1] |= al;
 						frame_rect(sub, 0, 0, ++p_wid, p_hei++, 1);
 						switch(al)
@@ -3322,6 +3322,7 @@ namespace Venrob::SubscreenEditor
 		{
 			Input->DisableKey[KEY_ESC] = true;
 			Input->DisableKey[KEY_F1] = dis;
+			Game->FFRules[qr_NOFASTMODE] = dis;
 			Game->ClickToFreezeEnabled = !dis;
 		}
 		//end Main Menu

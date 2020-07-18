@@ -306,11 +306,11 @@ namespace Venrob::Subscreen
 	//start Settings
 	void load_active_settings(untyped settings_arr) //start
 	{
-		untyped settings[MODULE_META_SIZE+NUM_SETTINGS];
+		untyped settings[SZ_SETTINGS];
 		load_default_settings(settings, true);
 		if(IsValidArray(settings_arr))
 		{
-			memcpy(settings, 0, settings_arr, 0, Min(NUM_SETTINGS, SizeOfArray(settings_arr)));
+			memcpy(settings, 0, settings_arr, 0, Min(SZ_SETTINGS, SizeOfArray(settings_arr)));
 		}
 		memcpy(activeData, START_SETTINGS, settings, START_SETTINGS, NUM_SETTINGS);
 		activeData[M_SIZE] = SZ_SETTINGS;
@@ -341,10 +341,10 @@ namespace Venrob::Subscreen
 	
 	void load_passive_settings(untyped settings_arr) //start
 	{
-		untyped settings[MODULE_META_SIZE+NUM_SETTINGS];
+		untyped settings[SZ_SETTINGS];
 		load_default_settings(settings, false);
 		if(IsValidArray(settings_arr))
-			memcpy(settings, 0, settings_arr, 0, Min(NUM_SETTINGS, SizeOfArray(settings_arr)-1));
+			memcpy(settings, 0, settings_arr, 0, Min(SZ_SETTINGS, SizeOfArray(settings_arr)-1));
 		memcpy(passiveData, START_SETTINGS, settings, START_SETTINGS, NUM_SETTINGS);
 		passiveData[M_SIZE] = SZ_SETTINGS;
 		passiveData[M_TYPE] = MODULE_TYPE_SETTINGS;
@@ -402,9 +402,8 @@ namespace Venrob::Subscreen
 			runPassiveLogic();
 			for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
 			{
-				untyped buf[MODULE_BUF_SIZE];
-				memcpy(buf, 0, activeData, activeModules[q], activeData[activeModules[q]]);
-				if((g_arr[ACTIVE_SELECTED_INDEX]==-1) || (g_arr[ACTIVE_SELECTED_INDEX] == buf[P2] && isSelectable(buf[M_TYPE]) && !canSelect(buf)))
+				int indx = activeModules[q];
+				if((g_arr[ACTIVE_SELECTED_INDEX]==-1) || (g_arr[ACTIVE_SELECTED_INDEX] == activeData[indx+P2] && isSelectable(activeData[indx+M_TYPE]) && !canSelect(activeData, indx)))
 				{
 					g_arr[ACTIVE_SELECTED_INDEX] = -1;
 					for(int i = 1; i < g_arr[NUM_ACTIVE_MODULES]; ++i)
@@ -417,7 +416,7 @@ namespace Venrob::Subscreen
 						}
 					}
 				}
-				event = runModule(q, buf, true);
+				event = runModule(q, activeData, indx, true);
 			}
 			if(g_arr[ACTIVE_SELECTED_INDEX] != g_arr[LAST_SELECTED_INDEX])
 				clearPreparedSelector();
@@ -463,9 +462,7 @@ namespace Venrob::Subscreen
 		g_arr[PASSIVE_TIMER] %= 100000000000000000b;
 		for(int q = 1; q < g_arr[NUM_PASSIVE_MODULES] ; ++q)
 		{
-			untyped buf[MODULE_BUF_SIZE];
-			memcpy(buf, 0, passiveData, passiveModules[q], passiveData[passiveModules[q]]);
-			runModule(q, buf, false);
+			runModule(q, passiveData, passiveModules[q], false);
 		}
 	}
 	
@@ -483,26 +480,26 @@ namespace Venrob::Subscreen
 		EVENT_MAX
 	};
 	
-	event_t runModule(int mod_indx, untyped module_arr, bool active)
+	event_t runModule(int mod_indx, untyped module_arr, int offs, bool active)
 	{
 		bitmap bit = getSubscreenBitmap(active);
-		switch(module_arr[M_TYPE])
+		switch(module_arr[offs+M_TYPE])
 		{
 			case MODULE_TYPE_BGCOLOR: //start
 			{
-				if(module_arr[P1])
+				if(module_arr[offs+P1])
 				{
 					if(active)
-						bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 224, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+						bit->Rectangle(module_arr[offs+M_LAYER], 0, 0, 256, 224, module_arr[offs+P1], 1, 0, 0, 0, true, OP_OPAQUE);
 					else
-						bit->Rectangle(module_arr[M_LAYER], 0, 0, 256, 56, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+						bit->Rectangle(module_arr[offs+M_LAYER], 0, 0, 256, 56, module_arr[offs+P1], 1, 0, 0, 0, true, OP_OPAQUE);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_BUTTONITEM: //start
 			{
-				int itid = get_btn_itm(module_arr[P1]);
+				int itid = get_btn_itm(module_arr[offs+P1]);
 				if(itid > -1)
 				{
 					itemdata id = Game->LoadItemData(itid);
@@ -512,7 +509,7 @@ namespace Venrob::Subscreen
 					int temp = (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % ((id->ASpeed * id->AFrames) + (id->ASpeed * id->Delay))) - (id->Delay * id->ASpeed);
 					if(temp >= 0)
 						frm = Floor(temp / id->ASpeed);
-					bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
+					bit->FastTile(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				}
 				break;
 			} //end
@@ -522,10 +519,10 @@ namespace Venrob::Subscreen
 			case MODULE_TYPE_SEL_ITEM_ID:
 			case MODULE_TYPE_SEL_ITEM_CLASS: //start
 			{
-				bool nonsel = module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID || module_arr[M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
+				bool nonsel = module_arr[offs+M_TYPE] == MODULE_TYPE_NONSEL_ITEM_ID || module_arr[offs+M_TYPE] == MODULE_TYPE_NONSEL_ITEM_CLASS;
 				unless(active || nonsel) break; //Selectable not allowed on passive
-				bool class = module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_CLASS || module_arr[M_TYPE]==MODULE_TYPE_NONSEL_ITEM_CLASS;
-				int itmid = (class?(get_item_of_class(module_arr[P1])):(module_arr[P1]));
+				bool class = module_arr[offs+M_TYPE]==MODULE_TYPE_SEL_ITEM_CLASS || module_arr[offs+M_TYPE]==MODULE_TYPE_NONSEL_ITEM_CLASS;
+				int itmid = (class?(get_item_of_class(module_arr[offs+P1])):(module_arr[offs+P1]));
 				if(itmid < 0 || !hasItem(itmid)) break;
 				
 				itemdata id = Game->LoadItemData(itmid);
@@ -535,9 +532,9 @@ namespace Venrob::Subscreen
 				int temp = (g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] % ((id->ASpeed * id->AFrames) + (id->ASpeed * id->Delay))) - (id->Delay * id->ASpeed);
 				if(temp >= 0)
 					frm = Floor(temp / id->ASpeed);
-				bit->FastTile(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
+				bit->FastTile(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], id->Tile + frm, id->CSet, OP_OPAQUE);
 				if(nonsel) break;
-				if(g_arr[ACTIVE_SELECTED_INDEX] == module_arr[P2])
+				if(g_arr[ACTIVE_SELECTED_INDEX] == module_arr[offs+P2])
 				{
 					for(int q = 0; q < CB_MAX; ++q) //start
 					{
@@ -555,18 +552,18 @@ namespace Venrob::Subscreen
 							}
 							default: continue;
 						} //end
-						if(btn_data[BTNPOS+q] != module_arr[P2] && Input->Press[q])
+						if(btn_data[BTNPOS+q] != module_arr[offs+P2] && Input->Press[q])
 						{
 							PressCheck(q);
 							if(class)
 							{
-								equp_btn_itmclass(q, module_arr[P1]);
+								equp_btn_itmclass(q, module_arr[offs+P1]);
 							}
 							else
 							{
-								equp_btn_itm(q, module_arr[P1]);
+								equp_btn_itm(q, module_arr[offs+P1]);
 							}
-							set_btn_pos(q, module_arr[P2]);
+							set_btn_pos(q, module_arr[offs+P2]);
 						}
 					} //end
 					/*
@@ -590,7 +587,7 @@ namespace Venrob::Subscreen
 						int selectedDir = -1;
 						for(int dir = DIR_UP; dir <= DIR_RIGHT; ++dir)
 						{
-							if(PressCheck(CB_UP+dir) && module_arr[P3+dir] > -1)
+							if(PressCheck(CB_UP+dir) && module_arr[offs+P3+dir] > -1)
 							{
 								selectedDir = dir;
 								break;
@@ -599,8 +596,8 @@ namespace Venrob::Subscreen
 						if(selectedDir > -1)
 						{
 							bool visited[MAX_INT];
-							visited[module_arr[P2]] = true;
-							g_arr[ACTIVE_SELECTED_INDEX] = module_arr[P3+selectedDir];
+							visited[module_arr[offs+P2]] = true;
+							g_arr[ACTIVE_SELECTED_INDEX] = module_arr[offs+P3+selectedDir];
 							for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
 							{
 								int indx = activeModules[q];
@@ -608,7 +605,7 @@ namespace Venrob::Subscreen
 								{
 									if(visited[activeData[indx+P2]])
 									{
-										g_arr[ACTIVE_SELECTED_INDEX] = module_arr[P2];
+										g_arr[ACTIVE_SELECTED_INDEX] = module_arr[offs+P2];
 										break;
 									}
 									if(canSelect(activeData, indx))
@@ -621,8 +618,8 @@ namespace Venrob::Subscreen
 									visited[activeData[indx+P2]] = true;
 								}
 							}
-							if(g_arr[ACTIVE_SELECTED_INDEX]==-1) g_arr[ACTIVE_SELECTED_INDEX] = module_arr[P2];
-							if(g_arr[ACTIVE_SELECTED_INDEX]!=module_arr[P2]) //If the selection changed
+							if(g_arr[ACTIVE_SELECTED_INDEX]==-1) g_arr[ACTIVE_SELECTED_INDEX] = module_arr[offs+P2];
+							if(g_arr[ACTIVE_SELECTED_INDEX]!=module_arr[offs+P2]) //If the selection changed
 							{
 								KillButtons(true);
 								Audio->PlaySound(activeData[A_STTNG_SELECTOR_SFX]);
@@ -636,97 +633,97 @@ namespace Venrob::Subscreen
 					unless(id->HitHeight) id->HitHeight = 16;
 					unless(id->TileWidth) id->TileWidth = 1;
 					unless(id->TileHeight) id->TileHeight = 1;
-					DrawSelector(module_arr[M_LAYER], module_arr[M_X] + (hit ? id->HitXOffset : id->DrawXOffset), module_arr[M_Y] + (hit ? id->HitYOffset : id->DrawYOffset), (hit ? id->HitWidth : id->TileWidth*16), (hit ? id->HitHeight : id->TileHeight*16), true);
+					DrawSelector(module_arr[offs+M_LAYER], module_arr[offs+M_X] + (hit ? id->HitXOffset : id->DrawXOffset), module_arr[offs+M_Y] + (hit ? id->HitYOffset : id->DrawYOffset), (hit ? id->HitWidth : id->TileWidth*16), (hit ? id->HitHeight : id->TileHeight*16), true);
 				}
 				break;
 			} //end
 			
 			case MODULE_TYPE_PASSIVESUBSCREEN: //start
 			{
-				bit->BlitTo(module_arr[M_LAYER], getSubscreenBitmap(false), 0, 0, 256, 56, module_arr[M_X], module_arr[M_Y], 256, 56, 0, 0, 0, 0, 0, true);
+				bit->BlitTo(module_arr[offs+M_LAYER], getSubscreenBitmap(false), 0, 0, 256, 56, module_arr[offs+M_X], module_arr[offs+M_Y], 256, 56, 0, 0, 0, 0, 0, true);
 				break;
 			} //end
 			
 			case MODULE_TYPE_MINIMAP: //start
 			{
-				minimap(module_arr,bit,active);
+				minimap(module_arr,offs,bit,active);
 			} //end
 			
 			case MODULE_TYPE_TILEBLOCK: //start
 			{
-				bit->DrawTile(0,  module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P3], module_arr[P4], module_arr[P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
+				bit->DrawTile(0,  module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P3], module_arr[offs+P4], module_arr[offs+P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
 				break;
 			} //end
 			
 			
 			case MODULE_TYPE_HEART: //start
 			{
-				heart(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+				heart(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2]);
 				break;
 			} //end
 			
 			case MODULE_TYPE_HEARTROW: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_HROW_RTOL)
-					invheartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_HROW_RTOL)
+					invheartrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				else
-					heartrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+					heartrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				break;
 			} //end
 			case MODULE_TYPE_MAGIC: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_MAG_ISHALF)
-					halfmagic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_MAG_ISHALF)
+					halfmagic(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2]);
 				else
-					magic(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2]);
+					magic(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2]);
 				
 				break;
 			} //end
 			
 			case MODULE_TYPE_MAGICROW: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_MROW_RTOL)
-					invmagicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_MROW_RTOL)
+					invmagicrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				else
-					magicrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+					magicrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				break;
 			} //end
 			
 			case MODULE_TYPE_CRPIECE: //start
 			{
-				crpiece(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P4], module_arr[P5]);
+				crpiece(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P4], module_arr[offs+P5]);
 				break;
 			} //end
 			
 			case MODULE_TYPE_CRROW: //start
 			{
-				if(module_arr[M_FLAGS1] & FLAG_CRROW_RTOL)
-					invmiscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
+				if(module_arr[offs+M_FLAGS1] & FLAG_CRROW_RTOL)
+					invmiscrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P6], module_arr[offs+P7], module_arr[offs+P4], module_arr[offs+P5]);
 				else
-					miscrow(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P3], module_arr[P1], module_arr[P2], module_arr[P6], module_arr[P7], module_arr[P4], module_arr[P5]);
+					miscrow(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P6], module_arr[offs+P7], module_arr[offs+P4], module_arr[offs+P5]);
 				break;
 			} //end
 			
 			case MODULE_TYPE_COUNTER: //start
 			{
-				counter(module_arr, bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y]);
+				counter(module_arr, offs, bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y]);
 				break;
 			} //end
 			case MODULE_TYPE_MINITILE: //start
 			{
-				minitile(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], module_arr[M_FLAGS1]&MASK_MINITL_CRN);
+				minitile(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+M_FLAGS1]&MASK_MINITL_CRN);
 				break;
 			} //end
 			case MODULE_TYPE_CLOCK: //start
 			{
 				char32 buf[32];
 				sprintf(buf, "%02d:%02d:%02d",time::Hours(),time::Minutes(),time::Seconds());
-				int bg = module_arr[P3];
-				int shd = module_arr[P4];
-				int shd_t = module_arr[P5];
+				int bg = module_arr[offs+P3];
+				int shd = module_arr[offs+P4];
+				int shd_t = module_arr[offs+P5];
 				unless(bg) bg = -1;
 				unless(shd) shd_t = SHD_NORMAL;
-				bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, TF_NORMAL, buf, OP_OPAQUE, shd_t, shd);
+				bit->DrawString(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, TF_NORMAL, buf, OP_OPAQUE, shd_t, shd);
 				break;
 			} //end
 			case MODULE_TYPE_ITEMNAME: //start
@@ -763,29 +760,29 @@ namespace Venrob::Subscreen
 				unless(itm) break; //No item loaded
 				char32 buf[64];
 				itm->GetName(buf);
-				int bg = module_arr[P3];
-				int shd = module_arr[P4];
+				int bg = module_arr[offs+P3];
+				int shd = module_arr[offs+P4];
 				unless(bg) bg = -1;
-				int shd_t = module_arr[P5];
+				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
-				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
-				if(module_arr[P6])
-					DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[P7], module_arr[P6]);
+				int tf = module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				if(module_arr[offs+P6])
+					DrawStringsBitmap(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[offs+P7], module_arr[offs+P6]);
 				else
-					bit->DrawString(module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd);
+					bit->DrawString(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd);
 				break;
 			} //end
 			case MODULE_TYPE_DMTITLE: //start
 			{
 				char32 buf[22];
 				getDMapTitle(buf);
-				int bg = module_arr[P3];
-				int shd = module_arr[P4];
+				int bg = module_arr[offs+P3];
+				int shd = module_arr[offs+P4];
 				unless(bg) bg = -1;
-				int shd_t = module_arr[P5];
+				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
-				int tf = module_arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
-				DrawStringsBitmap(bit, module_arr[M_LAYER], module_arr[M_X], module_arr[M_Y], module_arr[P1], module_arr[P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
+				int tf = module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				DrawStringsBitmap(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
 				break;
 			} //end
 			//case :
@@ -795,20 +792,20 @@ namespace Venrob::Subscreen
 	//end Running
 	//start Handler Functions
 	//start Minimap
-	void minimap(untyped module_arr, bitmap bit, bool active)
+	void minimap(untyped module_arr, int offs, bitmap bit, bool active)
 	{
-		minimap(module_arr, bit, active, module_arr[M_X], module_arr[M_Y]);
+		minimap(module_arr, offs, bit, active, module_arr[offs+M_X], module_arr[offs+M_Y]);
 	}
-	void minimap(untyped module_arr, bitmap bit, bool active, int orig_x, int orig_y)
+	void minimap(untyped module_arr, int offs, bitmap bit, bool active, int orig_x, int orig_y)
 	{
 		dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
 		int curscr = Game->GetCurDMapScreen();
 		bool showExplore;
 		int ow = dm->Type & (11b);
-		int mtile = (ow == DMAP_OVERWORLD ? module_arr[P7] : module_arr[P9]);
-		int mcs = (ow == DMAP_OVERWORLD ? module_arr[P8] : module_arr[P10]);
+		int mtile = (ow == DMAP_OVERWORLD ? module_arr[offs+P7] : module_arr[offs+P9]);
+		int mcs = (ow == DMAP_OVERWORLD ? module_arr[offs+P8] : module_arr[offs+P10]);
 		bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
-		unless(module_arr[M_FLAGS1] & FLAG_MMP_IGNORE_DMAP_BGTILE)
+		unless(module_arr[offs+M_FLAGS1] & FLAG_MMP_IGNORE_DMAP_BGTILE)
 		{
 			if(dm->MiniMapTile[hasMap ? 1 : 0])
 			{
@@ -817,21 +814,21 @@ namespace Venrob::Subscreen
 				//printf("without (%d,%d) - with (%d,%d)\n",dm->MiniMapTile[0],dm->MiniMapCSet[0],dm->MiniMapTile[1],dm->MiniMapCSet[1]);
 			}
 		}
-		if(mtile) bit->DrawTile(module_arr[M_LAYER], orig_x, orig_y, mtile, 5, 3, mcs, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		if(mtile) bit->DrawTile(module_arr[offs+M_LAYER], orig_x, orig_y, mtile, 5, 3, mcs, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
 		bool hasCompass = Game->LItems[Game->GetCurLevel()] & LI_COMPASS;
-		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[M_FLAGS1] & FLAG_MMP_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
-		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[P6]-1);
+		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[offs+M_FLAGS1] & FLAG_MMP_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
+		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[offs+P6]-1);
 		switch(ow)
 		{
 			case DMAP_BSOVERWORLD:
 			case DMAP_OVERWORLD:
-				showExplore = (module_arr[M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_OW);
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_OW);
 				break;
 			case DMAP_DUNGEON:
-				showExplore = (module_arr[M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON);
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON);
 				break;
 			case DMAP_CAVE:
-				showExplore = (module_arr[M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR);
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR);
 				break;
 		}
 		if(ow == DMAP_OVERWORLD)
@@ -842,28 +839,28 @@ namespace Venrob::Subscreen
 				int y = orig_y + 8 + (4*Div(q, 0x010));
 				int c = 0;
 				if(hasCompass && q == dm->Compass &&
-				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
+				   (blinkon || (deadCompass && !(module_arr[offs+M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
 				{
-					c = deadCompass ? module_arr[P5] : module_arr[P4];
+					c = deadCompass ? module_arr[offs+P5] : module_arr[offs+P4];
 				}
 				else if(q == curscr)
-					c = module_arr[P1];
+					c = module_arr[offs+P1];
 				else if(showExplore)
 				{
 					mapdata m = Game->LoadMapData(Game->GetCurMap(),q);
 					if(m->State[ST_VISITED])
 					{
-						c = module_arr[P2];
+						c = module_arr[offs+P2];
 					}
 				}
 				
-				if(c) bit->Rectangle(module_arr[M_LAYER], x, y, x+2, y+2, module_arr[P1], 1, 0, 0, 0, true, OP_OPAQUE);
+				if(c) bit->Rectangle(module_arr[offs+M_LAYER], x, y, x+2, y+2, module_arr[offs+P1], 1, 0, 0, 0, true, OP_OPAQUE);
 			}
 		}
 		else
 		{
 			int offs = Game->DMapOffset[Game->GetCurDMap()];
-			bool largeMarkers = module_arr[M_FLAGS1] & FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
+			bool largeMarkers = module_arr[offs+M_FLAGS1] & FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 			
 			int lim = 8 - Max(offs - 8, 0);
 			int low_lim = Min(offs, 0);
@@ -881,13 +878,13 @@ namespace Venrob::Subscreen
 				int y = orig_y + 8 + (4*Div(q, 0x010));
 				
 				if(hasCompass && q+offs == dm->Compass &&
-				   (blinkon || (deadCompass && !(module_arr[M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
+				   (blinkon || (deadCompass && !(module_arr[offs+M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
 				{
-					c = deadCompass ? module_arr[P5] : module_arr[P4];
+					c = deadCompass ? module_arr[offs+P5] : module_arr[offs+P4];
 				}
 				else if(q == curscr)
 				{
-					c = module_arr[P1];
+					c = module_arr[offs+P1];
 				}
 				
 				unless(largeMarkers)
@@ -903,20 +900,20 @@ namespace Venrob::Subscreen
 					mapdata m = Game->LoadMapData(Game->GetCurMap(),q+offs);
 					if(showExplore && m->State[ST_VISITED])
 					{
-						c = module_arr[P2];
+						c = module_arr[offs+P2];
 					}
 					else if(ow != DMAP_BSOVERWORLD && hasMap && dmapinfo::VisibleOnDungeonMap(q, true))
 					{
-						c = module_arr[P3];
+						c = module_arr[offs+P3];
 					}
 				}
 				if(c)
 				{
-					bit->Rectangle(module_arr[M_LAYER], x, y, x+6, y+2, c, 1, 0, 0, 0, true, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], x, y, x+6, y+2, c, 1, 0, 0, 0, true, OP_OPAQUE);
 				}
 				if(sm_c)
 				{
-					bit->Rectangle(module_arr[M_LAYER], x+2, y, x+4, y+2, sm_c, 1, 0, 0, 0, true, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], x+2, y, x+4, y+2, sm_c, 1, 0, 0, 0, true, OP_OPAQUE);
 				}
 			}
 		}
@@ -1064,16 +1061,16 @@ namespace Venrob::Subscreen
 		}
 	} //end
 	//returns width in pixels
-	int counter(untyped arr, bitmap bit, int layer, int x, int y)
+	int counter(untyped arr, int offs, bitmap bit, int layer, int x, int y)
 	{
 		//FORMAT: {META..., FONT, CNTR, INFITEM, INFCHAR, MINDIG, TXTCOL, BGCOL, SHADCOL}
 		int val = 0;
-		bool infinite = hasItem(arr[P3]);
+		bool infinite = hasItem(arr[offs+P3]);
 		unless(infinite)
 		{
-			if(arr[M_FLAGS1] & FLAG_CNTR_SPECIAL) //start Special types
+			if(arr[offs+M_FLAGS1] & FLAG_CNTR_SPECIAL) //start Special types
 			{
-				switch(arr[P2])
+				switch(arr[offs+P2])
 				{
 					case CNTR_ANYKEY:
 						val = Game->Counter[CR_KEYS];
@@ -1086,7 +1083,7 @@ namespace Venrob::Subscreen
 					case CNTR_EX1BTN: case CNTR_EX2BTN: case CNTR_EX3BTN: case CNTR_EX4BTN: //start
 					{
 						int btn;
-						switch(arr[P2]) //start calc button
+						switch(arr[offs+P2]) //start calc button
 						{
 							case CNTR_ABTN: btn = CB_A; break;
 							case CNTR_BBTN: btn = CB_B; break;
@@ -1110,24 +1107,24 @@ namespace Venrob::Subscreen
 			} //end
 			else
 			{
-				val = Game->Counter[arr[P2]];
-				if(hasInfItem(arr[P2])) infinite = true;
+				val = Game->Counter[arr[offs+P2]];
+				if(hasInfItem(arr[offs+P2])) infinite = true;
 			}
-			unless(val || infinite || arr[P5]) return 0; //no min digits, and no value
+			unless(val || infinite || arr[offs+P5]) return 0; //no min digits, and no value
 		}
 		char32 buf[6];
 		if(infinite)
 		{
-			unless(arr[P4]) return 0; //No infinite char
-			buf[0] = arr[P4]; //Infinite char
+			unless(arr[offs+P4]) return 0; //No infinite char
+			buf[0] = arr[offs+P4]; //Infinite char
 		}
 		else
 		{
 			char32 format[16] = "%i";
-			if(arr[P5])
-				sprintf(format, "%%0%ii", arr[P5]); //Puts '%0ni' in buffer, with n = min digits
+			if(arr[offs+P5])
+				sprintf(format, "%%0%ii", arr[offs+P5]); //Puts '%0ni' in buffer, with n = min digits
 			sprintf(buf, format, val);
-			if(arr[M_FLAGS1] & FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO) //start Trim lead 0s
+			if(arr[offs+M_FLAGS1] & FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO) //start Trim lead 0s
 			{
 				for(int q = 0; q < 6; ++q)
 				{
@@ -1143,16 +1140,16 @@ namespace Venrob::Subscreen
 			} //end
 		}
 		//buf now contains the proper counter value
-		int bg = arr[P7];
-		int shd = arr[P8];
-		int shd_t = arr[P9];
+		int bg = arr[offs+P7];
+		int shd = arr[offs+P8];
+		int shd_t = arr[offs+P9];
 		unless(bg) bg = -1;
 		unless(shd) shd_t = SHD_NORMAL;
-		int wid = Text->StringWidth(buf, arr[P1]) + (shd_t?1:0);
+		int wid = Text->StringWidth(buf, arr[offs+P1]) + (shd_t?1:0);
 		
-		if(arr[P6])
-			bit->DrawString(layer, x, y, arr[P1], arr[P6], bg, arr[M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE, arr[P9], shd);
-		return wid + ((arr[P9])?1:0);
+		if(arr[offs+P6])
+			bit->DrawString(layer, x, y, arr[offs+P1], arr[offs+P6], bg, arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE, arr[offs+P9], shd);
+		return wid + ((arr[offs+P9])?1:0);
 	}
 	//end Counter
 	//end Handler Functions
