@@ -1780,7 +1780,6 @@ namespace Venrob::SubscreenEditor
 						{
 							strcpy(testbuf, "  Test    \n    Name  ");
 						}
-						else TraceS("No testname\n");
 						DEFINE P_C_X = WIDTH/2;
 						int p_hei = DrawStringsCount(arr[P1], testbuf, 256) * Text->FontHeight(arr[P1]);
 						DEFINE P_Y = ABOVE_BOTTOM_Y - p_hei;

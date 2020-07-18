@@ -104,6 +104,15 @@ namespace Venrob::Subscreen
 		BTNITM_EX2 = BTNITMS+CB_EX2,
 		BTNITM_EX3 = BTNITMS+CB_EX3,
 		BTNITM_EX4 = BTNITMS+CB_EX4,
+		BTNCLASS,
+		BTNCLASS_A = BTNCLASS+CB_A,
+		BTNCLASS_B = BTNCLASS+CB_B,
+		BTNCLASS_L = BTNCLASS+CB_L,
+		BTNCLASS_R = BTNCLASS+CB_R,
+		BTNCLASS_EX1 = BTNCLASS+CB_EX1,
+		BTNCLASS_EX2 = BTNCLASS+CB_EX2,
+		BTNCLASS_EX3 = BTNCLASS+CB_EX3,
+		BTNCLASS_EX4 = BTNCLASS+CB_EX4,
 		BTNPOS = CB_MAX,
 		BTNPOS_A = BTNPOS+CB_A,
 		BTNPOS_B = BTNPOS+CB_B,
@@ -320,7 +329,7 @@ namespace Venrob::Subscreen
 						dequp_btn(q);
 					else if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP] && (q == CB_EX3 || q == CB_EX4))
 						dequp_btn(q);
-					continue;
+					break;
 				}
 				default: continue;
 			}
@@ -1309,11 +1318,17 @@ namespace Venrob::Subscreen
 		{
 			return val;
 		}
-		else if(val <= -1000)
-		{
-			return get_item_of_class(-val -1000);
-		}
 		else return -1;
+	} //end
+	void refresh_button(int btn) //start
+	{
+		if(btn_data[BTNCLASS+btn] > -1)
+		{
+			btn_data[BTNITMS+btn] = get_item_of_class(btn_data[BTNCLASS+btn]);
+			if(btn_data[BTNITMS+btn] < 0)
+				shuffle_button(btn, DIR_RIGHT, true);
+		}
+		else shuffle_button(btn, DIR_RIGHT, true);
 	} //end
 	void set_btn_pos(int btn, int pos) //start Sets the pos of a button
 	{
@@ -1377,14 +1392,18 @@ namespace Venrob::Subscreen
 	void equp_btn_itm(int btn, int id) //start Sets the item (ID) of a button
 	{
 		btn_data[BTNITMS+btn] = id;
+		btn_data[BTNCLASS+btn] = -1;
 	} //end
 	void equp_btn_itmclass(int btn, int class) //start Sets the item (class) of a button
 	{
-		btn_data[BTNITMS+btn] = -class -1000;
+		btn_data[BTNCLASS+btn] = class;
+		if(class > -1)
+			btn_data[BTNITMS+btn] = get_item_of_class(class);
 	} //end
 	void dequp_btn(int btn) //start Sets a button to be empty
 	{
 		btn_data[BTNITMS+btn] = -1;
+		btn_data[BTNCLASS+btn] = -1;
 		btn_data[BTNPOS+btn] = -1;
 	} //end
 	void handle_buttons() //start Handle button inputs
@@ -1442,7 +1461,7 @@ namespace Venrob::Subscreen
 				default: continue;
 			} //end
 			unless(hasItem(get_btn_itm(q)))
-				shuffle_button(q, DIR_RIGHT, true); //Check if the item is owned, and if not, shuffle it
+				refresh_button(q);
 			int itm = get_btn_itm(q);
 			if(q == CB_A)
 			{
@@ -1470,7 +1489,6 @@ namespace Venrob::Subscreen
 		int pos = btn_data[BTNPOS+btn];
 		unless(pos > -1) return;
 		bool visited[MAX_INT];
-		visited[pos] = true;
 		for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES]; ++q)
 		{
 			int indx = activeModules[q];
@@ -1478,24 +1496,48 @@ namespace Venrob::Subscreen
 			{
 				if(activeData[indx+P2] == pos)
 				{
-					int try_itm = -1;
-					int try_class = -1;
-					pos = activeData[indx+P2+dir];
-					q = 1;
-					if(activeData[indx+M_TYPE] == MODULE_TYPE_SEL_ITEM_ID)
-						try_itm = activeData[indx+P1];
-					else if(activeData[indx+M_TYPE] == MODULE_TYPE_SEL_ITEM_CLASS)
+					bool skp;
+					for(int b = 0; b < CB_MAX; ++b)
 					{
-						try_class = activeData[indx+P1];
-						try_itm = get_item_of_class(try_class);
+						switch(b) //start Filter out unused buttons
+						{
+							case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
+							{
+								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<b))
+									continue;
+								if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (b == CB_L || b == CB_R))
+									continue;
+								if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP] && (b == CB_EX3 || b == CB_EX4))
+									continue;
+								break;
+							}
+							default: continue;
+						} //end
+						if(btn_data[BTNPOS+b] == pos)
+						{
+							skp = true;
+							break;
+						}
 					}
-					if(try_itm > -1 && hasItem(try_itm))
+					unless(skp)
 					{
-						if(try_class > -1)
-							equp_btn_itmclass(btn, try_class);
-						else equp_btn_itm(btn, try_itm);
-						set_btn_pos(btn, pos);
-						return;
+						int try_itm = -1;
+						int try_class = -1;
+						if(activeData[indx+M_TYPE] == MODULE_TYPE_SEL_ITEM_ID)
+							try_itm = activeData[indx+P1];
+						else if(activeData[indx+M_TYPE] == MODULE_TYPE_SEL_ITEM_CLASS)
+						{
+							try_class = activeData[indx+P1];
+							try_itm = get_item_of_class(try_class);
+						}
+						if(try_itm > -1 && hasItem(try_itm))
+						{
+							if(try_class > -1)
+								equp_btn_itmclass(btn, try_class);
+							else equp_btn_itm(btn, try_itm);
+							btn_data[BTNPOS+btn] = pos;
+							return;
+						}
 					}
 					if(visited[pos])
 					{
@@ -1504,6 +1546,8 @@ namespace Venrob::Subscreen
 						return;
 					}
 					visited[pos] = true;
+					pos = activeData[indx+P3+dir];
+					q = 1;
 				}
 			}
 		}
@@ -1513,9 +1557,9 @@ namespace Venrob::Subscreen
 		for(int q = 0; q < CB_MAX; ++q)
 		{
 			btn_data[BTNITMS+q] = -1;
+			btn_data[BTNCLASS+q] = -1;
 			btn_data[BTNPOS+q] = -1;
 		}
-		equp_btn_itmclass(CB_A, IC_SWORD);
 	} //end
 	//end Button Item stuff
 	//start getters/setters
