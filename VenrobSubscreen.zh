@@ -173,7 +173,8 @@ namespace Venrob::Subscreen
 		FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR = FLAG4,
 		FLAG_MMP_COMPASS_BLINK_DOESNT_STOP = FLAG5,
 		FLAG_MMP_IGNORE_DMAP_BGTILE = FLAG6,
-		FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS = FLAG7
+		FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS = FLAG7,
+		FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW = FLAG8
 	};
 	enum //Heart Row
 	{
@@ -832,9 +833,11 @@ namespace Venrob::Subscreen
 		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[offs+P6]-1);
 		switch(ow)
 		{
-			case DMAP_BSOVERWORLD:
 			case DMAP_OVERWORLD:
 				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_OW);
+				break;
+			case DMAP_BSOVERWORLD:
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW);
 				break;
 			case DMAP_DUNGEON:
 				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON);
@@ -914,7 +917,7 @@ namespace Venrob::Subscreen
 					{
 						c = module_arr[offs+P2];
 					}
-					else if(ow != DMAP_BSOVERWORLD && hasMap && dmapinfo::VisibleOnDungeonMap(q, true))
+					else if(hasMap && dmapinfo::VisibleOnDungeonMap(q, true))
 					{
 						c = module_arr[offs+P3];
 					}

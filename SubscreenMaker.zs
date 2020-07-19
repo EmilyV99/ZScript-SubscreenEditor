@@ -31,7 +31,7 @@ namespace Venrob::SubscreenEditor
 	DEFINE MVER_SEL_ITEM_CLASS = 1;
 	DEFINE MVER_BUTTONITEM = 2;
 	DEFINE MVER_PASSIVESUBSCREEN = 1;
-	DEFINE MVER_MINIMAP = 1;
+	DEFINE MVER_MINIMAP = 2;
 	DEFINE MVER_TILEBLOCK = 1;
 	DEFINE MVER_HEART = 1;
 	DEFINE MVER_HEARTROW = 1;
@@ -1446,6 +1446,18 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_MINIMAP: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						if(module_arr[M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_OW)
+						{
+							module_arr[M_FLAGS1] |= FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW;
+						}
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P10+1)
 				{
 					if(DEBUG)
