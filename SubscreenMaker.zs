@@ -611,11 +611,7 @@ namespace Venrob::SubscreenEditor
 							//fallthrough
 						}
 						default:
-							if(Hero->ItemA)
-								itm = Game->LoadItemData(Hero->ItemA);
-							else if(Hero->ItemB)
-								itm = Game->LoadItemData(Hero->ItemB);
-							else itm = Game->LoadItemData(0);
+							itm = Game->LoadItemData(0);
 							break;
 					}
 				} //end
