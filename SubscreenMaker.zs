@@ -305,6 +305,7 @@ namespace Venrob::SubscreenEditor
 						printf("Btn %d: pos %d, val %d (%d)\n",q,btn_data[BTNPOS+q],btn_data[BTNITMS+q],get_btn_itm(q));
 					}
 				}
+				if(Input->Key[KEY_G]) setScriptConditional(0, 0, true);
 				runPassiveSubscreen();
 				Waitframe();
 			}
@@ -1219,27 +1220,44 @@ namespace Venrob::SubscreenEditor
 	}
 	//end Misc
 	//start Module Validation
-	/*
-	 * Returns true if the passed module is valid for an active subscreen.
-	 * This has separate handling per module type, ensuring that individual requirements are met.
-	 */
-	bool validate_active_module(untyped module_arr) //start
+	
+	void metaver_check(untyped module_arr) //start Check metadata version
 	{
-		moduleType type = module_arr[M_TYPE];
-		if(module_arr[M_META_SIZE] < MODULE_META_SIZE) //start Versioning!
+		if(module_arr[M_META_SIZE] < MODULE_META_SIZE)
 		{
 			switch(module_arr[M_META_SIZE])
 			{
 				case 8:
-					for(int q = P10; q > M_VER; --q)
+					for(int q = module_arr[M_SIZE]; q > M_VER; --q)
 					{
 						module_arr[q] = module_arr[q-1];
 					}
 					module_arr[M_VER] = 1;
 					++module_arr[M_META_SIZE];
 					++module_arr[M_SIZE];
+					//fallthrough
+				case 9:
+					for(int q = module_arr[M_SIZE]+2; q > M_CNDTYPE; --q)
+					{
+						module_arr[q] = module_arr[q-3];
+					}
+					module_arr[M_CNDTYPE] = COND_NONE;
+					module_arr[M_CND1] = 0;
+					module_arr[M_CND2] = 0;
+					module_arr[M_META_SIZE] += 3;
+					module_arr[M_SIZE] += 3;
+					//fallthrough
 			}
-		} //end
+		}
+	} //end
+	/*
+	 * Returns true if the passed module is valid for an active subscreen.
+	 * This has separate handling per module type, ensuring that individual requirements are met.
+	 */
+	bool validate_active_module(untyped module_arr) //start
+	{
+		metaver_check(module_arr);
+		moduleType type = module_arr[M_TYPE];
 		switch(type)
 		{
 			case MODULE_TYPE_BGCOLOR: //start
@@ -2207,6 +2225,7 @@ namespace Venrob::SubscreenEditor
 	
 	bool validate_passive_module(untyped module_arr) //start
 	{
+		metaver_check(module_arr);
 		moduleType type = module_arr[M_TYPE];
 		switch(type)
 		{
@@ -2298,7 +2317,7 @@ namespace Venrob::SubscreenEditor
 		if(indx < g_arr[NUM_ACTIVE_MODULES])
 		{
 			int sz_shift = activeModules[g_arr[NUM_ACTIVE_MODULES]] - (activeModules[indx]+sz);
-			memmove(activeData, activeModules[indx], activeData, activeModules[indx]+sz, sz_shift);
+			large_memmove(activeData, activeModules[indx], activeData, activeModules[indx]+sz, sz_shift);
 			memset(activeData, activeModules[g_arr[NUM_ACTIVE_MODULES]]-sz, 0, g_arr[SZ_ACTIVE_DATA]-(activeModules[g_arr[NUM_ACTIVE_MODULES]]-sz));
 			g_arr[SZ_ACTIVE_DATA] -= sz;
 			for(int q = indx; q <= g_arr[NUM_ACTIVE_MODULES]; ++q)
@@ -2382,7 +2401,7 @@ namespace Venrob::SubscreenEditor
 		if(indx < g_arr[NUM_PASSIVE_MODULES])
 		{
 			int sz_shift = passiveModules[g_arr[NUM_PASSIVE_MODULES]] - (passiveModules[indx]+sz);
-			memmove(passiveData, passiveModules[indx], passiveData, passiveModules[indx]+sz, sz_shift);
+			large_memmove(passiveData, passiveModules[indx], passiveData, passiveModules[indx]+sz, sz_shift);
 			memset(passiveData, passiveModules[g_arr[NUM_PASSIVE_MODULES]]-sz, 0, g_arr[SZ_PASSIVE_DATA]-(passiveModules[g_arr[NUM_PASSIVE_MODULES]]-sz));
 			g_arr[SZ_PASSIVE_DATA] -= sz;
 			for(int q = indx; q <= g_arr[NUM_PASSIVE_MODULES]; ++q)

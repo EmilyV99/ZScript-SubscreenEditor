@@ -44,6 +44,7 @@ namespace Venrob::Subscreen
 	int passiveModules[MAX_MODULES];
 	untyped g_arr[G_ARR_SIZE];
 	untyped btn_data[BTNDAT_SZ];
+	untyped script_conditional[MAX_INT];
 	CONFIGB DEBUG = true;
 	enum Data //start Settings
 	{
@@ -131,7 +132,7 @@ namespace Venrob::Subscreen
 	enum //For parameters for modules.
 	{
 		//Meta
-		M_SIZE, M_META_SIZE, M_TYPE, M_VER, M_PANEL, M_LAYER, M_X, M_Y, M_FLAGS1,
+		M_SIZE, M_META_SIZE, M_TYPE, M_VER, M_CNDTYPE, M_CND1, M_CND2, M_PANEL, M_LAYER, M_X, M_Y, M_FLAGS1,
 		//Parameters
 		P1, P2, P3, P4, P5, P6, P7, P8, P9, P10
 	};
@@ -258,14 +259,15 @@ namespace Venrob::Subscreen
 		LARGE MAP (Active only)
 		COUNTER METER (%)
 		TEXT (Will be a large module, to store the char data)
-		TRIFORCE FRAME
-		TRIFORCE PIECE
 
 		Shapes:
 		RECTANGLE
 		TRIANGLE
 		CIRCLE
 		LINE
+		
+		Not Doing:
+		TRIFORCE FRAME / TRIFORCE PIECE - Use a tile block for a frame, and tiles with conditionals for the pieces!
 		*/
 		MODULE_TYPE_MAX
 	}; //end
@@ -312,8 +314,9 @@ namespace Venrob::Subscreen
 		{
 			memcpy(settings, 0, settings_arr, 0, Min(SZ_SETTINGS, SizeOfArray(settings_arr)));
 		}
-		memcpy(activeData, START_SETTINGS, settings, START_SETTINGS, NUM_SETTINGS);
+		memcpy(activeData, 0, settings, 0, NUM_SETTINGS);
 		activeData[M_SIZE] = SZ_SETTINGS;
+		activeData[M_META_SIZE] = P1;
 		activeData[M_TYPE] = MODULE_TYPE_SETTINGS;
 		
 		int b = activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] | activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS];
@@ -347,6 +350,7 @@ namespace Venrob::Subscreen
 			memcpy(settings, 0, settings_arr, 0, Min(SZ_SETTINGS, SizeOfArray(settings_arr)-1));
 		memcpy(passiveData, START_SETTINGS, settings, START_SETTINGS, NUM_SETTINGS);
 		passiveData[M_SIZE] = SZ_SETTINGS;
+		passiveData[M_META_SIZE] = P1;
 		passiveData[M_TYPE] = MODULE_TYPE_SETTINGS;
 	} //end
 
@@ -396,28 +400,36 @@ namespace Venrob::Subscreen
 			//Trace(activeData[q]);
 		}*/
 		event_t event = EVENT_NONE;
+		bool killrun;
 		bitmap abit = getSubscreenBitmap(true), pbit = getSubscreenBitmap(false);
 		do
 		{
 			runPassiveLogic();
-			for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
+			for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES]; ++q)
 			{
 				int indx = activeModules[q];
-				if((g_arr[ACTIVE_SELECTED_INDEX]==-1) || (g_arr[ACTIVE_SELECTED_INDEX] == activeData[indx+P2] && isSelectable(activeData[indx+M_TYPE]) && !canSelect(activeData, indx)))
+				event = runModule(q, activeData, indx, true);
+				if(event == EVENT_EXIT)
+					killrun = true;
+				if((g_arr[ACTIVE_SELECTED_INDEX]==-1) || (g_arr[ACTIVE_SELECTED_INDEX] == activeData[indx+P2] && isSelectable(activeData[indx+M_TYPE]) && (!canSelect(activeData, indx) || event == EVENT_SKIPPED)))
 				{
+					TraceS("Running forced selection\n");
 					g_arr[ACTIVE_SELECTED_INDEX] = -1;
 					for(int i = 1; i < g_arr[NUM_ACTIVE_MODULES]; ++i)
 					{
 						int indx = activeModules[i];
+						if(activeData[indx+M_CNDTYPE] && !getConditional(<ConditionalType>(activeData[indx+M_CNDTYPE]),activeData[indx+M_CND1],activeData[indx+M_CND2]))
+							continue;
 						if(canSelect(activeData, indx))
 						{
 							g_arr[ACTIVE_SELECTED_INDEX] = activeData[indx+P2];
 							break;
 						}
 					}
+					printf("Selected %d\n", g_arr[ACTIVE_SELECTED_INDEX]);
 				}
-				event = runModule(q, activeData, indx, true);
 			}
+			//printf("Selector: %d, old %d\n", g_arr[ACTIVE_SELECTED_INDEX], g_arr[LAST_SELECTED_INDEX]);
 			if(g_arr[ACTIVE_SELECTED_INDEX] != g_arr[LAST_SELECTED_INDEX])
 				clearPreparedSelector();
 			else runPreparedSelector(true);
@@ -427,14 +439,8 @@ namespace Venrob::Subscreen
 			clearActive1frame();
 			handle_buttons();
 			Waitframe();
-			switch(event)
-			{
-				case EVENT_EXIT:
-					Input->Press[CB_START] = true;
-					break;
-			}
 		}
-		until(Input->Press[CB_START]);
+		until(Input->Press[CB_START] || killrun);
 	}
 	
 	void activetimers()
@@ -477,11 +483,14 @@ namespace Venrob::Subscreen
 	{
 		EVENT_EXIT = -1,
 		EVENT_NONE,
+		EVENT_SKIPPED,
 		EVENT_MAX
 	};
 	
 	event_t runModule(int mod_indx, untyped module_arr, int offs, bool active)
 	{
+		if(module_arr[offs+M_CNDTYPE] && !getConditional(<ConditionalType>(module_arr[offs+M_CNDTYPE]),module_arr[offs+M_CND1],module_arr[offs+M_CND2]))
+			return EVENT_SKIPPED;
 		bitmap bit = getSubscreenBitmap(active);
 		switch(module_arr[offs+M_TYPE])
 		{
@@ -598,7 +607,7 @@ namespace Venrob::Subscreen
 							bool visited[MAX_INT];
 							visited[module_arr[offs+P2]] = true;
 							g_arr[ACTIVE_SELECTED_INDEX] = module_arr[offs+P3+selectedDir];
-							for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
+							for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES]; ++q)
 							{
 								int indx = activeModules[q];
 								if(isSelectable(activeData[indx+M_TYPE]) && g_arr[ACTIVE_SELECTED_INDEX] == activeData[indx+P2])
@@ -608,7 +617,7 @@ namespace Venrob::Subscreen
 										g_arr[ACTIVE_SELECTED_INDEX] = module_arr[offs+P2];
 										break;
 									}
-									if(canSelect(activeData, indx))
+									if(canSelect(activeData, indx) && (!activeData[indx+M_CNDTYPE] || getConditional(activeData[indx+M_CNDTYPE], activeData[indx+M_CND1], activeData[indx+M_CND2])))
 										break;
 									else
 									{
@@ -647,6 +656,7 @@ namespace Venrob::Subscreen
 			case MODULE_TYPE_MINIMAP: //start
 			{
 				minimap(module_arr,offs,bit,active);
+				break;
 			} //end
 			
 			case MODULE_TYPE_TILEBLOCK: //start
@@ -742,6 +752,8 @@ namespace Venrob::Subscreen
 						{
 							if(activeData[indx+P2] == g_arr[ACTIVE_SELECTED_INDEX])
 							{
+								if(activeData[indx+M_CNDTYPE] && !getConditional(activeData[indx+M_CNDTYPE], activeData[indx+M_CND1], activeData[indx+M_CND2]))
+									break;
 								switch(activeData[indx+M_TYPE])
 								{
 									case MODULE_TYPE_SEL_ITEM_ID:
@@ -859,11 +871,11 @@ namespace Venrob::Subscreen
 		}
 		else
 		{
-			int offs = Game->DMapOffset[Game->GetCurDMap()];
+			int dmoffs = Game->DMapOffset[Game->GetCurDMap()];
 			bool largeMarkers = module_arr[offs+M_FLAGS1] & FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 			
-			int lim = 8 - Max(offs - 8, 0);
-			int low_lim = Min(offs, 0);
+			int lim = 8 - Max(dmoffs - 8, 0);
+			int low_lim = Min(dmoffs, 0);
 			
 			for(int q = 0; q < 128; ++q)
 			{			
@@ -877,7 +889,7 @@ namespace Venrob::Subscreen
 				int x = orig_x + 8 + (8*(q%0x010));
 				int y = orig_y + 8 + (4*Div(q, 0x010));
 				
-				if(hasCompass && q+offs == dm->Compass &&
+				if(hasCompass && q+dmoffs == dm->Compass &&
 				   (blinkon || (deadCompass && !(module_arr[offs+M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
 				{
 					c = deadCompass ? module_arr[offs+P5] : module_arr[offs+P4];
@@ -897,7 +909,7 @@ namespace Venrob::Subscreen
 				}
 				unless(c)
 				{
-					mapdata m = Game->LoadMapData(Game->GetCurMap(),q+offs);
+					mapdata m = Game->LoadMapData(Game->GetCurMap(),q+dmoffs);
 					if(showExplore && m->State[ST_VISITED])
 					{
 						c = module_arr[offs+P2];
@@ -1494,26 +1506,31 @@ namespace Venrob::Subscreen
 				if(activeData[indx+P2] == pos)
 				{
 					bool skp;
-					for(int b = 0; b < CB_MAX; ++b)
+					if(activeData[indx+M_CNDTYPE] && !getConditional(activeData[indx+M_CNDTYPE], activeData[indx+M_CND1], activeData[indx+M_CND2]))
+						skp = true;
+					else
 					{
-						switch(b) //start Filter out unused buttons
+						for(int b = 0; b < CB_MAX; ++b)
 						{
-							case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
+							switch(b) //start Filter out unused buttons
 							{
-								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<b))
-									continue;
-								if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (b == CB_L || b == CB_R))
-									continue;
-								if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP] && (b == CB_EX3 || b == CB_EX4))
-									continue;
+								case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
+								{
+									unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<b))
+										continue;
+									if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (b == CB_L || b == CB_R))
+										continue;
+									if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP] && (b == CB_EX3 || b == CB_EX4))
+										continue;
+									break;
+								}
+								default: continue;
+							} //end
+							if(btn_data[BTNPOS+b] == pos)
+							{
+								skp = true;
 								break;
 							}
-							default: continue;
-						} //end
-						if(btn_data[BTNPOS+b] == pos)
-						{
-							skp = true;
-							break;
 						}
 					}
 					unless(skp)
@@ -1603,7 +1620,65 @@ namespace Venrob::Subscreen
 		}
 	}
 	//end
-	
+	//start Conditionals
+	enum ConditionalType //start
+	{
+		COND_NONE,
+		COND_SCRIPT,
+		COND_LITEM,
+		MAX_COND_TYPE
+	}; //end
+	//start misc enums for conditions
+	enum //LItem indexes
+	{
+		LICND_TRIFORCE,
+		LICND_MAP,
+		LICND_COMPASS,
+		LICND_BOSS_DEAD,
+		LICND_BOSSKEY,
+		MAX_LICND
+	};
+	//end
+	bool getConditional(ConditionalType t, int indx, int indx2) //start
+	{
+		#option BINARY_32BIT off
+		switch(t)
+		{
+			case COND_NONE: default:
+				return true;
+			case COND_LITEM:
+				if(indx == -1)
+					return Game->LItems[Game->GetCurLevel()] & (1b<<indx2);
+				return Game->LItems[indx] & (1b<<indx2);
+			case COND_SCRIPT:
+				return get_32b(script_conditional, indx, indx2);
+		}
+	} //end
+	bool get_32b(untyped arr, int indx, int indx2) //start
+	{
+		#option BINARY_32BIT on
+		return arr[indx] & 1b<<indx2;
+	} //end
+	void set_32b(untyped arr, int indx, int indx2, bool state) //start
+	{
+		#option BINARY_32BIT on
+		if(state)
+			arr[indx] |= 1b<<indx2;
+		else
+			arr[indx] ~= 1b<<indx2;
+	} //end
+	//These functions are for user scripts:
+	bool getScriptConditional(int indx, int bit) //start
+	{
+		if(bit > 31 || bit < 0 || indx < 0) return false;
+		return get_32b(script_conditional, indx, bit);
+	} //end
+	void setScriptConditional(int indx, int bit, bool state) //start
+	{
+		if(bit > 31 || bit < 0 || indx < 0) return;
+		set_32b(script_conditional, indx, bit, state);
+	} //end
+	//end Conditionals
 	using namespace Venrob::Subscreen::Internal;
 	namespace Internal //start
 	{
