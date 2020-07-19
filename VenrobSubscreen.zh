@@ -1472,6 +1472,11 @@ namespace Venrob::Subscreen
 			unless(hasItem(get_btn_itm(q)))
 				refresh_button(q);
 			int itm = get_btn_itm(q);
+			unless(itm > -1)
+			{
+				Input->Button[q] = false;
+				Input->Press[q] = false;
+			}
 			if(q == CB_A)
 			{
 				Hero->ItemA = itm;
