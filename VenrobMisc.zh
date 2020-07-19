@@ -1345,4 +1345,17 @@ namespace Venrob
 				break;
 		}
 	} //end
+
+	/**
+	 * As memmove(), but with a larger buffer
+	 */
+	untyped large_memmove(untyped dest, int dpos, untyped src, int spos, int n) //start
+	{
+		untyped buffer[MAX_INT];
+		for(int i = 0; i < n; ++i)
+			buffer[i] = src[spos + i];
+		for(int i = 0; i < n; ++i)
+			dest[dpos + i] = buffer[i];
+		return dest;
+	} //end
 }
