@@ -13,6 +13,8 @@ namespace Venrob
 	//start Constants
 	DEFINE MAX_FONT = FONT_LISA;
 	DEFINE NUM_FONTS = MAX_FONT+1;
+	DEFINE MIN_COUNTER_INDX = 0;
+	DEFINE MAX_COUNTER_INDX = CR_CUSTOM25;
 	//end Constants
 	
 	/**

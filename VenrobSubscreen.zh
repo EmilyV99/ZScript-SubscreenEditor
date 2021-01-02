@@ -1634,6 +1634,9 @@ namespace Venrob::Subscreen
 		COND_NONE,
 		COND_SCRIPT,
 		COND_LITEM,
+		COND_ITEM,
+		COND_COUNTER,
+		COND_COUNTER_UNDER,
 		MAX_COND_TYPE
 	}; //end
 	//start misc enums for conditions
@@ -1660,6 +1663,14 @@ namespace Venrob::Subscreen
 				return Game->LItems[indx] & (1b<<indx2);
 			case COND_SCRIPT:
 				return get_32b(script_conditional, indx, indx2);
+			case COND_ITEM:
+				return Hero->Item[indx];
+			case COND_COUNTER:
+				unless(indx2) //Hardcode to check for a full counter
+					return Game->Counter[indx] >= Game->MCounter[indx];
+				return Game->Counter[indx] >= indx2;
+			case COND_COUNTER_UNDER:
+				return Game->Counter[indx] <= indx2;
 		}
 	} //end
 	bool get_32b(untyped arr, int indx, int indx2) //start

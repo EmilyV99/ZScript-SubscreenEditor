@@ -1048,7 +1048,7 @@ namespace Venrob::SubscreenEditor
 						return;
 					}
 				}
-				if(PROC_CONFIRM==button(bit, WIDTH-FRAME_X-BUTTON_WIDTH-10, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH+10, BUTTON_HEIGHT, "Conditionals", data, proc_data, 5, 0))
+				if(PROC_CONFIRM==button(bit, WIDTH-FRAME_X-BUTTON_WIDTH-10, HEIGHT-(MARGIN_WIDTH+2)-BUTTON_HEIGHT, BUTTON_WIDTH+10, BUTTON_HEIGHT, "Conditionals", data, proc_data, 5, arr[M_TYPE]==MODULE_TYPE_BGCOLOR?FLAG_DISABLE:0))
 				{
 					do_condsettings(arr);
 				}
@@ -1459,13 +1459,13 @@ namespace Venrob::SubscreenEditor
 					case MODULE_TYPE_CRROW: //start
 					{
 						char32 buf1[] = "Piece Count:";
-						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39+14, 28, argbuf6, 2, false, data, OBJ_SPEC_TFINDX_START+3, 0, 0, MAX_INT, buf1);
+						titled_inc_text_field(bit, FRAME_X+5+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+48+12, 28, argbuf6, 2, false, data, OBJ_SPEC_TFINDX_START+3, 0, 0, MAX_INT, buf1);
 						arr[P6] = VBound(atoi(argbuf6), 32, 1);
 						char32 buf2[] = "Spacing:";
-						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39+14, 28, argbuf7, 2, false, data, OBJ_SPEC_TFINDX_START+4, 0, buf2);
+						titled_inc_text_field(bit, FRAME_X+37+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+48+12, 28, argbuf7, 2, false, data, OBJ_SPEC_TFINDX_START+4, 0, buf2);
 						arr[P7] = atoi(argbuf7);
 						
-						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 53+14, 7, arr[M_FLAGS1]&FLAG_CRROW_RTOL, data, 0, "Right to Left", "This row of magics fills from right to left, instead of left to right."))
+						switch(desc_titled_checkbox(bit, FRAME_X+3, FRAME_Y + 48+24, 7, arr[M_FLAGS1]&FLAG_CRROW_RTOL, data, 0, "Right to Left", "This row of magics fills from right to left, instead of left to right."))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_CRROW_RTOL;
@@ -1483,7 +1483,7 @@ namespace Venrob::SubscreenEditor
 						char32 buftl[] = "Tile:";
 						int tlarr[2] = {arr[P1], arr[P2]};
 						text(bit, FRAME_X+3, FRAME_Y+23, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
-						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
+						tile_swatch(bit, FRAME_X+4+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
 						arr[P1] = tlarr[0];
 						arr[P2] = tlarr[1];
 						
@@ -1492,10 +1492,12 @@ namespace Venrob::SubscreenEditor
 						arr[P3] = Max(atoi(argbuf3), 0);
 						
 						char32 buf1[] = "Counter:";
-						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39, 28, argbuf4, 2, false, data, OBJ_SPEC_TFINDX_START+1, 0, MIN_COUNTER_INDX, MAX_COUNTER_INDX, buf1);
-						arr[P4] = VBound(atoi(argbuf4), 32, 1);
+						//titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+39, 28, argbuf4, 2, false, data, OBJ_SPEC_TFINDX_START+1, 0, MIN_COUNTER_INDX, MAX_COUNTER_INDX, buf1);
+						//arr[P4] = VBound(atoi(argbuf4), 32, 1);
+						text(bit, FRAME_X+3, FRAME_Y+39, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						arr[P4] = dropdown_proc(bit, FRAME_X+5+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+37, 96, arr[P4], data, SSL_COUNTER, -1, 10, lastframe, 0);
 						char32 buf2[] = "Per Container:";
-						titled_inc_text_field(bit, FRAME_X+35+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+39, 40, argbuf5, 5, false, data, OBJ_SPEC_TFINDX_START+2, 0, 1, MAX_COUNTER, buf2);
+						titled_inc_text_field(bit, FRAME_X+5+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+48, 40, argbuf5, 5, false, data, OBJ_SPEC_TFINDX_START+2, 0, 1, MAX_COUNTER, buf2);
 						arr[P5] = atoi(argbuf5);
 						
 						//start Preview
@@ -1548,11 +1550,11 @@ namespace Venrob::SubscreenEditor
 						}
 						else
 						{
-							titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 64, argbuf2, 2, false, data, OBJ_SPEC_TFINDX_START+0, 0, MIN_COUNTER_INDX, MAX_COUNTER_INDX, buf3);
-							arr[P2] = Max(atoi(argbuf2), 0);
+							text(bit, FRAME_X, FRAME_Y+26, TF_NORMAL, buf3, PAL[COL_TEXT_MAIN]);
+							arr[P2] = dropdown_proc(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 96, arr[P2], data, SSL_COUNTER, -1, 10, lastframe, 0);
 						}
 						char32 buf4[] = "Min Digits:";
-						titled_inc_text_field(bit, FRAME_X+70+Text->StringWidth(buf3, DIA_FONT)+Text->StringWidth(buf4, DIA_FONT), FRAME_Y+24, 20, argbuf5, 2, false, data, OBJ_SPEC_TFINDX_START+1, 0, 0, 5, buf4);
+						titled_inc_text_field(bit, FRAME_X+102+Text->StringWidth(buf3, DIA_FONT)+Text->StringWidth(buf4, DIA_FONT), FRAME_Y+24, 20, argbuf5, 2, false, data, OBJ_SPEC_TFINDX_START+1, 0, 0, 5, buf4);
 						arr[P5] = atoi(argbuf5);
 						
 						
@@ -1887,7 +1889,7 @@ namespace Venrob::SubscreenEditor
 		{
 			gen_startup();
 			//start setup
-			DEFINE WIDTH = 112
+			DEFINE WIDTH = 224
 			     , HEIGHT = 112
 				 , BAR_HEIGHT = 11
 				 , MARGIN_WIDTH = 1
@@ -1910,7 +1912,12 @@ namespace Venrob::SubscreenEditor
 			                   "A level value of '-1' will read the current level.";
 			char32 script_desc[] = "The module will only display when a scripted condition is met. Script not provided.\n"
 			                       "The function 'setScriptConditional' can be used to set a given conditional.";
-			char32 desc_strs[] = {none_desc, script_desc, li_desc};
+			char32 item_desc[] = "The module will only display when the Player has the chosen item.";
+			char32 counter_desc[] = "The module will only display when the selected counter has a value"
+			                        " >= the selected value.\n Selecting '0' will require that the counter be *full*.";
+			char32 counter_und_desc[] = "The module will only display when the selected counter has a value"
+			                            " <= the selected value.";
+			char32 desc_strs[] = {none_desc, script_desc, li_desc, item_desc, counter_desc, counter_und_desc};
 			untyped data[DLG_DATA_SZ];
 			data[DLG_DATA_WID] = WIDTH;
 			data[DLG_DATA_HEI] = HEIGHT;
@@ -1946,7 +1953,7 @@ namespace Venrob::SubscreenEditor
 				i_proc(bit, FRAME_X, FRAME_Y - 1, desc_strs[new_arr[M_CNDTYPE]], data);
 				text(bit, FRAME_X+9, FRAME_Y, TF_NORMAL, "Type:", PAL[COL_TEXT_MAIN]);
 				int oldtype = new_arr[M_CNDTYPE];
-				new_arr[M_CNDTYPE] = dropdown_proc(bit, FRAME_X, FRAME_Y + Text->FontHeight(DIA_FONT) + 1, 64, new_arr[M_CNDTYPE], data, SSL_CONDTYPE, -1, 8, lastframe, 0);
+				new_arr[M_CNDTYPE] = dropdown_proc(bit, FRAME_X, FRAME_Y + Text->FontHeight(DIA_FONT) + 1, 128, new_arr[M_CNDTYPE], data, SSL_CONDTYPE, -1, 8, lastframe, 0);
 				if(new_arr[M_CNDTYPE] != oldtype) //start Bound values
 				{
 					switch(oldtype) //start Load values from argbufs
@@ -1959,7 +1966,18 @@ namespace Venrob::SubscreenEditor
 						case COND_SCRIPT:
 						{
 							new_arr[M_CND1] = VBound(atoi(argbuf1), MAX_INT, 0);
-							new_arr[M_CND2] = VBound(atoi(argbuf2), 32, 0);
+							new_arr[M_CND2] = VBound(atoi(argbuf2), 31, 0);
+							break;
+						}
+						case COND_ITEM:
+						{
+							new_arr[M_CND1] = VBound(atoi(argbuf1), MAX_ITEMDATA, MIN_ITEMDATA);
+							break;
+						}
+						case COND_COUNTER: case COND_COUNTER_UNDER:
+						{
+							new_arr[M_CND1] = VBound(atoi(argbuf1), MAX_COUNTER_INDX, MIN_COUNTER_INDX);
+							new_arr[M_CND2] = VBound(atoi(argbuf2), MAX_COUNTER, MIN_COUNTER);
 							break;
 						}
 					} //end
@@ -1975,6 +1993,17 @@ namespace Venrob::SubscreenEditor
 						{
 							new_arr[M_CND1] = VBound(new_arr[M_CND1], MAX_INT, 0);
 							new_arr[M_CND2] = VBound(new_arr[M_CND2], 31, 0);
+							break;
+						}
+						case COND_ITEM:
+						{
+							new_arr[M_CND1] = VBound(new_arr[M_CND1], MAX_ITEMDATA, MIN_ITEMDATA);
+							break;
+						}
+						case COND_COUNTER: case COND_COUNTER_UNDER:
+						{
+							new_arr[M_CND1] = VBound(new_arr[M_CND1], MAX_COUNTER_INDX, MIN_COUNTER_INDX);
+							new_arr[M_CND2] = VBound(new_arr[M_CND2], MAX_COUNTER, MIN_COUNTER);
 							break;
 						}
 					} //end
@@ -2012,6 +2041,33 @@ namespace Venrob::SubscreenEditor
 						char32 buf1[] = "Indx:";
 						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), V1_Y, 64, argbuf1, 6, false, data, 1, 0, 0, MAX_INT, buf1);
 						char32 buf2[] = "Bit:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf2, DIA_FONT), V2_Y, 32, argbuf2, 3, false, data, 2, 0, 0, 31, buf2);
+						break;
+					}
+					case COND_ITEM:
+					{
+						char32 buf1[] = "Item:";
+						text(bit, FRAME_X, V1_Y+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						new_arr[M_CND1] = dropdown_proc(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), V1_Y, 128, new_arr[M_CND1], data, SSL_ITEM, -1, 8, lastframe, 0);
+						char32 buf2[] = "V2:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf2, DIA_FONT), V2_Y, 32, argbuf2, 3, false, data, 2, FLAG_DISABLE, buf2);
+						break;
+					}
+					case COND_COUNTER:
+					{
+						char32 buf1[] = "Counter:";
+						text(bit, FRAME_X, V1_Y+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						new_arr[M_CND1] = dropdown_proc(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), V1_Y, 96, new_arr[M_CND1], data, SSL_COUNTER, -1, 8, lastframe, 0);
+						char32 buf2[] = "Min Value:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf2, DIA_FONT), V2_Y, 32, argbuf2, 3, false, data, 2, 0, 0, 31, buf2);
+						break;
+					}
+					case COND_COUNTER_UNDER:
+					{
+						char32 buf1[] = "Counter:";
+						text(bit, FRAME_X, V1_Y+2, TF_NORMAL, buf1, PAL[COL_TEXT_MAIN]);
+						new_arr[M_CND1] = dropdown_proc(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), V1_Y, 96, new_arr[M_CND1], data, SSL_COUNTER, -1, 8, lastframe, 0);
+						char32 buf2[] = "Max Value:";
 						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf2, DIA_FONT), V2_Y, 32, argbuf2, 3, false, data, 2, 0, 0, 31, buf2);
 						break;
 					}
@@ -4578,7 +4634,8 @@ namespace Venrob::SubscreenEditor
 			SSL_SHADOWTYPE = -4,
 			SSL_SP_CNTR = -5,
 			SSL_CONDTYPE = -6,
-			SSL_LICND = -7
+			SSL_LICND = -7,
+			SSL_COUNTER = -8
 		};
 		DEFINE DDWN_WID_FONT = 107;
 		DEFINE DDWN_WID_ALIGN = 39;
@@ -4679,6 +4736,12 @@ namespace Venrob::SubscreenEditor
 							strcpy(buf, "Scripted"); break;
 						case COND_LITEM:
 							strcpy(buf, "Level Item"); break;
+						case COND_ITEM:
+							strcpy(buf, "Item Owned"); break;
+						case COND_COUNTER:
+							strcpy(buf, "Counter"); break;
+						case COND_COUNTER_UNDER:
+							strcpy(buf, "Counter Under"); break;
 					} //end
 					return;
 				case SSL_LICND:
@@ -4694,6 +4757,27 @@ namespace Venrob::SubscreenEditor
 							strcpy(buf, "Killed Boss"); break;
 						case LICND_BOSSKEY:
 							strcpy(buf, "Boss Key"); break;
+					} //end
+					return;
+				case SSL_COUNTER:
+					switch(indx) //start
+					{
+						case CR_LIFE:
+							strcpy(buf, "Life"); break;
+						case CR_RUPEES:
+							strcpy(buf, "Rupees"); break;
+						case CR_BOMBS:
+							strcpy(buf, "Bombs"); break;
+						case CR_ARROWS:
+							strcpy(buf, "Arrows"); break;
+						case CR_MAGIC:
+							strcpy(buf, "Magic"); break;
+						case CR_KEYS:
+							strcpy(buf, "Keys"); break;
+						case CR_SBOMBS:
+							strcpy(buf, "Super Bombs"); break;
+						case CR_SCRIPT1...CR_SCRIPT25:
+							sprintf(buf, "Script %d", 1 + indx - CR_SCRIPT1); break;
 					} //end
 					return;
 				default:
@@ -4718,6 +4802,8 @@ namespace Venrob::SubscreenEditor
 					return MAX_COND_TYPE;
 				case SSL_LICND:
 					return MAX_LICND;
+				case SSL_COUNTER:
+					return MAX_COUNTER_INDX+1;
 			}
 			return 1;
 		}

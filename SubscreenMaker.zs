@@ -137,8 +137,6 @@ namespace Venrob::SubscreenEditor
 		{
 			MakeBGColorModule(buf);
 			add_active_module(buf);
-			buf[P1] = DGRAY;
-			add_passive_module(buf);
 			MakePassiveSubscreen(buf);
 			add_active_module(buf);
 			//
@@ -198,6 +196,9 @@ namespace Venrob::SubscreenEditor
 		}
 		else
 		{
+			MakeBGColorModule(buf);
+			buf[P1] = DGRAY;
+			add_passive_module(buf);
 			MakeButtonItem(buf);
 			buf[M_X] = 128;
 			buf[M_Y] = 24;
@@ -2556,7 +2557,7 @@ namespace Venrob::SubscreenEditor
 	void MakeButtonItem(untyped buf_arr)
 	{
 		MakeModule(buf_arr);
-		buf_arr[M_SIZE] = MODULE_META_SIZE;
+		buf_arr[M_SIZE] = P1+1;
 		buf_arr[M_TYPE] = MODULE_TYPE_BUTTONITEM;
 		buf_arr[M_VER] = MVER_BUTTONITEM;
 		
@@ -2694,6 +2695,9 @@ namespace Venrob::SubscreenEditor
 		buf_arr[M_SIZE] = P5+1;
 		buf_arr[M_TYPE] = MODULE_TYPE_CRPIECE;
 		buf_arr[M_VER] = MVER_CRPIECE;
+		
+		buf_arr[P4] = CR_LIFE;
+		buf_arr[P5] = HP_PER_HEART;
 	}
 	
 	void MakeCRRow(untyped buf_arr)
