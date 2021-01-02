@@ -1,0 +1,11 @@
+Modules:
+	2x2 Frame
+	Counter Block?
+	Large Map [Req: dmapdata->Charted[]]
+	Line
+	Rectangle
+	Desc Box (Selected Item Name, but not only items will be selectable...)
+	Desc Object (An object with pos and such like selectable items, but lets you use a message string as the description, and does nothing else)
+	Text
+	Text Box
+Triforce Frame/Pieces are covered by tile blocks, and LI_ conditionals.
