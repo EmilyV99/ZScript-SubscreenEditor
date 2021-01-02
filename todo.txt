@@ -1,11 +1,25 @@
 Modules:
-	2x2 Frame
+	2x2 Frame [Req: Screen->DrawFrame()]
 	Counter Block?
 	Large Map [Req: dmapdata->Charted[]]
 	Line
 	Rectangle
 	Desc Box (Selected Item Name, but not only items will be selectable...)
-	Desc Object (An object with pos and such like selectable items, but lets you use a message string as the description, and does nothing else)
+	Desc Object (An object with pos and such like selectable items,
+		but lets you use a message string as the description, and does nothing else)
 	Text
 	Text Box
 Triforce Frame/Pieces are covered by tile blocks, and LI_ conditionals.
+
+Systems:
+	Text storage system, allowing storing script strings. This requires a new file type ('.tsub', for 'text subscreen'?)
+		This would allow storing 419 strings of length 512 (including nullchar). These could be referenced by text/textbox/desc objects.
+		The storage would be *global* among all subscreens, rather than per-subscreen, thus the new storage.
+		The storage also needs to be added to the joint 'project' file type.
+		(419 of length 512 as 214748/512 = 419.429688)
+	Pages: L/R (by option) swap pages, or a 'Page Swap' module, which on 'A' press swaps to a 'target page'
+		(possibly with a given 'transition' style). This allows much more subscreen space than just the 256x224 area of the screen,
+		instead allowing multiple screens, up to a likely 256 max.
+		Should also allow pages (in a 'page options'?) to be ignored when L/R'ing; or have L/R be triggered by a 'Page Swap' module to
+		it's destination? This allows pages that cannot be L/R'd to, which could be accessible as 'sub-menus'; think Bomber's Notebook in MM,
+		or Kinstone List in MC.
