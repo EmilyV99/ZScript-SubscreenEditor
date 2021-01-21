@@ -2764,7 +2764,7 @@ namespace Venrob::SubscreenEditor
 	} //end
 	bool load_active_file(int indx) //start
 	{
-		printf("Attempted to load afile %d\n", indx);
+		//printf("Attempted to load afile %d\n", indx);
 		if(indx <= 0 || indx > 999) return false;
 		char32 path[256];
 		get_filename(path, indx, false);
@@ -2814,7 +2814,7 @@ namespace Venrob::SubscreenEditor
 	} //end
 	bool load_passive_file(int indx) //start
 	{
-		printf("Attempted to load pfile %d\n", indx);
+		//printf("Attempted to load pfile %d\n", indx);
 		if(indx <= 0 || indx > 999) return false;
 		char32 path[256];
 		get_filename(path, indx, true);
@@ -3104,7 +3104,7 @@ namespace Venrob::SubscreenEditor
 		}
 		else //Default settings
 		{
-			loadClassicPal(PAL);
+			loadBasicPal(PAL);
 			sys_settings[SSET_DELWARN] = true;
 		}
 		f->Free();
