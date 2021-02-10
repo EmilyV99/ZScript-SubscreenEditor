@@ -21,6 +21,8 @@ namespace Venrob
 	typedef const int DEFINE;
 	typedef const int CONFIG;
 	typedef const bool CONFIGB;
+	typedef const long DEFINEL;
+	typedef const long CONFIGL;
 }
 
 namespace Venrob::Subscreen
@@ -127,7 +129,57 @@ namespace Venrob::Subscreen
 	}; //end
 	
 	//end Constants/vars
-	
+	//start Versioning
+	//File IO Versions
+	DEFINE VERSION_ASUB = 1;
+	DEFINE VERSION_PSUB = 1;
+	DEFINE VERSION_PROJ = 1;
+	DEFINE VERSION_SSET = 1;
+	//Module Versions
+	DEFINE MVER_SETTINGS = 2;
+	DEFINE MVER_BGCOLOR = 2;
+	DEFINE MVER_SEL_ITEM_ID = 2;
+	DEFINE MVER_SEL_ITEM_CLASS = 2;
+	DEFINE MVER_BUTTONITEM = 3;
+	DEFINE MVER_PASSIVESUBSCREEN = 2;
+	DEFINE MVER_MINIMAP = 3;
+	DEFINE MVER_TILEBLOCK = 2;
+	DEFINE MVER_HEART = 2;
+	DEFINE MVER_HEARTROW = 2;
+	DEFINE MVER_COUNTER = 3;
+	DEFINE MVER_MINITILE = 2;
+	DEFINE MVER_NONSEL_ITEM_ID = 2;
+	DEFINE MVER_NONSEL_ITEM_CLASS = 2;
+	DEFINE MVER_CLOCK = 2;
+	DEFINE MVER_ITEMNAME = 2;
+	DEFINE MVER_DMTITLE = 2;
+	DEFINE MVER_MAGIC = 2;
+	DEFINE MVER_MAGICROW = 2;
+	DEFINE MVER_CRPIECE = 2;
+	DEFINE MVER_CRROW = 2;
+	//Compatible versions
+	DEFINE C_MVER_SETTINGS = 2;
+	DEFINE C_MVER_BGCOLOR = 2;
+	DEFINE C_MVER_SEL_ITEM_ID = 2;
+	DEFINE C_MVER_SEL_ITEM_CLASS = 2;
+	DEFINE C_MVER_BUTTONITEM = 3;
+	DEFINE C_MVER_PASSIVESUBSCREEN = 2;
+	DEFINE C_MVER_MINIMAP = 3;
+	DEFINE C_MVER_TILEBLOCK = 2;
+	DEFINE C_MVER_HEART = 2;
+	DEFINE C_MVER_HEARTROW = 2;
+	DEFINE C_MVER_COUNTER = 3;
+	DEFINE C_MVER_MINITILE = 2;
+	DEFINE C_MVER_NONSEL_ITEM_ID = 2;
+	DEFINE C_MVER_NONSEL_ITEM_CLASS = 2;
+	DEFINE C_MVER_CLOCK = 2;
+	DEFINE C_MVER_ITEMNAME = 2;
+	DEFINE C_MVER_DMTITLE = 2;
+	DEFINE C_MVER_MAGIC = 2;
+	DEFINE C_MVER_MAGICROW = 2;
+	DEFINE C_MVER_CRPIECE = 2;
+	DEFINE C_MVER_CRROW = 2;
+	//end Versioning
 	//start Module enums
 	enum //For parameters for modules.
 	{
@@ -138,75 +190,67 @@ namespace Venrob::Subscreen
 	};
 
 	DEFINE SUBSCR_BITS_INT = 18;
-	enum //start Flag Bits
-	{
-		FLAG1  = 000000000000000001b,
-		FLAG2  = 000000000000000010b,
-		FLAG3  = 000000000000000100b,
-		FLAG4  = 000000000000001000b,
-		FLAG5  = 000000000000010000b,
-		FLAG6  = 000000000000100000b,
-		FLAG7  = 000000000001000000b,
-		FLAG8  = 000000000010000000b,
-		FLAG9  = 000000000100000000b,
-		FLAG10 = 000000001000000000b,
-		FLAG11 = 000000010000000000b,
-		FLAG12 = 000000100000000000b,
-		FLAG13 = 000001000000000000b,
-		FLAG14 = 000010000000000000b,
-		FLAG15 = 000100000000000000b,
-		FLAG16 = 001000000000000000b,
-		FLAG17 = 010000000000000000b,
-		FLAG18 = 100000000000000000b
-	}; //end Flag Bits
+	//start Flag Bits
+	DEFINEL FLAG1  = 00000000000000000000000000000001bL;
+	DEFINEL FLAG2  = 00000000000000000000000000000010bL;
+	DEFINEL FLAG3  = 00000000000000000000000000000100bL;
+	DEFINEL FLAG4  = 00000000000000000000000000001000bL;
+	DEFINEL FLAG5  = 00000000000000000000000000010000bL;
+	DEFINEL FLAG6  = 00000000000000000000000000100000bL;
+	DEFINEL FLAG7  = 00000000000000000000000001000000bL;
+	DEFINEL FLAG8  = 00000000000000000000000010000000bL;
+	DEFINEL FLAG9  = 00000000000000000000000100000000bL;
+	DEFINEL FLAG10 = 00000000000000000000001000000000bL;
+	DEFINEL FLAG11 = 00000000000000000000010000000000bL;
+	DEFINEL FLAG12 = 00000000000000000000100000000000bL;
+	DEFINEL FLAG13 = 00000000000000000001000000000000bL;
+	DEFINEL FLAG14 = 00000000000000000010000000000000bL;
+	DEFINEL FLAG15 = 00000000000000000100000000000000bL;
+	DEFINEL FLAG16 = 00000000000000001000000000000000bL;
+	DEFINEL FLAG17 = 00000000000000010000000000000000bL;
+	DEFINEL FLAG18 = 00000000000000100000000000000000bL;
+	DEFINEL FLAG19 = 00000000000001000000000000000000bL;
+	DEFINEL FLAG20 = 00000000000010000000000000000000bL;
+	DEFINEL FLAG21 = 00000000000100000000000000000000bL;
+	DEFINEL FLAG22 = 00000000001000000000000000000000bL;
+	DEFINEL FLAG23 = 00000000010000000000000000000000bL;
+	DEFINEL FLAG24 = 00000000100000000000000000000000bL;
+	DEFINEL FLAG25 = 00000001000000000000000000000000bL;
+	DEFINEL FLAG26 = 00000010000000000000000000000000bL;
+	DEFINEL FLAG27 = 00000100000000000000000000000000bL;
+	DEFINEL FLAG28 = 00001000000000000000000000000000bL;
+	DEFINEL FLAG29 = 00010000000000000000000000000000bL;
+	DEFINEL FLAG30 = 00100000000000000000000000000000bL;
+	DEFINEL FLAG31 = 01000000000000000000000000000000bL;
+	DEFINEL FLAG32 = 10000000000000000000000000000000bL;
+	//end Flag Bits
 	//start Flags
-	enum //SelectableItems
-	{
-		FLAG_SELIT_ABTN = FLAG1,
-		FLAG_SELIT_BBTN = FLAG2
-	};
-	enum //Minimap
-	{
-		FLAG_MMP_COMP_ON_BOSS = FLAG1, //instead of triforce
-		FLAG_MMP_SHOW_EXPLORED_ROOMS_OW = FLAG2,
-		FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON = FLAG3,
-		FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR = FLAG4,
-		FLAG_MMP_COMPASS_BLINK_DOESNT_STOP = FLAG5,
-		FLAG_MMP_IGNORE_DMAP_BGTILE = FLAG6,
-		FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS = FLAG7,
-		FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW = FLAG8
-	};
-	enum //Heart Row
-	{
-		FLAG_HROW_RTOL = FLAG1
-	};
-	enum //Magic Row
-	{
-		FLAG_MROW_RTOL = FLAG1
-	};
-	enum //Magic Row
-	{
-		FLAG_CRROW_RTOL = FLAG1
-	};
-	enum //Magic
-	{
-		FLAG_MAG_ISHALF = FLAG1
-	};
-	enum //A_STTNG_FLAGS1
-	{
-		FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR = FLAG1
-	};
-	enum //ACTIVE_1FRAME_FLAGS_1
-	{
-		FLAG_A1FR_DREW_SELECTOR = FLAG1
-	};
-	enum //Counter
-	{
-		MASK_CNTR_ALIGN = FLAG1 | FLAG2,
-		FLAG_CNTR_SPECIAL = FLAG3,
-		//FLAG4 no longer used
-		FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO = FLAG5
-	};
+	//Minimap
+	DEFINEL FLAG_MMP_COMP_ON_BOSS = FLAG1; //instead of triforce
+	DEFINEL FLAG_MMP_SHOW_EXPLORED_ROOMS_OW = FLAG2;
+	DEFINEL FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON = FLAG3;
+	DEFINEL FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR = FLAG4;
+	DEFINEL FLAG_MMP_COMPASS_BLINK_DOESNT_STOP = FLAG5;
+	DEFINEL FLAG_MMP_IGNORE_DMAP_BGTILE = FLAG6;
+	DEFINEL FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS = FLAG7;
+	DEFINEL FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW = FLAG8;
+	//Heart Row
+	DEFINEL FLAG_HROW_RTOL = FLAG1;
+	//Magic Row
+	DEFINEL FLAG_MROW_RTOL = FLAG1;
+	//Magic Row
+	DEFINEL FLAG_CRROW_RTOL = FLAG1;
+	//Magic
+	DEFINEL FLAG_MAG_ISHALF = FLAG1;
+	//A_STTNG_FLAGS1
+	DEFINEL FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR = FLAG1;
+	//ACTIVE_1FRAME_FLAGS_1
+	DEFINEL FLAG_A1FR_DREW_SELECTOR = FLAG1;
+	//Counter
+	DEFINEL MASK_CNTR_ALIGN = FLAG1 | FLAG2;
+	DEFINEL FLAG_CNTR_SPECIAL = FLAG3;
+	//FLAG4 no longer used
+	DEFINEL FLAG_CNTR_SPACE_INSTEAD_LEAD_ZERO = FLAG5;
 	enum //Special Counter Types
 	{
 		CNTR_ANYKEY,
@@ -221,14 +265,10 @@ namespace Venrob::Subscreen
 		CNTR_EX4BTN,
 		CNTR_MAX_SPECIAL
 	};
-	enum //Minitile
-	{
-		MASK_MINITL_CRN = FLAG1 | FLAG2
-	};
-	enum //ItemName
-	{
-		MASK_ITEMNM_ALIGN = FLAG1 | FLAG2
-	};
+	//Minitile
+	DEFINEL MASK_MINITL_CRN = FLAG1 | FLAG2;
+	//ItemName
+	DEFINEL MASK_ITEMNM_ALIGN = FLAG1 | FLAG2;
 	//end Flags
 	enum moduleType //start
 	{
@@ -315,19 +355,20 @@ namespace Venrob::Subscreen
 		{
 			memcpy(settings, 0, settings_arr, 0, Min(SZ_SETTINGS, SizeOfArray(settings_arr)));
 		}
-		memcpy(activeData, 0, settings, 0, NUM_SETTINGS);
+		memcpy(activeData, 0, settings, 0, SZ_SETTINGS);
 		activeData[M_SIZE] = SZ_SETTINGS;
 		activeData[M_META_SIZE] = P1;
 		activeData[M_TYPE] = MODULE_TYPE_SETTINGS;
+		activeData[M_VER] = MVER_SETTINGS;
 		
-		int b = activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] | activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS];
+		DEFINEL b = activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] | <DEFINEL>(activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS]);
 		for(int q = 0; q < CB_MAX; ++q) //start Wipe unused buttons
 		{
 			switch(q)
 			{
 				case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 				{
-					unless(b & (1b<<q))
+					unless(b & (FLAG1<<q))
 						dequp_btn(q);
 					else if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
 						dequp_btn(q);
@@ -339,7 +380,7 @@ namespace Venrob::Subscreen
 			}
 		} //end
 		//Hardcode a non-assignable CB_A to IC_SWORD
-		unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A))
+		unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_A))
 			equp_btn_itmclass(CB_A, IC_SWORD);
 	} //end
 	
@@ -353,23 +394,25 @@ namespace Venrob::Subscreen
 		passiveData[M_SIZE] = SZ_SETTINGS;
 		passiveData[M_META_SIZE] = P1;
 		passiveData[M_TYPE] = MODULE_TYPE_SETTINGS;
+		passiveData[M_VER] = MVER_SETTINGS;
 	} //end
 
 	void load_default_settings(untyped settings, bool active) //start
 	{
+		settings[M_VER] = MVER_SETTINGS;
 		if(active)
 		{
-			settings[STTNG_FLAGS1] = 000000000000000000b;
-			settings[STTNG_FLAGS2] = 000000000000000000b;
-			settings[STTNG_FLAGS3] = 000000000000000000b;
-			settings[STTNG_FLAGS4] = 000000000000000000b;
+			settings[STTNG_FLAGS1] = 0L;
+			settings[STTNG_FLAGS2] = 0L;
+			settings[STTNG_FLAGS3] = 0L;
+			settings[STTNG_FLAGS4] = 0L;
 			settings[A_STTNG_FRAME_HOLD_DELAY] = 30;
 			settings[A_STTNG_SELECTOR_TYPE] = SEL_RECTANGLE;
 			settings[A_STTNG_SELECTOR_VALUE] = 0x01;
 			settings[A_STTNG_SELECTOR_VALUE2] = 0;
 			settings[A_STTNG_SELECTOR_SFX] = SFX_CURSOR;
-			settings[A_STTNG_BUTTON_ITEM_ENABLED_BITS] = (1b<<CB_A) | (1b<<CB_B);
-			settings[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] = (Game->FFRules[qr_SELECTAWPN] ? (1b<<CB_A) : 0) | (1b<<CB_B);
+			settings[A_STTNG_BUTTON_ITEM_ENABLED_BITS] = (FLAG1<<CB_A) | (FLAG1<<CB_B);
+			settings[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] = (Game->FFRules[qr_SELECTAWPN] ? (FLAG1<<CB_A) : 0) | (FLAG1<<CB_B);
 		}
 		else
 		{
@@ -552,7 +595,7 @@ namespace Venrob::Subscreen
 						{
 							case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 							{
-								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<q))
+								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<q))
 									continue;
 								if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
 									continue;
@@ -722,7 +765,7 @@ namespace Venrob::Subscreen
 			} //end
 			case MODULE_TYPE_MINITILE: //start
 			{
-				minitile(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+M_FLAGS1]&MASK_MINITL_CRN);
+				minitile(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], 10000*(module_arr[offs+M_FLAGS1]&MASK_MINITL_CRN));
 				break;
 			} //end
 			case MODULE_TYPE_CLOCK: //start
@@ -1163,7 +1206,7 @@ namespace Venrob::Subscreen
 		int wid = Text->StringWidth(buf, arr[offs+P1]) + (shd_t?1:0);
 		
 		if(arr[offs+P6])
-			bit->DrawString(layer, x, y, arr[offs+P1], arr[offs+P6], bg, arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN, buf, OP_OPAQUE, arr[offs+P9], shd);
+			bit->DrawString(layer, x, y, arr[offs+P1], arr[offs+P6], bg, 10000*(arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN), buf, OP_OPAQUE, arr[offs+P9], shd);
 		return wid + ((arr[offs+P9])?1:0);
 	}
 	//end Counter
@@ -1354,7 +1397,7 @@ namespace Venrob::Subscreen
 			{
 				case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 				{
-					unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<q))
+					unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<q))
 						continue;
 					if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
 						continue;
@@ -1428,7 +1471,7 @@ namespace Venrob::Subscreen
 				case CB_L:
 					unless(Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_B))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_B))
 							shuffle_button(CB_B, DIR_LEFT, false);
 						continue;
 					}
@@ -1436,7 +1479,7 @@ namespace Venrob::Subscreen
 				case CB_R:
 					unless(Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_B))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_B))
 							shuffle_button(CB_B, DIR_RIGHT, false);
 						continue;
 					}
@@ -1444,7 +1487,7 @@ namespace Venrob::Subscreen
 				case CB_EX3:
 					if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_A))
 							shuffle_button(CB_A, DIR_LEFT, false);
 						continue;
 					}
@@ -1452,7 +1495,7 @@ namespace Venrob::Subscreen
 				case CB_EX4:
 					if(Game->FFRules[qr_USE_EX1_EX2_INVENTORYSWAP])
 					{
-						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A))
+						if(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_A))
 							shuffle_button(CB_A, DIR_RIGHT, false);
 						continue;
 					}
@@ -1462,7 +1505,7 @@ namespace Venrob::Subscreen
 			{
 				case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 				{
-					unless(activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<q))
+					unless(activeData[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<q))
 						continue;
 					if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (q == CB_L || q == CB_R))
 						continue;
@@ -1524,7 +1567,7 @@ namespace Venrob::Subscreen
 							{
 								case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 								{
-									unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<b))
+									unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<b))
 										continue;
 									if(!Game->FFRules[qr_NO_L_R_BUTTON_INVENTORY_SWAP] && (b == CB_L || b == CB_R))
 										continue;
@@ -1673,18 +1716,16 @@ namespace Venrob::Subscreen
 				return Game->Counter[indx] <= indx2;
 		}
 	} //end
-	bool get_32b(untyped arr, int indx, int indx2) //start
+	bool get_32b(long arr, int indx, int indx2) //start
 	{
-		#option BINARY_32BIT on
-		return arr[indx] & 1b<<indx2;
+		return arr[indx] & 1bL<<indx2;
 	} //end
-	void set_32b(untyped arr, int indx, int indx2, bool state) //start
+	void set_32b(long arr, int indx, int indx2, bool state) //start
 	{
-		#option BINARY_32BIT on
 		if(state)
-			arr[indx] |= 1b<<indx2;
+			arr[indx] |= 1bL<<indx2;
 		else
-			arr[indx] ~= 1b<<indx2;
+			arr[indx] ~= 1bL<<indx2;
 	} //end
 	//These functions are for user scripts:
 	bool getScriptConditional(int indx, int bit) //start
@@ -1745,6 +1786,13 @@ namespace Venrob::Subscreen
 			char32 buf[2048];
 			sprintf(buf, "[ERROR] [VenrobSubscreen.zh] %s\n", msg);
 			printf(buf, arg1, arg2, arg3);
+		}
+		
+		void error(char32 msg, untyped arg1, untyped arg2, untyped arg3, untyped arg4)
+		{
+			char32 buf[2048];
+			sprintf(buf, "[ERROR] [VenrobSubscreen.zh] %s\n", msg);
+			printf(buf, arg1, arg2, arg3, arg4);
 		}
 		
 		void debug(char32 msg)

@@ -18,35 +18,6 @@ namespace Venrob::SubscreenEditor
 	using namespace Venrob::Subscreen::Internal;
 	using namespace Venrob::SubscreenEditor::DIALOG::PARTS;
 	char32 FileEncoding[] = "Venrob_Subscreen_FileSystem"; //Do not change this! This is used for validating saved files.
-	//start Versioning
-	//File IO Versions
-	DEFINE VERSION_ASUB = 1;
-	DEFINE VERSION_PSUB = 1;
-	DEFINE VERSION_PROJ = 1;
-	DEFINE VERSION_SSET = 1;
-	//Module Versions
-	DEFINE MVER_SETTINGS = 1;
-	DEFINE MVER_BGCOLOR = 1;
-	DEFINE MVER_SEL_ITEM_ID = 1;
-	DEFINE MVER_SEL_ITEM_CLASS = 1;
-	DEFINE MVER_BUTTONITEM = 2;
-	DEFINE MVER_PASSIVESUBSCREEN = 1;
-	DEFINE MVER_MINIMAP = 2;
-	DEFINE MVER_TILEBLOCK = 1;
-	DEFINE MVER_HEART = 1;
-	DEFINE MVER_HEARTROW = 1;
-	DEFINE MVER_COUNTER = 2;
-	DEFINE MVER_MINITILE = 1;
-	DEFINE MVER_NONSEL_ITEM_ID = 1;
-	DEFINE MVER_NONSEL_ITEM_CLASS = 1;
-	DEFINE MVER_CLOCK = 1;
-	DEFINE MVER_ITEMNAME = 1;
-	DEFINE MVER_DMTITLE = 1;
-	DEFINE MVER_MAGIC = 1;
-	DEFINE MVER_MAGICROW = 1;
-	DEFINE MVER_CRPIECE = 1;
-	DEFINE MVER_CRROW = 1;
-	//end Versioning
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false, false};
 	enum
@@ -79,11 +50,8 @@ namespace Venrob::SubscreenEditor
 		SED_ZCM_BTN
 	}; //end
 	//start Module Edit Flags
-	untyped mod_flags[MAX_INT];
-	enum
-	{
-		MODFLAG_SELECTED = FLAG1
-	};
+	long mod_flags[MAX_INT];
+	DEFINEL MODFLAG_SELECTED = FLAG1;
 	//end
 	//start System Settings
 	untyped sys_settings[MAX_INT];
@@ -297,7 +265,7 @@ namespace Venrob::SubscreenEditor
 						{
 							case CB_A: case CB_B: case CB_L: case CB_R: case CB_EX1: case CB_EX2: case CB_EX3: case CB_EX4:
 							{
-								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1<<q))
+								unless(activeData[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<q))
 									continue;
 								break;
 							}
@@ -332,8 +300,6 @@ namespace Venrob::SubscreenEditor
 		runFauxPassiveSubscreen(false);
 		for(int q = 1; q < g_arr[NUM_ACTIVE_MODULES] ; ++q)
 		{
-			untyped buf[MODULE_BUF_SIZE];
-			saveModule(buf, q, true);
 			runFauxModule(q, activeData, activeModules[q], true, true);
 		}
 		handleDragging(true);
@@ -540,7 +506,7 @@ namespace Venrob::SubscreenEditor
 				int wid = counter(module_arr, offs, bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y]);
 				if(wid < 8) //Ensure there's a hitbox to grab for repositioning
 					wid = 8;
-				int tf = module_arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN;
+				int tf = 10000*(module_arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN);
 				int xoff;
 				switch(tf) //start Calculate offsets based on alignment
 				{
@@ -560,7 +526,7 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_MINITILE: //start
 			{
-				minitile(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+M_FLAGS1]&MASK_MINITL_CRN);
+				minitile(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], 10000*(module_arr[offs+M_FLAGS1]&MASK_MINITL_CRN));
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], 7, 7, mod_indx, active, true);
@@ -1089,7 +1055,7 @@ namespace Venrob::SubscreenEditor
 				for(int q = module_arr[P5]-1; q>=0; --q)
 					buf[q] = '0';
 				int wid = Text->StringWidth(buf, module_arr[P1]);
-				switch(module_arr[M_FLAGS1] & MASK_CNTR_ALIGN)
+				switch(10000*(module_arr[M_FLAGS1] & MASK_CNTR_ALIGN))
 				{
 					case TF_RIGHT:
 						return 255;
@@ -1130,7 +1096,7 @@ namespace Venrob::SubscreenEditor
 				for(int q = module_arr[P5]-1; q>=0; --q)
 					buf[q] = '0';
 				int wid = Text->StringWidth(buf, module_arr[P1]);
-				switch(module_arr[M_FLAGS1] & MASK_CNTR_ALIGN)
+				switch(10000*(module_arr[M_FLAGS1] & MASK_CNTR_ALIGN))
 				{
 					case TF_NORMAL:
 						return 0;
@@ -1217,8 +1183,106 @@ namespace Venrob::SubscreenEditor
 	}
 	//end Misc
 	//start Module Validation
-	
-	void metaver_check(untyped module_arr) //start Check metadata version
+	bool ver_check(untyped module_arr)
+	{
+		int cur_ver;
+		int compat_ver;
+		switch(module_arr[M_TYPE]) //start
+		{
+			case MODULE_TYPE_SETTINGS:
+				cur_ver = MVER_SETTINGS;
+				compat_ver = C_MVER_SETTINGS;
+				break;
+			case MODULE_TYPE_BGCOLOR:
+				cur_ver = MVER_BGCOLOR;
+				compat_ver = C_MVER_BGCOLOR;
+				break;
+			case MODULE_TYPE_SEL_ITEM_ID:
+				cur_ver = MVER_SEL_ITEM_ID;
+				compat_ver = C_MVER_SEL_ITEM_ID;
+				break;
+			case MODULE_TYPE_SEL_ITEM_CLASS:
+				cur_ver = MVER_SEL_ITEM_CLASS;
+				compat_ver = C_MVER_SEL_ITEM_CLASS;
+				break;
+			case DEPR_MODULE_TYPE_BBUTTONITEM:
+				return false;
+			case MODULE_TYPE_PASSIVESUBSCREEN:
+				cur_ver = MVER_PASSIVESUBSCREEN;
+				compat_ver = C_MVER_PASSIVESUBSCREEN;
+				break;
+			case MODULE_TYPE_MINIMAP:
+				cur_ver = MVER_MINIMAP;
+				compat_ver = C_MVER_MINIMAP;
+				break;
+			case MODULE_TYPE_TILEBLOCK:
+				cur_ver = MVER_TILEBLOCK;
+				compat_ver = C_MVER_TILEBLOCK;
+				break;
+			case MODULE_TYPE_HEART:
+				cur_ver = MVER_HEART;
+				compat_ver = C_MVER_HEART;
+				break;
+			case MODULE_TYPE_HEARTROW:
+				cur_ver = MVER_HEARTROW;
+				compat_ver = C_MVER_HEARTROW;
+				break;
+			case MODULE_TYPE_COUNTER:
+				cur_ver = MVER_COUNTER;
+				compat_ver = C_MVER_COUNTER;
+				break;
+			case MODULE_TYPE_MINITILE:
+				cur_ver = MVER_MINITILE;
+				compat_ver = C_MVER_MINITILE;
+				break;
+			case MODULE_TYPE_NONSEL_ITEM_ID:
+				cur_ver = MVER_NONSEL_ITEM_ID;
+				compat_ver = C_MVER_NONSEL_ITEM_ID;
+				break;
+			case MODULE_TYPE_NONSEL_ITEM_CLASS:
+				cur_ver = MVER_NONSEL_ITEM_CLASS;
+				compat_ver = C_MVER_NONSEL_ITEM_CLASS;
+				break;
+			case MODULE_TYPE_CLOCK:
+				cur_ver = MVER_CLOCK;
+				compat_ver = C_MVER_CLOCK;
+				break;
+			case MODULE_TYPE_ITEMNAME:
+				cur_ver = MVER_ITEMNAME;
+				compat_ver = C_MVER_ITEMNAME;
+				break;
+			case MODULE_TYPE_DMTITLE:
+				cur_ver = MVER_DMTITLE;
+				compat_ver = C_MVER_DMTITLE;
+				break;
+			case MODULE_TYPE_MAGIC:
+				cur_ver = MVER_MAGIC;
+				compat_ver = C_MVER_MAGIC;
+				break;
+			case MODULE_TYPE_MAGICROW:
+				cur_ver = MVER_MAGICROW;
+				compat_ver = C_MVER_MAGICROW;
+				break;
+			case MODULE_TYPE_CRPIECE:
+				cur_ver = MVER_CRPIECE;
+				compat_ver = C_MVER_CRPIECE;
+				break;
+			case MODULE_TYPE_CRROW:
+				cur_ver = MVER_CRROW;
+				compat_ver = C_MVER_CRROW;
+				break;
+		} //end
+		if(module_arr[M_VER] < compat_ver)
+		{
+			if(DEBUG)
+			{
+				error("Module type %d version incompatible; cannot be loaded. Version: Currently %d, Compatible back to %d, found %d\n", module_arr[M_TYPE], cur_ver, compat_ver, module_arr[M_VER]);
+			}
+			return false;
+		}
+		return true;
+	}
+	bool metaver_check(untyped module_arr) //start Check metadata version
 	{
 		if(module_arr[M_META_SIZE] < MODULE_META_SIZE)
 		{
@@ -1245,7 +1309,16 @@ namespace Venrob::SubscreenEditor
 					module_arr[M_SIZE] += 3;
 					//fallthrough
 			}
+			
+			return true;
 		}
+		else if(module_arr[M_META_SIZE] > MODULE_META_SIZE)
+		{
+			if(DEBUG)
+				error("Module meta size too large! Cannot load module from a future version!");
+			return false;
+		}
+		return true;
 	} //end
 	/*
 	 * Returns true if the passed module is valid for an active subscreen.
@@ -1253,7 +1326,18 @@ namespace Venrob::SubscreenEditor
 	 */
 	bool validate_active_module(untyped module_arr) //start
 	{
-		metaver_check(module_arr);
+		unless(metaver_check(module_arr))
+		{
+			if(DEBUG)
+				error("Metaver check failed for module");
+			return false;
+		}
+		unless(ver_check(module_arr))
+		{
+			if(DEBUG)
+				error("Version check failed for module");
+			return false;
+		}
 		moduleType type = module_arr[M_TYPE];
 		switch(type)
 		{

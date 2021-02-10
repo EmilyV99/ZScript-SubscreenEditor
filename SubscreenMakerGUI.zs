@@ -428,7 +428,7 @@ namespace Venrob::SubscreenEditor
 				x(bit, x+1, y+1, len-2, PAL[COL_TEXT_MAIN]);
 				return ret;
 			} //end
-			ProcRet checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, int flags) //start
+			ProcRet checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, long flags) //start
 			{
 				bool disabled = flags&FLAG_DISABLE;
 				ProcRet ret = PROC_NULL;
@@ -443,7 +443,7 @@ namespace Venrob::SubscreenEditor
 				if(checked) x(bit, x+1, y+1, len-2, (disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
 				return ret;
 			} //end
-			ProcRet insta_button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, int flags) //start
+			ProcRet insta_button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, long flags) //start
 			{
 				bool disabled = flags&FLAG_DISABLE;
 				ProcRet ret = PROC_NULL;
@@ -459,11 +459,11 @@ namespace Venrob::SubscreenEditor
 				
 				return ret;
 			} //end
-			ProcRet button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, untyped proc_data, int proc_indx, int flags) //start
+			ProcRet button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, untyped proc_data, int proc_indx, long flags) //start
 			{
-				int was_held = proc_data[proc_indx];
-				DEFINE FLAG_HELD_MOUSE = 01b;
-				DEFINE FLAG_HELD_KEY = 10b;
+				long was_held = proc_data[proc_indx];
+				DEFINEL FLAG_HELD_MOUSE = 01bL;
+				DEFINEL FLAG_HELD_KEY = 10bL;
 				bool disabled = flags&FLAG_DISABLE;
 				bool isDefault = flags&FLAG_DEFAULT;
 				ProcRet ret = PROC_NULL;
@@ -487,7 +487,7 @@ namespace Venrob::SubscreenEditor
 					}
 					else if(was_held & FLAG_HELD_MOUSE)
 					{
-						was_held = 0;
+						was_held = 0L;
 						if(cursor) ret = PROC_CONFIRM; //If you slid the cursor off the button, don't register it as a click!
 					}
 					
@@ -502,7 +502,7 @@ namespace Venrob::SubscreenEditor
 					}
 					else if(was_held & FLAG_HELD_KEY)
 					{
-						was_held = 0;
+						was_held = 0L;
 						ret = PROC_CONFIRM;
 					}
 				}
@@ -519,7 +519,7 @@ namespace Venrob::SubscreenEditor
 			{
 				button(bit, x, y, wid, hei, btnText, dlgdata, proc_data, proc_indx, 0);
 			} //end
-			ProcRet radio(bitmap bit, int x, int y, int rad, untyped dlgdata, untyped proc_data, int proc_indx, int rad_indx, int flags) //start
+			ProcRet radio(bitmap bit, int x, int y, int rad, untyped dlgdata, untyped proc_data, int proc_indx, int rad_indx, long flags) //start
 			{
 				bool disabled = flags&FLAG_DISABLE;
 				ProcRet ret = PROC_NULL;
@@ -551,19 +551,19 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1, swatch_color);
 				return swatch_color;
 			}//end
-			void minitile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata, bool show_t0) //start
+			void minitile_swatch(bitmap bit, int x, int y, untyped arr, untyped dlgdata, bool show_t0) //start
 			{
 				tile_swatch(bit, x, y, arr, dlgdata, show_t0);
 				if(SubEditorData[SED_RCLICKED] && DLGCursorBox(x+1, y+1, x+16, y+16, dlgdata))
 				{
 					int cx = DLGMouseX(dlgdata) - (x+1),
 					    cy = DLGMouseY(dlgdata) - (y+1);
-					int crn = 0;
-					if(cx >= 8) crn |= 1b;
-					if(cy >= 8) crn |= 10b;
+					long crn = 0L;
+					if(cx >= 8) crn |= 01bL;
+					if(cy >= 8) crn |= 10bL;
 					arr[2] = crn;
 				}
-				if(arr[0] || show_t0) h_rect(bit, x + ((arr[2]&1b)?9:1), y + ((arr[2]&10b)?9:1), x + ((arr[2]&1b)?16:8), y + ((arr[2]&10b)?16:8), PAL[COL_HIGHLIGHT]);
+				if(arr[0] || show_t0) h_rect(bit, x + ((arr[2]&01bL)?9:1), y + ((arr[2]&10bL)?9:1), x + ((arr[2]&01bL)?16:8), y + ((arr[2]&10bL)?16:8), PAL[COL_HIGHLIGHT]);
 			} //end
 			void tile_swatch(bitmap bit, int x, int y, int arr, untyped dlgdata, bool show_t0) //start
 			{
@@ -575,7 +575,7 @@ namespace Venrob::SubscreenEditor
 				frame_rect(bit, x, y, x2, y2, 1);
 				if(arr[0] || show_t0) tile(bit, x+1, y+1, arr[0], arr[1]);
 			}//end
-			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags) //start
+			int dropdown_proc(bitmap bit, int x, int y, int wid, int indx, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, long flags) //start
 			{
 				if(num_opts <= 0)
 				{
@@ -622,7 +622,7 @@ namespace Venrob::SubscreenEditor
 			} //end
 			//end
 			//start compounds
-			int dropdown_inc_text_combo(bitmap bit, int x, int y, int ddwid, int val, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, int flags, int tfwid, int maxchar, bool neg, int tf_indx, int min, int max, bool tf_left) //start
+			int dropdown_inc_text_combo(bitmap bit, int x, int y, int ddwid, int val, untyped dlgdata, char32 strings, int num_opts, int NUM_VIS_OPTS, bitmap lastframe, long flags, int tfwid, int maxchar, bool neg, int tf_indx, int min, int max, bool tf_left) //start
 			{
 				val = dropdown_proc(bit, tf_left ? x+tfwid : x, y, ddwid, val, dlgdata, strings, num_opts, NUM_VIS_OPTS, lastframe, flags);
 				char32 buf[16];
@@ -632,7 +632,7 @@ namespace Venrob::SubscreenEditor
 					return VBound(atoi(buf), max, min);
 				return atoi(buf);
 			} //end
-			int itemsel_bundle(bitmap bit, int x, int y, int val, untyped dlgdata, bitmap lastframe, int flags, int tf_indx, char32 title, bool flip_preview) //start
+			int itemsel_bundle(bitmap bit, int x, int y, int val, untyped dlgdata, bitmap lastframe, long flags, int tf_indx, char32 title, bool flip_preview) //start
 			{
 				text(bit, x, y, TF_NORMAL, title, (flags&FLAG_DISABLE) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				val = dropdown_inc_text_combo(bit, x, y+Text->FontHeight(DIA_FONT), 104, val, dlgdata, SSL_ITEM, -1, 10, lastframe, flags, 28, 3, false, tf_indx, MIN_ITEMDATA, MAX_ITEMDATA, true);
@@ -723,46 +723,46 @@ namespace Venrob::SubscreenEditor
 				h_rect(bit, tx1, ty1, tx2, ty2, PAL[COL_HIGHLIGHT]);
 				return <Color>active_swatch;
 			} //end
-			ProcRet titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, int flags, char32 title) //start
+			ProcRet titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, long flags, char32 title) //start
 			{
 				text(bit, x+len+2, y+((len-1-Text->FontHeight(DIA_FONT))/2)+1, TF_NORMAL, title, (flags&FLAG_DISABLE ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
 				return checkbox(bit, x, y, len, checked, dlgdata, flags);
 			} //end
-			ProcRet desc_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, int flags, char32 title, char32 desc_str) //start
+			ProcRet desc_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, long flags, char32 title, char32 desc_str) //start
 			{
 				i_proc(bit, x + Text->StringWidth(title, DIA_FONT) + len + 3, y, (flags&FLAG_DISABLE ? "" : desc_str), dlgdata);
 				return titled_checkbox(bit, x, y, len, checked, dlgdata, flags, title);
 			} //end
-			ProcRet r_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, int flags, char32 title) //start
+			ProcRet r_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, long flags, char32 title) //start
 			{
 				text(bit, x, y+((len-1-Text->FontHeight(DIA_FONT))/2)+1, TF_NORMAL, title, (flags&FLAG_DISABLE ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
 				return checkbox(bit, x+Text->StringWidth(title,DIA_FONT), y, len, checked, dlgdata, flags);
 			} //end
-			ProcRet r_desc_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, int flags, char32 title, char32 desc_str) //start
+			ProcRet r_desc_titled_checkbox(bitmap bit, int x, int y, int len, bool checked, untyped dlgdata, long flags, char32 title, char32 desc_str) //start
 			{
 				i_proc(bit, x + Text->StringWidth(title, DIA_FONT) + len + 3, y, (flags&FLAG_DISABLE ? "" : desc_str), dlgdata);
 				return r_titled_checkbox(bit, x, y, len, checked, dlgdata, flags, title);
 			} //end
-			void titled_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, TypeAString::TMode tm, untyped dlgdata, int tf_indx, int flags, char32 title) //start
+			void titled_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, TypeAString::TMode tm, untyped dlgdata, int tf_indx, long flags, char32 title) //start
 			{
 				text(bit, x-2, y+2, TF_RIGHT, title, (flags&FLAG_DISABLE) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				text_field(bit, x, y, wid, buf, maxchar, tm, dlgdata, tf_indx, flags);
 			} //end
-			void titled_inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, bool can_neg, untyped dlgdata, int tf_indx, int flags, char32 title) //start
+			void titled_inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, bool can_neg, untyped dlgdata, int tf_indx, long flags, char32 title) //start
 			{
 				text(bit, x-2, y+2, TF_RIGHT, title, (flags&FLAG_DISABLE) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				inc_text_field(bit, x, y, wid, buf, maxchar, can_neg, dlgdata, tf_indx, flags);
 			} //end
-			void titled_inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, bool can_neg, untyped dlgdata, int tf_indx, int flags, int min, int max, char32 title) //start
+			void titled_inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, bool can_neg, untyped dlgdata, int tf_indx, long flags, int min, int max, char32 title) //start
 			{
 				text(bit, x-2, y+2, TF_RIGHT, title, (flags&FLAG_DISABLE) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				inc_text_field(bit, x, y, wid, buf, maxchar, can_neg, dlgdata, tf_indx, flags, min, max);
 			} //end
-			void inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, bool can_neg, untyped dlgdata, int tf_indx, int flags) //start
+			void inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, bool can_neg, untyped dlgdata, int tf_indx, long flags) //start
 			{
 				inc_text_field(bit, x, y, wid, buf, maxchar, can_neg, dlgdata, tf_indx, flags, 0, 0); //Since min==max, no bounding occurs
 			} //end
-			void inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar,  bool can_neg, untyped dlgdata, int tf_indx, int flags, int min, int max) //start
+			void inc_text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar,  bool can_neg, untyped dlgdata, int tf_indx, long flags, int min, int max) //start
 			{
 				TypeAString::TMode tm = can_neg ? TypeAString::TMODE_NUMERIC : TypeAString::TMODE_NUMERIC_POSITIVE;
 				bool doBound = min < max;
@@ -808,7 +808,7 @@ namespace Venrob::SubscreenEditor
 				line(bit, x+wid-1-2, y+(HEIGHT/2)+1, x+wid-(WIDTH/2), y+HEIGHT-1-1, disabled ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
 				if(clicked) dlgdata[DLG_DATA_ACTIVE_TEXTFIELD] = 0;
 			} //end
-			void text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, TypeAString::TMode tm, untyped dlgdata, int tf_indx, int flags) //start
+			void text_field(bitmap bit, int x, int y, int wid, char32 buf, int maxchar, TypeAString::TMode tm, untyped dlgdata, int tf_indx, long flags) //start
 			{
 				bool disabled = flags & FLAG_DISABLE;
 				DEFINE HEIGHT = 2+2+Text->FontHeight(DIA_FONT);
@@ -860,7 +860,7 @@ namespace Venrob::SubscreenEditor
 					msg_dlg("Information", info);
 				}
 			} //end
-			ProcRet titled_radio(bitmap bit, int x, int y, int rad, untyped dlgdata, untyped proc_data, int proc_indx, int rad_indx, int flags, char32 title) //start
+			ProcRet titled_radio(bitmap bit, int x, int y, int rad, untyped dlgdata, untyped proc_data, int proc_indx, int rad_indx, long flags, char32 title) //start
 			{
 				text(bit, x+rad+3, y - Div(Text->FontHeight(DIA_FONT), 2), TF_NORMAL, title, (flags&FLAG_DISABLE ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
 				return radio(bit, x, y, rad, dlgdata, proc_data, proc_indx, rad_indx, flags);
@@ -868,8 +868,8 @@ namespace Venrob::SubscreenEditor
 			//end
 		} //end
 		//Flagsets
-		DEFINE FLAG_DISABLE = 00000001b;
-		DEFINE FLAG_DEFAULT = 00000010b;
+		DEFINEL FLAG_DISABLE = FLAG1;
+		DEFINEL FLAG_DEFAULT = FLAG2;
 		//DLG Data Organization
 		enum
 		{
@@ -1540,7 +1540,7 @@ namespace Venrob::SubscreenEditor
 						char32 buf2[] = "Align:";
 						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
 						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_CNTR_ALIGN)
-						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_CNTR_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
+						              | (dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, 10000*(arr[M_FLAGS1]&MASK_CNTR_ALIGN), data, SSL_ALIGNMENT, -1, 3, lastframe, 0) / 10000);
 						
 						char32 buf3[] = "Counter:";
 						if(arr[M_FLAGS1]&FLAG_CNTR_SPECIAL)
@@ -1612,12 +1612,12 @@ namespace Venrob::SubscreenEditor
 						DEFINE P_Y = ABOVE_BOTTOM_Y - p_hei;
 						line(bit, P_C_X, P_Y - 3, P_C_X, P_Y + p_hei + 2, PAL[COL_NULL]);
 						bitmap sub = create(P_BMP_WID, p_hei+1);
-						int al = arr[M_FLAGS1] & MASK_CNTR_ALIGN;
+						long al = arr[M_FLAGS1] & MASK_CNTR_ALIGN;
 						arr[M_FLAGS1] ~= MASK_CNTR_ALIGN;
 						int p_wid = 1+counter(arr, 0, sub, 1, 2, 2);
 						arr[M_FLAGS1] |= al;
 						frame_rect(sub, 0, 0, ++p_wid, p_hei++, 1);
-						switch(al)
+						switch(al*10000)
 						{
 							case TF_NORMAL: default:
 								sub->Blit(1,bit,0,0,P_BMP_WID,p_hei,P_C_X,P_Y,P_BMP_WID,p_hei, 0, 0, 0, 0, 0, true);
@@ -1635,7 +1635,7 @@ namespace Venrob::SubscreenEditor
 					case MODULE_TYPE_MINITILE: //start
 					{
 						char32 buftl[] = "Minitile:";
-						int tlarr[3] = {arr[P1], arr[P2],arr[M_FLAGS1]&MASK_MINITL_CRN};
+						untyped tlarr[3] = {arr[P1], arr[P2],arr[M_FLAGS1]&MASK_MINITL_CRN};
 						text(bit, FRAME_X+3, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
 						minitile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
 						arr[P1] = tlarr[0];
@@ -1645,7 +1645,7 @@ namespace Venrob::SubscreenEditor
 						DEFINE PREVY = ABOVE_BOTTOM_Y-8;
 						frame_rect(bit, (WIDTH/2)-4, PREVY-1, (WIDTH/2)+4, PREVY+8, 1);
 						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview:", PAL[COL_TEXT_MAIN]);
-						minitile(bit, (WIDTH/2)-3, PREVY, arr[P1], arr[P2], arr[M_FLAGS1]&MASK_MINITL_CRN);
+						minitile(bit, (WIDTH/2)-3, PREVY, arr[P1], arr[P2], 10000*(arr[M_FLAGS1]&MASK_MINITL_CRN));
 						break;
 					} //end
 					case MODULE_TYPE_CLOCK: //start
@@ -2714,15 +2714,15 @@ namespace Venrob::SubscreenEditor
 				for(int q = 0; q < SUBSCR_BITS_INT; ++q)
 				{
 					char32 titlebuf[128], descbuf[256];
-					get_flag_name(titlebuf, active, 1b<<q);
-					get_flag_desc(descbuf, active, 1b<<q);
-					switch(desc_titled_checkbox(bit, flags_x, flags_y, FLAGS_HEIGHT, settings_arr[STTNG_FLAGS1] & (1b<<q), data, active?(a_active[q]?0:FLAG_DISABLE):(p_active[q]?0:FLAG_DISABLE), titlebuf, descbuf))
+					get_flag_name(titlebuf, active, FLAG1<<q);
+					get_flag_desc(descbuf, active, FLAG1<<q);
+					switch(desc_titled_checkbox(bit, flags_x, flags_y, FLAGS_HEIGHT, settings_arr[STTNG_FLAGS1] & (FLAG1<<q), data, active?(a_active[q]?0:FLAG_DISABLE):(p_active[q]?0:FLAG_DISABLE), titlebuf, descbuf))
 					{
 						case PROC_UPDATED_FALSE:
-							settings_arr[STTNG_FLAGS1] &= ~(1b<<q);
+							settings_arr[STTNG_FLAGS1] &= ~(FLAG1<<q);
 							break;
 						case PROC_UPDATED_TRUE:
-							settings_arr[STTNG_FLAGS1] |= (1b<<q);
+							settings_arr[STTNG_FLAGS1] |= (FLAG1<<q);
 							break;
 					}
 					flags_y += (FLAGS_HEIGHT+2);
@@ -2883,150 +2883,150 @@ namespace Venrob::SubscreenEditor
 				//
 				text(bit, WIDTH/2, FRAME_Y, TF_CENTERED, "   Enabled | Assignable", PAL[COL_TEXT_MAIN]);
 				//start Enabled
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*0), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_A), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*0), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_A), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_A);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_A);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_A);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_A);
 						break;
 				}
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*1), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_B), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*1), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_B), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_B);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_B);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_B);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_B);
 						break;
 				}
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*2), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_L), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*2), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_L), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_L);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_L);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_L);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_L);
 						break;
 				}
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*3), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_R), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*3), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_R), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_R);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_R);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_R);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_R);
 						break;
 				}
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*4), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX1), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*4), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_EX1), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX1);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_EX1);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX1);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_EX1);
 						break;
 				}
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*5), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX2), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*5), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_EX2), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX2);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_EX2);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX2);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_EX2);
 						break;
 				}
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*6), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX3), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*6), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_EX3), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX3);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_EX3);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX3);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_EX3);
 						break;
 				}
-				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*7), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (1b<<CB_EX4), data, 0))
+				switch(checkbox(bit, ENABLED_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*7), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] & (FLAG1<<CB_EX4), data, 0))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(1b<<CB_EX4);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] &= ~(FLAG1<<CB_EX4);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (1b<<CB_EX4);
+						settings_arr[A_STTNG_BUTTON_ITEM_ENABLED_BITS] |= (FLAG1<<CB_EX4);
 						break;
 				}
 				//end Enabled
 				//start Assignable
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*0), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_A), data, 0, "A"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*0), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_A), data, 0, "A"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_A);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_A);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_A);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_A);
 						break;
 				}
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*1), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_B), data, 0, "B"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*1), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_B), data, 0, "B"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_B);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_B);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_B);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_B);
 						break;
 				}
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*2), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_L), data, 0, "L"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*2), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_L), data, 0, "L"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_L);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_L);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_L);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_L);
 						break;
 				}
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*3), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_R), data, 0, "R"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*3), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_R), data, 0, "R"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_R);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_R);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_R);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_R);
 						break;
 				}
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*4), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX1), data, 0, "EX1"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*4), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_EX1), data, 0, "EX1"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX1);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_EX1);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX1);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_EX1);
 						break;
 				}
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*5), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX2), data, 0, "EX2"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*5), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_EX2), data, 0, "EX2"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX2);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_EX2);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX2);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_EX2);
 						break;
 				}
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*6), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX3), data, 0, "EX3"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*6), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_EX3), data, 0, "EX3"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX3);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_EX3);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX3);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_EX3);
 						break;
 				}
-				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*7), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (1b<<CB_EX4), data, 0, "EX4"))
+				switch(titled_checkbox(bit, ASSIGNABLE_X, FRAME_Y+2+Text->FontHeight(DIA_FONT)+((FLAGS_HEIGHT+2)*7), FLAGS_HEIGHT, settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] & (FLAG1<<CB_EX4), data, 0, "EX4"))
 				{
 					case PROC_UPDATED_FALSE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(1b<<CB_EX4);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] &= ~(FLAG1<<CB_EX4);
 						break;
 					case PROC_UPDATED_TRUE:
-						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (1b<<CB_EX4);
+						settings_arr[A_STTNG_BUTTON_ITEM_ASSIGNABLE_BITS] |= (FLAG1<<CB_EX4);
 						break;
 				}
 				//end Assignable
@@ -4517,7 +4517,7 @@ namespace Venrob::SubscreenEditor
 			}
 		} //end
 		
-		void get_flag_name(char32 buf, bool active, int flag) //start
+		void get_flag_name(char32 buf, bool active, long flag) //start
 		{
 			if(active)
 			{
@@ -4539,7 +4539,7 @@ namespace Venrob::SubscreenEditor
 			}
 		} //end
 		
-		void get_flag_desc(char32 buf, bool active, int flag) //start
+		void get_flag_desc(char32 buf, bool active, long flag) //start
 		{
 			if(active)
 			{
