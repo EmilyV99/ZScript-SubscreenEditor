@@ -60,9 +60,13 @@ namespace Venrob::SubscreenEditor
 		SSET_CURSORTILE, //if >0, tile to draw for cursor
 		SSET_CURSORCSET,
 		SSET_CURSOR_VER, //if SED_CURSORTILE <= 0, then which packaged cursor style to draw
-		SSET_DELWARN,
+		SSET_FLAGS1,
+		SSET_FLAGS2,
 		SSET_MAX
-	}; //end
+	};
+	
+	DEFINEL SSET_FLAG_DELWARN = FLAG1;
+	//end
 	
 	void do_init() //start
 	{
@@ -3189,7 +3193,7 @@ namespace Venrob::SubscreenEditor
 		else //Default settings
 		{
 			loadBasicPal(PAL);
-			sys_settings[SSET_DELWARN] = true;
+			sys_settings[SSET_FLAGS1] |= SSET_FLAG_DELWARN;
 		}
 		f->Free();
 	}

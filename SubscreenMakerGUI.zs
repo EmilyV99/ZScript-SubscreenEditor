@@ -865,6 +865,98 @@ namespace Venrob::SubscreenEditor
 				text(bit, x+rad+3, y - Div(Text->FontHeight(DIA_FONT), 2), TF_NORMAL, title, (flags&FLAG_DISABLE ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]));
 				return radio(bit, x, y, rad, dlgdata, proc_data, proc_indx, rad_indx, flags);
 			} //end
+			void flag_tab(bitmap bit, int x, int y, int wid, int num_per_page, long arr, long use_arr, char32 strings, char32 desc_strings, untyped data, untyped proc_data, int proc_indx /*uses 3*/) //start
+			{
+				DEFINE FLAGS_HEIGHT = 7;
+				int bts = count_bits(use_arr);
+				int max = Div(bts-1,num_per_page);
+				DEFINE FLAG_TOTAL_HEIGHT = (FLAGS_HEIGHT+2)*num_per_page + 1 + (max < 1 ? 0 : (1 + Text->FontHeight(DIA_FONT)));
+				char32 flagsbuf[256];
+				sprintf(flagsbuf, "%i/%i", proc_data[proc_indx]+1, max+1);
+				frame_rect(bit, x, y, x + wid - 1, y + FLAG_TOTAL_HEIGHT, 1);
+				
+				int flags_x = x + 2, flags_y = y + 2;
+				
+				unless(max < 1)
+				{
+					text(bit, x + (wid/2), flags_y, TF_CENTERED, flagsbuf, PAL[COL_TEXT_MAIN]);
+					flags_y += Text->FontHeight(DIA_FONT) + 1;
+				}
+				
+				int overall_indx = 0;
+				int indx = 0;
+				int offs = 0;
+				for(int q = -num_per_page*proc_data[proc_indx]; q < num_per_page; ++overall_indx) //start checkboxes
+				{
+					if(use_arr[indx] & (FLAG1 << offs))
+					{
+						if(q >= 0)
+						{
+							char32 flagbuf[128], descbuf[256];
+							char32 flgptr = flagbuf;
+							char32 dscptr = descbuf;
+							
+							if(strings < 0)
+								getSpecialString(flagbuf, strings, overall_indx);
+							else unless(strings) itoa(flagbuf, overall_indx);
+							else if(overall_indx >= SizeOfArray(strings)) strcpy(flagbuf, "---");
+							else flgptr = strings[overall_indx];
+							unless(flgptr)
+							{
+								flgptr = flagbuf;
+								itoa(flagbuf, overall_indx);
+							}
+							
+							if(desc_strings < 0)
+								getSpecialString(descbuf, desc_strings, overall_indx);
+							else unless(desc_strings) /*nothing*/;
+							else unless(overall_indx >= SizeOfArray(desc_strings)) dscptr = desc_strings[overall_indx];
+							unless(dscptr)
+							{
+								dscptr = descbuf;
+								remchr(descbuf, 0);
+							}
+							
+							switch(desc_titled_checkbox(bit, flags_x, flags_y, FLAGS_HEIGHT, arr[indx] & (FLAG1 << offs), data, 0, flgptr, dscptr))
+							{
+								case PROC_UPDATED_FALSE:
+									arr[indx] &= ~(FLAG1 << offs);
+									break;
+								case PROC_UPDATED_TRUE:
+									arr[indx] |= (FLAG1 << offs);
+									break;
+							}
+							flags_y += (FLAGS_HEIGHT+2);
+						}
+						++q;
+					}
+					if(++offs >= 32)
+					{
+						offs %= 32;
+						if(++indx >= SizeOfArray(arr))
+						{
+							if(q <= 0)
+							{
+								titled_checkbox(bit, flags_x, flags_y, FLAGS_HEIGHT, 0, data, FLAG_DISABLE, "---");
+							}
+							break;
+						}
+					}
+				} //end checkboxes
+				if(max < 1) return;
+				DEFINE BUTTON_WIDTH = GEN_BUTTON_HEIGHT, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
+				//Swap flag tabs
+				{
+					if(PROC_CONFIRM==button(bit, x, y + FLAG_TOTAL_HEIGHT + 1, BUTTON_WIDTH, BUTTON_HEIGHT, "<", data, proc_data, proc_indx+1, (proc_data[proc_indx] <= 0 ? FLAG_DISABLE : 0)))
+					{
+						--proc_data[proc_indx];
+					}
+					if(PROC_CONFIRM==button(bit, x + wid - BUTTON_WIDTH, y + FLAG_TOTAL_HEIGHT + 1, BUTTON_WIDTH, BUTTON_HEIGHT, ">", data, proc_data, proc_indx+2, (proc_data[proc_indx] >= max ? FLAG_DISABLE : 0)))
+					{
+						++proc_data[proc_indx];
+					}
+				}
+			} //end
 			//end
 		} //end
 		//Flagsets
@@ -884,7 +976,7 @@ namespace Venrob::SubscreenEditor
 		
 		bool delwarn() //start
 		{
-			return !sys_settings[SSET_DELWARN] || yesno_dlg("Are you sure you want to delete this?") == PROC_CONFIRM;
+			return !(sys_settings[SSET_FLAGS1] & SSET_FLAG_DELWARN) || yesno_dlg("Are you sure you want to delete this?") == PROC_CONFIRM;
 		} //end
 		void gen_startup() //start
 		{
@@ -2474,7 +2566,11 @@ namespace Venrob::SubscreenEditor
 			untyped old_sys_settings[SSET_MAX];
 			memcpy(old_sys_settings, sys_settings, SSET_MAX);
 			//end
-			untyped proc_data[6];
+			untyped proc_data[10];
+			long flagbits[2], usebits[2];
+			flagbits[0] = sys_settings[SSET_FLAGS1];
+			flagbits[1] = sys_settings[SSET_FLAGS2];
+			usebits[0] = 1bL;
 			while(running)
 			{
 				bit->ClearToColor(0, PAL[COL_NULL]);
@@ -2484,15 +2580,11 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y, 7, sys_settings[SSET_DELWARN], data, 0, "Recieve Deletion Warnings", "If checked, a confirmation prompt will appear when attempting to delete objects."))
-				{
-					case PROC_UPDATED_FALSE:
-						sys_settings[SSET_DELWARN]=false;
-						break;
-					case PROC_UPDATED_TRUE:
-						sys_settings[SSET_DELWARN]=true;
-						break;
-				}
+				flag_tab(bit, FRAME_X, FRAME_Y, 144, 8, flagbits, usebits,
+					{"Recieve Deletion Warnings"},
+					{"If checked, a confirmation prompt will appear when attempting to delete objects."},
+					data, proc_data, 4);
+				
 				//Buttons
 				{
 					DEFINE BUTTON_WIDTH = GEN_BUTTON_WIDTH, BUTTON_HEIGHT = GEN_BUTTON_HEIGHT;
@@ -2528,7 +2620,12 @@ namespace Venrob::SubscreenEditor
 				subscr_Waitframe();
 			}
 			
-			unless(do_save_changes)
+			if(do_save_changes)
+			{
+				sys_settings[SSET_FLAGS1] = flagbits[0];
+				sys_settings[SSET_FLAGS2] = flagbits[1];
+			}
+			else
 			{
 				memcpy(sys_settings, old_sys_settings, SSET_MAX);
 			}
@@ -2698,7 +2795,22 @@ namespace Venrob::SubscreenEditor
 			bool running = true;
 			bool do_save_changes = false;
 			//end
-			untyped proc_data[6];
+			untyped proc_data[10];
+			long flagbits[4];
+			long usebits[4];
+			for(int q = 0; q < 4; ++q)
+			{
+				flagbits[q] = settings_arr[STTNG_FLAGS1+q];
+			}
+			if(active)
+			{
+				usebits[0] = 1bL;
+			}
+			else
+			{
+				
+			}
+			
 			while(running)
 			{
 				bit->ClearToColor(0, PAL[COL_NULL]);
@@ -2708,25 +2820,11 @@ namespace Venrob::SubscreenEditor
 				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, desc_str)==PROC_CANCEL || CancelButtonP())
 					running = false;
 				
-				int flags_x = FRAME_X, flags_y = FRAME_Y;
-				bool a_active[SUBSCR_BITS_INT] = {true}, p_active[SUBSCR_BITS_INT] = {false};
-				DEFINE FLAGS_HEIGHT = 7;
-				for(int q = 0; q < SUBSCR_BITS_INT; ++q)
-				{
-					char32 titlebuf[128], descbuf[256];
-					get_flag_name(titlebuf, active, FLAG1<<q);
-					get_flag_desc(descbuf, active, FLAG1<<q);
-					switch(desc_titled_checkbox(bit, flags_x, flags_y, FLAGS_HEIGHT, settings_arr[STTNG_FLAGS1] & (FLAG1<<q), data, active?(a_active[q]?0:FLAG_DISABLE):(p_active[q]?0:FLAG_DISABLE), titlebuf, descbuf))
-					{
-						case PROC_UPDATED_FALSE:
-							settings_arr[STTNG_FLAGS1] &= ~(FLAG1<<q);
-							break;
-						case PROC_UPDATED_TRUE:
-							settings_arr[STTNG_FLAGS1] |= (FLAG1<<q);
-							break;
-					}
-					flags_y += (FLAGS_HEIGHT+2);
-				}
+				flag_tab(bit, FRAME_X, FRAME_Y, 112, 16, flagbits, usebits, active
+					? {"Items Use Hitbox Size"}
+					: {"---"}, active
+					? {"The highlight around items, both in the editor and when selecting them in-game, are based on 'Hit' size if this is on, or 'Draw' size otherwise."}
+					: NULL,	data, proc_data, 4);
 				
 				//Buttons
 				{
@@ -2814,6 +2912,10 @@ namespace Venrob::SubscreenEditor
 			
 			if(do_save_changes)
 			{
+				for(int q = 0; q < 4; ++q)
+				{
+					settings_arr[STTNG_FLAGS1+q] = flagbits[q];
+				}
 				if(active)
 				{
 					settings_arr[A_STTNG_FRAME_HOLD_DELAY] = VBound(atoi(b1), MAX_INT, 0);
@@ -4623,6 +4725,25 @@ namespace Venrob::SubscreenEditor
 			until(ret<0 || (ret==0 || str[ret-1]!='\\'))
 				ret = strchr(str, ret+1, chr);
 			return ret;
+		} //end
+		
+		int count_bits(long arr) //start
+		{
+			int cnt = 0;
+			for(int q = SizeOfArray(arr)-1; q >= 0; --q)
+			{
+				int ocnt = cnt;
+				//printf("Counting bits from '%d' ... ", arr[q]);
+				for(int b = 0; b < 32; ++b)
+				{
+					if(arr[q] & (FLAG1 << b))
+					{
+						++cnt;
+					}
+				}
+				//printf("Counted %d, total %d\n", cnt-ocnt, cnt);
+			}
+			return cnt;
 		} //end
 		//end 
 		//start Special String Lists
