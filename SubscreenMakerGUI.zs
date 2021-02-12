@@ -1383,6 +1383,130 @@ namespace Venrob::SubscreenEditor
 						break;
 					} //end
 					
+					case MODULE_TYPE_BIGMAP: //start
+					{
+						DEFINE TEXT_OFFSET = WIDTH - FRAME_X - 20;
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*0), TF_RIGHT, "Current Color:", PAL[COL_TEXT_MAIN]);
+						arr[P1] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*0), 16, 16, arr[P1], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*1), TF_RIGHT, "Explored Color:", PAL[COL_TEXT_MAIN]);
+						arr[P2] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*1), 16, 16, arr[P2], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*2), TF_RIGHT, "Unexplored Color:", PAL[COL_TEXT_MAIN]);
+						arr[P3] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*2), 16, 16, arr[P3], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*3), TF_RIGHT, "Compass Color:", PAL[COL_TEXT_MAIN]);
+						arr[P4] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*3), 16, 16, arr[P4], data);
+						text(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12+5 + (18*4), TF_RIGHT, "Compass Dead Color:", PAL[COL_TEXT_MAIN]);
+						arr[P5] = pal_swatch(bit, FRAME_X+TEXT_OFFSET, FRAME_Y+12 + (18*4), 16, 16, arr[P5], data);
+						
+						char32 buf1[] = "Comp. Blink Rate:";
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+3, 28, argbuf6, 2, false, data, OBJ_SPEC_TFINDX_START+0, 0, 1, 9, buf1);
+						arr[P6] = VBound(atoi(argbuf6), 9, 1);
+						
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 0), 7, arr[M_FLAGS1]&FLAG_MMP_COMP_ON_BOSS, data, 0, "Compass Points to Boss", "The compass will end once the boss is dead, instead of when the triforce is collected."))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_COMP_ON_BOSS;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_COMP_ON_BOSS;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 1), 7, arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_OW, data, 0, "Show Explored - OW", "Shows explored rooms on Overworld dmaps"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_OW;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 2), 7, arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW, data, 0, "Show Explored - BS-OW", "Shows explored rooms on BS Overworld dmaps"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 3), 7, arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON, data, 0, "Show Explored - DNG", "Shows explored rooms on Dungeon dmaps"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 4), 7, arr[M_FLAGS1]&FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR, data, 0, "Show Explored - INT", "Shows explored rooms on Interior dmaps"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 5), 7, arr[M_FLAGS1]&FLAG_MMP_COMPASS_BLINK_DOESNT_STOP, data, 0, "Blink Continues", "The compass will continue blinking even after it changes color"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_COMPASS_BLINK_DOESNT_STOP;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 6), 7, arr[M_FLAGS1]&FLAG_MMP_IGNORE_DMAP_BGTILE, data, 0, "Ignore DMap-specfic BG", "The Large Map BG tile set in the DMap editor will be ignored"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_IGNORE_DMAP_BGTILE;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_IGNORE_DMAP_BGTILE;
+								break;
+						}
+						switch(desc_titled_checkbox(bit, FRAME_X, FRAME_Y + 25 + (10 * 7), 7, arr[M_FLAGS1]&FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS, data, 0, "Larger Markers", "The player position and compass markers will cover the whole room, rather than just a rectangle in the center of it."))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
+								break;
+						}
+						DEFINE MMY = ABOVE_BOTTOM_Y - BIGMAP_THEI * 16;
+						DEFINE MMX = WIDTH - FRAME_X - BIGMAP_TWID * 16 - 2;
+						frame_rect(bit, MMX-1, MMY-1, MMX + 1 + BIGMAP_TWID * 16, MMY+1+BIGMAP_THEI*16, 1);
+						text(bit, MMX - 3, MMY, TF_RIGHT, "Preview:", PAL[COL_TEXT_MAIN]);
+						char32 buf[] = "Defeated";
+						switch(r_titled_checkbox(bit, MMX - 10 - Text->StringWidth(buf, DIA_FONT), MMY + 8, 7, prev&1b, data, 0, buf))
+						{
+							case PROC_UPDATED_FALSE:
+								prev~=1b;
+								break;
+							case PROC_UPDATED_TRUE:
+								prev|=1b;
+								break;
+						}
+						char32 bufm16[] = "16x8 Tile";
+						char32 bufm8[] = " 8x8 Tile";
+						int tilearr[2] = {arr[P7], arr[P8]};
+						text(bit, FRAME_X, FRAME_Y + 25 + (10 * 8) + 4, TF_NORMAL, bufm16, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 8), tilearr, data, false);
+						arr[P7] = tilearr[0];
+						arr[P8] = tilearr[1];
+						tilearr[0] = arr[P9];
+						tilearr[1] = arr[P10];
+						text(bit, FRAME_X+ Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 8) + 20 + 4, TF_RIGHT, bufm8, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X + Text->StringWidth(bufm16, DIA_FONT), FRAME_Y + 25 + (10 * 8) + 20, tilearr, data, false);
+						arr[P9] = tilearr[0];
+						arr[P10] = tilearr[1];
+						if(prev&1b)
+							Game->LItems[Game->GetCurLevel()] |= LI_BOSS | LI_TRIFORCE;
+						bigmap(arr, 0, bit, active, MMX, MMY);
+						Game->LItems[Game->GetCurLevel()] ~= LI_BOSS | LI_TRIFORCE;
+						break;
+					} //end
+					
 					case MODULE_TYPE_TILEBLOCK: //start
 					{
 						char32 buftl[] = "Tile:";
@@ -1861,8 +1985,8 @@ namespace Venrob::SubscreenEditor
 						
 						char32 buf2[] = "Align:";
 						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
-						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_ITEMNM_ALIGN)
-						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_ITEMNM_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
+						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_DMTITLE_ALIGN)
+						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_DMTITLE_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
 						
 						//
 						int bg = arr[P3];
@@ -1896,7 +2020,7 @@ namespace Venrob::SubscreenEditor
 						//
 						int p_wid = DrawStringsWid(arr[P1], testbuf, 256);
 						int xoff;
-						int tf = arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+						int tf = arr[M_FLAGS1] & MASK_DMTITLE_ALIGN;
 						switch(tf) //start Calculate offsets based on alignment
 						{
 							case TF_NORMAL: break;
@@ -3203,18 +3327,18 @@ namespace Venrob::SubscreenEditor
 			//start val/string setup
 			int aval[] = {MODULE_TYPE_SEL_ITEM_ID, MODULE_TYPE_SEL_ITEM_CLASS, MODULE_TYPE_ITEMNAME,
 				MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_BUTTONITEM,
-				MODULE_TYPE_PASSIVESUBSCREEN, MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK,
-				MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC,
-				MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE, MODULE_TYPE_CRROW,
-				MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK,
-				MODULE_TYPE_DMTITLE};
+				MODULE_TYPE_PASSIVESUBSCREEN, MODULE_TYPE_MINIMAP, MODULE_TYPE_BIGMAP,
+				MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW,
+				MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE,
+				MODULE_TYPE_CRROW,MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE,
+				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
 			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
 				"Item (ID)", "Item (Type)", "Button Item",
-				"Passive Subscreen", "MiniMap", "Tile Block",
-				"Heart", "Heart Row", "Magic",
-				"Magic Row", "Counter Meter (Piece)", "Counter Meter (Row)",
-				"Counter", "Minitile", "Clock",
-				"DMap Title"};
+				"Passive Subscreen", "MiniMap", "Big Map",
+				"Tile Block", "Heart", "Heart Row",
+				"Magic", "Magic Row", "Counter Meter (Piece)",
+				"Counter Meter (Row)", "Counter", "Minitile",
+				"Clock", "DMap Title"};
 			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_BUTTONITEM,
 				MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART,
 				MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW,
@@ -3262,6 +3386,10 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_MINIMAP:
 						{
 							MakeMinimap(module_arr); break;
+						}
+						case MODULE_TYPE_BIGMAP:
+						{
+							MakeBigMap(module_arr); break;
 						}
 						case MODULE_TYPE_TILEBLOCK:
 						{
@@ -4467,6 +4595,10 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Minimap"); break;
 				}
+				case MODULE_TYPE_BIGMAP:
+				{
+					strcat(buf, "Large Map"); break;
+				}
 				case MODULE_TYPE_TILEBLOCK:
 				{
 					strcat(buf, "Tile Block"); break;
@@ -4557,6 +4689,10 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_MINIMAP:
 				{
 					strcat(buf, "Displays the minimap of the current DMap, with various settings."); break;
+				}
+				case MODULE_TYPE_BIGMAP:
+				{
+					strcat(buf, "Displays the large map of the current DMap, with various settings."); break;
 				}
 				case MODULE_TYPE_TILEBLOCK:
 				{

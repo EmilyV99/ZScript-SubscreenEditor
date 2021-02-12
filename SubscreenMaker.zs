@@ -423,6 +423,16 @@ namespace Venrob::SubscreenEditor
 				break;
 			} //end
 			
+			case MODULE_TYPE_BIGMAP: //start
+			{
+				bigmap(module_arr, offs, bit, active);
+				if(interactive)
+				{
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], BIGMAP_TWID*16-1, BIGMAP_THEI*16-1, mod_indx, active, true);
+				}
+				break;
+			} //end
+			
 			case MODULE_TYPE_TILEBLOCK: //start
 			{
 				bit->DrawTile(0,  module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P3], module_arr[offs+P4], module_arr[offs+P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
@@ -1041,6 +1051,7 @@ namespace Venrob::SubscreenEditor
 				return 0;
 			case MODULE_TYPE_BGCOLOR:
 				return 0;
+			case MODULE_TYPE_BIGMAP:
 			case MODULE_TYPE_MINIMAP:
 				return 256 - (16 * 5);
 			case MODULE_TYPE_TILEBLOCK:
@@ -1137,6 +1148,7 @@ namespace Venrob::SubscreenEditor
 				return _BOTTOM-56;
 			case MODULE_TYPE_BGCOLOR:
 				return 0;
+			case MODULE_TYPE_BIGMAP:
 			case MODULE_TYPE_MINIMAP:
 				return _BOTTOM - (16 * 3);
 			case MODULE_TYPE_TILEBLOCK:
@@ -1218,6 +1230,10 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_MINIMAP:
 				cur_ver = MVER_MINIMAP;
 				compat_ver = C_MVER_MINIMAP;
+				break;
+			case MODULE_TYPE_BIGMAP:
+				cur_ver = MVER_BIGMAP;
+				compat_ver = C_MVER_BIGMAP;
 				break;
 			case MODULE_TYPE_TILEBLOCK:
 				cur_ver = MVER_TILEBLOCK;
@@ -1546,6 +1562,13 @@ namespace Venrob::SubscreenEditor
 						}
 						//fallthrough
 					} //end
+					
+					case 2: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
 				}
 				if(module_arr[M_SIZE]!=P10+1)
 				{
@@ -1635,6 +1658,96 @@ namespace Venrob::SubscreenEditor
 				}
 				return true;
 			} //end
+			case MODULE_TYPE_BIGMAP: //start
+			{
+				if(module_arr[M_SIZE]!=P10+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_BIGMAP (%d) must have argument size (10) in format {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, 16x8TILE, 16x8CSET, 8x8TILE, 8x8CSET}; argument size %d found", MODULE_TYPE_BIGMAP, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > 0xFF || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 1 (POSCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 0xFF || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 2 (EXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 0 || module_arr[P3] > 0xFF || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 3 (UNEXPLCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P3]);
+					}
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] > 0xFF || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 4 (COMPCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P4]);
+					}
+					return false;
+				}
+				if(module_arr[P5] < 0 || module_arr[P5] > 0xFF || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 5 (COMP_DEFEATEDCOLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P5]);
+					}
+					return false;
+				}
+				if(module_arr[P6] < 1 || module_arr[P6] > 9 || (module_arr[P6]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 6 (BLINKRATE) must be an integer between (1) and (9), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P6]);
+					}
+					return false;
+				}
+				if(module_arr[P7] < 0 || module_arr[P7] > MAX_TILE || (module_arr[P7]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 7 (16x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_BIGMAP, MAX_TILE, module_arr[P7]);
+					}
+					return false;
+				}
+				if(module_arr[P8] < 0 || module_arr[P8] > 11 || (module_arr[P8]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 8 (16x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P8]);
+					}
+					return false;
+				}
+				if(module_arr[P9] < 0 || module_arr[P9] > MAX_TILE || (module_arr[P9]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 9 (8x8TILE) must be an integer between (0) and (%d), inclusive; found %d", MODULE_TYPE_BIGMAP, MAX_TILE, module_arr[P9]);
+					}
+					return false;
+				}
+				if(module_arr[P10] < 0 || module_arr[P10] > 11 || (module_arr[P10]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_BIGMAP (%d) argument 10 (8x8CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_BIGMAP, module_arr[P10]);
+					}
+					return false;
+				}
+				return true;
+			} //end
 			
 			case MODULE_TYPE_TILEBLOCK: //start
 			{
@@ -1715,6 +1828,15 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_HEARTROW: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P5+1)
 				{
 					if(DEBUG)
@@ -1776,6 +1898,12 @@ namespace Venrob::SubscreenEditor
 							module_arr[P9] = SHD_SHADOWED;
 							module_arr[M_FLAGS1] ~= FLAG4;
 						}
+						//fallthrough
+					} //end
+					case 2: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
 						//fallthrough
 					} //end
 				}
@@ -1876,6 +2004,15 @@ namespace Venrob::SubscreenEditor
 			
 			case MODULE_TYPE_MINITILE: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P2+1)
 				{
 					if(DEBUG)
@@ -1952,6 +2089,15 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_ITEMNAME: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P7+1)
 				{
 					if(DEBUG)
@@ -2018,6 +2164,15 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_DMTITLE: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P5+1)
 				{
 					if(DEBUG)
@@ -2068,6 +2223,15 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_MAGIC: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P3+1)
 				{
 					if(DEBUG)
@@ -2102,6 +2266,15 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_MAGICROW: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P5+1)
 				{
 					if(DEBUG)
@@ -2202,6 +2375,15 @@ namespace Venrob::SubscreenEditor
 			} //end
 			case MODULE_TYPE_CRROW: //start
 			{
+				switch(module_arr[M_VER])
+				{
+					case 1: //start
+					{
+						++module_arr[M_VER];
+						module_arr[M_FLAGS1] * 1L; //Convert to 'long'
+						//fallthrough
+					} //end
+				}
 				if(module_arr[M_SIZE]!=P7+1)
 				{
 					if(DEBUG)
@@ -2670,6 +2852,13 @@ namespace Venrob::SubscreenEditor
 		
 		buf_arr[M_FLAGS1] = FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON | FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR;
 		buf_arr[P6] = 6;
+	}
+	
+	void MakeBigMap(untyped buf_arr)
+	{
+		MakeMinimap(buf_arr);
+		buf_arr[M_TYPE] = MODULE_TYPE_BIGMAP;
+		buf_arr[M_VER] = MVER_BIGMAP;
 	}
 	
 	void MakeTileBlock(untyped buf_arr)

@@ -143,6 +143,7 @@ namespace Venrob::Subscreen
 	DEFINE MVER_BUTTONITEM = 3;
 	DEFINE MVER_PASSIVESUBSCREEN = 2;
 	DEFINE MVER_MINIMAP = 3;
+	DEFINE MVER_BIGMAP = 1;
 	DEFINE MVER_TILEBLOCK = 2;
 	DEFINE MVER_HEART = 2;
 	DEFINE MVER_HEARTROW = 2;
@@ -158,27 +159,28 @@ namespace Venrob::Subscreen
 	DEFINE MVER_CRPIECE = 2;
 	DEFINE MVER_CRROW = 2;
 	//Compatible versions
-	DEFINE C_MVER_SETTINGS = 2;
-	DEFINE C_MVER_BGCOLOR = 2;
-	DEFINE C_MVER_SEL_ITEM_ID = 2;
-	DEFINE C_MVER_SEL_ITEM_CLASS = 2;
-	DEFINE C_MVER_BUTTONITEM = 3;
-	DEFINE C_MVER_PASSIVESUBSCREEN = 2;
-	DEFINE C_MVER_MINIMAP = 3;
-	DEFINE C_MVER_TILEBLOCK = 2;
-	DEFINE C_MVER_HEART = 2;
-	DEFINE C_MVER_HEARTROW = 2;
-	DEFINE C_MVER_COUNTER = 3;
-	DEFINE C_MVER_MINITILE = 2;
-	DEFINE C_MVER_NONSEL_ITEM_ID = 2;
-	DEFINE C_MVER_NONSEL_ITEM_CLASS = 2;
-	DEFINE C_MVER_CLOCK = 2;
-	DEFINE C_MVER_ITEMNAME = 2;
-	DEFINE C_MVER_DMTITLE = 2;
-	DEFINE C_MVER_MAGIC = 2;
-	DEFINE C_MVER_MAGICROW = 2;
-	DEFINE C_MVER_CRPIECE = 2;
-	DEFINE C_MVER_CRROW = 2;
+	DEFINE C_MVER_SETTINGS = 0;
+	DEFINE C_MVER_BGCOLOR = 0;
+	DEFINE C_MVER_SEL_ITEM_ID = 0;
+	DEFINE C_MVER_SEL_ITEM_CLASS = 0;
+	DEFINE C_MVER_BUTTONITEM = 0;
+	DEFINE C_MVER_PASSIVESUBSCREEN = 0;
+	DEFINE C_MVER_MINIMAP = 0;
+	DEFINE C_MVER_BIGMAP = 0;
+	DEFINE C_MVER_TILEBLOCK = 0;
+	DEFINE C_MVER_HEART = 0;
+	DEFINE C_MVER_HEARTROW = 0;
+	DEFINE C_MVER_COUNTER = 0;
+	DEFINE C_MVER_MINITILE = 0;
+	DEFINE C_MVER_NONSEL_ITEM_ID = 0;
+	DEFINE C_MVER_NONSEL_ITEM_CLASS = 0;
+	DEFINE C_MVER_CLOCK = 0;
+	DEFINE C_MVER_ITEMNAME = 0;
+	DEFINE C_MVER_DMTITLE = 0;
+	DEFINE C_MVER_MAGIC = 0;
+	DEFINE C_MVER_MAGICROW = 0;
+	DEFINE C_MVER_CRPIECE = 0;
+	DEFINE C_MVER_CRROW = 0;
 	//end Versioning
 	//start Module enums
 	enum //For parameters for modules.
@@ -238,14 +240,10 @@ namespace Venrob::Subscreen
 	DEFINEL FLAG_HROW_RTOL = FLAG1;
 	//Magic Row
 	DEFINEL FLAG_MROW_RTOL = FLAG1;
-	//Magic Row
+	//Counter Row
 	DEFINEL FLAG_CRROW_RTOL = FLAG1;
 	//Magic
 	DEFINEL FLAG_MAG_ISHALF = FLAG1;
-	//A_STTNG_FLAGS1
-	DEFINEL FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR = FLAG1;
-	//ACTIVE_1FRAME_FLAGS_1
-	DEFINEL FLAG_A1FR_DREW_SELECTOR = FLAG1;
 	//Counter
 	DEFINEL MASK_CNTR_ALIGN = FLAG1 | FLAG2;
 	DEFINEL FLAG_CNTR_SPECIAL = FLAG3;
@@ -269,6 +267,10 @@ namespace Venrob::Subscreen
 	DEFINEL MASK_MINITL_CRN = FLAG1 | FLAG2;
 	//ItemName
 	DEFINEL MASK_ITEMNM_ALIGN = FLAG1 | FLAG2;
+	//DMTitle
+	DEFINEL MASK_DMTITLE_ALIGN = FLAG1 | FLAG2;
+	//A_STTNG_FLAGS1
+	DEFINEL FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR = FLAG1;
 	//end Flags
 	enum moduleType //start
 	{
@@ -295,9 +297,9 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_MAGICROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNT, SPACING}
 		MODULE_TYPE_CRPIECE, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT}
 		MODULE_TYPE_CRROW, //FORMAT: {META..., TILE, CSET, CONTAINER_NUM, COUNTER, PER_CONT, COUNT, SPACING}
+		MODULE_TYPE_BIGMAP, //FORMAT: {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, 16x8TILE, 16x8CSET, 8x8TILE, 8x8CSET}
 		/* TODO
 		Complex Modules:
-		LARGE MAP (Active only)
 		COUNTER METER (%)
 		TEXT (Will be a large module, to store the char data)
 
@@ -703,6 +705,12 @@ namespace Venrob::Subscreen
 				break;
 			} //end
 			
+			case MODULE_TYPE_BIGMAP: //start
+			{
+				bigmap(module_arr,offs,bit,active);
+				break;
+			} //end
+			
 			case MODULE_TYPE_TILEBLOCK: //start
 			{
 				bit->DrawTile(0,  module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P3], module_arr[offs+P4], module_arr[offs+P2], -1, -1, 0, 0, 0, FLIP_NONE, true, OP_OPAQUE);
@@ -837,7 +845,7 @@ namespace Venrob::Subscreen
 				unless(bg) bg = -1;
 				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
-				int tf = module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				int tf = module_arr[offs+M_FLAGS1] & MASK_DMTITLE_ALIGN;
 				DrawStringsBitmap(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
 				break;
 			} //end
@@ -857,9 +865,9 @@ namespace Venrob::Subscreen
 		dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
 		int curscr = Game->GetCurDMapScreen();
 		bool showExplore;
-		int ow = dm->Type & (11b);
-		int mtile = (ow == DMAP_OVERWORLD ? module_arr[offs+P7] : module_arr[offs+P9]);
-		int mcs = (ow == DMAP_OVERWORLD ? module_arr[offs+P8] : module_arr[offs+P10]);
+		int dmtype = dm->Type & (11b);
+		int mtile = (dmtype == DMAP_OVERWORLD ? module_arr[offs+P7] : module_arr[offs+P9]);
+		int mcs = (dmtype == DMAP_OVERWORLD ? module_arr[offs+P8] : module_arr[offs+P10]);
 		bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
 		unless(module_arr[offs+M_FLAGS1] & FLAG_MMP_IGNORE_DMAP_BGTILE)
 		{
@@ -873,8 +881,8 @@ namespace Venrob::Subscreen
 		if(mtile) bit->DrawTile(module_arr[offs+M_LAYER], orig_x, orig_y, mtile, 5, 3, mcs, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
 		bool hasCompass = Game->LItems[Game->GetCurLevel()] & LI_COMPASS;
 		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[offs+M_FLAGS1] & FLAG_MMP_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
-		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & 1 << (module_arr[offs+P6]-1);
-		switch(ow)
+		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & (1b << (module_arr[offs+P6]-1));
+		switch(dmtype)
 		{
 			case DMAP_OVERWORLD:
 				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_OW);
@@ -889,12 +897,14 @@ namespace Venrob::Subscreen
 				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR);
 				break;
 		}
-		if(ow == DMAP_OVERWORLD)
+		if(dmtype == DMAP_OVERWORLD)
 		{
+			DEFINE BLOCK_WID = 4, BLOCK_HEI = 4;
 			for(int q = 0; q < 128; ++q)
 			{
-				int x = orig_x + 9 + (4*(q%0x010));
-				int y = orig_y + 8 + (4*Div(q, 0x010));
+				//start calculations
+				int x = orig_x + 9 + (BLOCK_WID*(q%0x010));
+				int y = orig_y + 8 + (BLOCK_HEI*Div(q, 0x010));
 				int c = 0;
 				if(hasCompass && q == dm->Compass &&
 				   (blinkon || (deadCompass && !(module_arr[offs+M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
@@ -911,12 +921,17 @@ namespace Venrob::Subscreen
 						c = module_arr[offs+P2];
 					}
 				}
-				
-				if(c) bit->Rectangle(module_arr[offs+M_LAYER], x, y, x+2, y+2, module_arr[offs+P1], 1, 0, 0, 0, true, OP_OPAQUE);
+				//end calculations
+				//Drawing
+				if(c)
+				{
+					bit->Rectangle(module_arr[offs+M_LAYER], x, y, x+BLOCK_WID-2, y+BLOCK_HEI-2, c, 1, 0, 0, 0, true, OP_OPAQUE);
+				}
 			}
 		}
 		else
 		{
+			DEFINE BLOCK_WID = 8, BLOCK_HEI = 4;
 			int dmoffs = Game->DMapOffset[Game->GetCurDMap()];
 			bool largeMarkers = module_arr[offs+M_FLAGS1] & FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
 			
@@ -929,11 +944,11 @@ namespace Venrob::Subscreen
 					continue;
 				if(q % 0x10 < low_lim)
 					continue;
-				
+				//start calculations
 				int c = 0;
 				int sm_c = 0;
-				int x = orig_x + 8 + (8*(q%0x010));
-				int y = orig_y + 8 + (4*Div(q, 0x010));
+				int x = orig_x + 8 + (BLOCK_WID*(q%0x010));
+				int y = orig_y + 8 + (BLOCK_HEI*Div(q, 0x010));
 				
 				if(hasCompass && q+dmoffs == dm->Compass &&
 				   (blinkon || (deadCompass && !(module_arr[offs+M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
@@ -947,11 +962,8 @@ namespace Venrob::Subscreen
 				
 				unless(largeMarkers)
 				{
-					if(c)
-					{
-						sm_c = c;
-						c = 0;
-					}
+					sm_c = c;
+					c = 0;
 				}
 				unless(c)
 				{
@@ -965,13 +977,192 @@ namespace Venrob::Subscreen
 						c = module_arr[offs+P3];
 					}
 				}
+				//end calculations
+				//Drawing
 				if(c)
 				{
-					bit->Rectangle(module_arr[offs+M_LAYER], x, y, x+6, y+2, c, 1, 0, 0, 0, true, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], x, y, x+BLOCK_WID-2, y+BLOCK_HEI-2, c, 1, 0, 0, 0, true, OP_OPAQUE);
 				}
 				if(sm_c)
 				{
-					bit->Rectangle(module_arr[offs+M_LAYER], x+2, y, x+4, y+2, sm_c, 1, 0, 0, 0, true, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], x+BLOCK_WID/4, y, x+BLOCK_WID/2, y+BLOCK_HEI-2, sm_c, 1, 0, 0, 0, true, OP_OPAQUE);
+				}
+			}
+		}
+	} //end Minimap
+	//start Large Map
+	void bigmap(untyped module_arr, int offs, bitmap bit, bool active)
+	{
+		bigmap(module_arr, offs, bit, active, module_arr[offs+M_X], module_arr[offs+M_Y]);
+	}
+	
+	DEFINE BIGMAP_TWID = 7, BIGMAP_THEI = 5;
+	void bigmap(untyped module_arr, int offs, bitmap bit, bool active, int orig_x, int orig_y)
+	{
+		dmapdata dm = Game->LoadDMapData(Game->GetCurDMap());
+		int curscr = Game->GetCurDMapScreen();
+		bool showExplore;
+		int dmtype = dm->Type & (11b);
+		int mtile = (dmtype == DMAP_OVERWORLD ? module_arr[offs+P7] : module_arr[offs+P9]);
+		int mcs = (dmtype == DMAP_OVERWORLD ? module_arr[offs+P8] : module_arr[offs+P10]);
+		bool hasMap = Game->LItems[Game->GetCurLevel()] & LI_MAP;
+		unless(module_arr[offs+M_FLAGS1] & FLAG_MMP_IGNORE_DMAP_BGTILE)
+		{
+			if(dm->MapTile[hasMap ? 1 : 0])
+			{
+				mtile = dm->MapTile[hasMap ? 1 : 0];
+				mcs = dm->MapCSet[hasMap ? 1 : 0];
+			}
+		}
+		if(mtile)
+		{
+			bit->DrawTile(module_arr[offs+M_LAYER], orig_x, orig_y, mtile, BIGMAP_TWID, BIGMAP_THEI, mcs, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		}
+		bool hasCompass = Game->LItems[Game->GetCurLevel()] & LI_COMPASS;
+		bool deadCompass = Game->LItems[Game->GetCurLevel()] & ((module_arr[offs+M_FLAGS1] & FLAG_MMP_COMP_ON_BOSS) ? LI_BOSS : LI_TRIFORCE);
+		bool blinkon = g_arr[active ? ACTIVE_TIMER : PASSIVE_TIMER] & (1b << (module_arr[offs+P6]-1));
+		bool largeMarkers = module_arr[offs+M_FLAGS1] & FLAG_MMP_LARGE_PLAYER_COMPASS_MARKERS;
+		switch(dmtype)
+		{
+			case DMAP_OVERWORLD:
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_OW);
+				break;
+			case DMAP_BSOVERWORLD:
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_BSOW);
+				break;
+			case DMAP_DUNGEON:
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_DUNGEON);
+				break;
+			case DMAP_CAVE:
+				showExplore = (module_arr[offs+M_FLAGS1] & FLAG_MMP_SHOW_EXPLORED_ROOMS_INTERIOR);
+				break;
+		}
+		if(dmtype == DMAP_OVERWORLD)
+		{
+			DEFINE BLOCK_WID = 6, BLOCK_HEI = 8;
+			for(int q = 0; q < 128; ++q)
+			{
+				//start calculations
+				int x = orig_x + 8 + (BLOCK_WID*(q%0x010));
+				int y = orig_y + 8 + (BLOCK_HEI*Div(q, 0x010));
+				int c = 0, sm_c = 0;
+				if(hasCompass && q == dm->Compass &&
+				   (blinkon || (deadCompass && !(module_arr[offs+M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
+				{
+					c = deadCompass ? module_arr[offs+P5] : module_arr[offs+P4];
+				}
+				else if(q == curscr)
+					c = module_arr[offs+P1];
+				
+				unless(largeMarkers)
+				{
+					sm_c = c;
+					c = 0;
+				}
+				unless(c)
+				{
+					if(showExplore)
+					{
+						if(dm->Charted[q])
+						{
+							c = module_arr[offs+P2];
+						}
+					}
+				}
+				//end calculations
+				//Drawing
+				if(c)
+				{
+					bit->Rectangle(module_arr[offs+M_LAYER], x+1, y+1, x+BLOCK_WID-2, y+BLOCK_HEI-2, c, 1, 0, 0, 0, true, OP_OPAQUE);
+					int chrt = dm->Charted[q];
+					if(chrt)
+					{
+						if(chrt & CHRT_UP)
+							bit->Line(module_arr[offs+M_LAYER], x+2, y, x+BLOCK_WID-3, y, c, 1, 0, 0, 0, OP_OPAQUE);
+						if(chrt & CHRT_DOWN)
+							bit->Line(module_arr[offs+M_LAYER], x+2, y+BLOCK_HEI-1, x+BLOCK_WID-3, y+BLOCK_HEI-1, c, 1, 0, 0, 0, OP_OPAQUE);
+						if(chrt & CHRT_LEFT)
+							bit->Line(module_arr[offs+M_LAYER], x, y+2, x, y+BLOCK_HEI-3, c, 1, 0, 0, 0, OP_OPAQUE);
+						if(chrt & CHRT_RIGHT)
+							bit->Line(module_arr[offs+M_LAYER], x+BLOCK_WID-1, y+2, x+BLOCK_WID-1, y+BLOCK_HEI-3, c, 1, 0, 0, 0, OP_OPAQUE );
+					}
+				}
+				if(sm_c)
+				{
+					bit->Rectangle(module_arr[offs+M_LAYER], x+2, y+2, x+BLOCK_WID-3, y+BLOCK_HEI-3, sm_c, 1, 0, 0, 0, true, OP_OPAQUE);
+				}
+			}
+		}
+		else
+		{
+			int dmoffs = Game->DMapOffset[Game->GetCurDMap()];
+			
+			int lim = 8 - Max(dmoffs - 8, 0);
+			int low_lim = Min(dmoffs, 0);
+			
+			DEFINE BLOCK_WID = 12, BLOCK_HEI = 8;
+			for(int q = 0; q < 128; ++q)
+			{			
+				if(q % 0x10 >= lim)
+					continue;
+				if(q % 0x10 < low_lim)
+					continue;
+				//start calculations
+				int c = 0, sm_c = 0;
+				int x = orig_x + 8 + (BLOCK_WID*(q%0x010));
+				int y = orig_y + 8 + (BLOCK_HEI*Div(q, 0x010));
+				
+				if(hasCompass && q+dmoffs == dm->Compass &&
+				   (blinkon || (deadCompass && !(module_arr[offs+M_FLAGS1] & FLAG_MMP_COMPASS_BLINK_DOESNT_STOP))))
+				{
+					c = deadCompass ? module_arr[offs+P5] : module_arr[offs+P4];
+				}
+				else if(q == curscr)
+				{
+					c = module_arr[offs+P1];
+				}
+				
+				unless(largeMarkers)
+				{
+					sm_c = c;
+					c = 0;
+				}
+				unless(c)
+				{
+					int chrt = dm->Charted[q+dmoffs];
+					/*printf("'q+dmoffs' = '%d + %d' = '%d' // dm->Charted[%d] == %d000%d%d%d%d\n",
+						q, dmoffs, q+dmoffs, q+dmoffs, (chrt&CHRT_VISITED)?1:0,
+						(chrt&CHRT_RIGHT)?1:0, (chrt&CHRT_LEFT)?1:0, (chrt&CHRT_DOWN)?1:0, (chrt&CHRT_UP)?1:0);*/
+					if(showExplore && chrt)
+					{
+						c = module_arr[offs+P2];
+					}
+					else if(hasMap && dmapinfo::VisibleOnDungeonMap(q, true))
+					{
+						c = module_arr[offs+P3];
+					}
+				}
+				//end calculations
+				//Drawing
+				if(c)
+				{
+					bit->Rectangle(module_arr[offs+M_LAYER], x+1, y+1, x+BLOCK_WID-2, y+BLOCK_HEI-2, c, 1, 0, 0, 0, true, OP_OPAQUE);
+					int chrt = dm->Charted[q+dmoffs];
+					if(chrt)
+					{
+						if(chrt & CHRT_UP)
+							bit->Line(module_arr[offs+M_LAYER], x+2, y, x+BLOCK_WID-3, y, c, 1, 0, 0, 0, OP_OPAQUE);
+						if(chrt & CHRT_DOWN)
+							bit->Line(module_arr[offs+M_LAYER], x+2, y+BLOCK_HEI-1, x+BLOCK_WID-3, y+BLOCK_HEI-1, c, 1, 0, 0, 0, OP_OPAQUE);
+						if(chrt & CHRT_LEFT)
+							bit->Line(module_arr[offs+M_LAYER], x, y+2, x, y+BLOCK_HEI-3, c, 1, 0, 0, 0, OP_OPAQUE);
+						if(chrt & CHRT_RIGHT)
+							bit->Line(module_arr[offs+M_LAYER], x+BLOCK_WID-1, y+2, x+BLOCK_WID-1, y+BLOCK_HEI-3, c, 1, 0, 0, 0, OP_OPAQUE );
+					}
+				}
+				if(sm_c)
+				{
+					bit->Rectangle(module_arr[offs+M_LAYER], x+2, y+2, x+BLOCK_WID-3, y+BLOCK_HEI-3, sm_c, 1, 0, 0, 0, true, OP_OPAQUE);
 				}
 			}
 		}

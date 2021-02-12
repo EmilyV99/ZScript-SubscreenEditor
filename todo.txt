@@ -1,7 +1,6 @@
 Modules:
 	2x2 Frame [Req: Screen->DrawFrame()]
 	Counter Block?
-	Large Map [Req: dmapdata->Charted[]]
 	Line
 	Rectangle
 	Desc Box (Selected Item Name, but not only items will be selectable...)
