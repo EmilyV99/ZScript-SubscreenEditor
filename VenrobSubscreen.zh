@@ -160,6 +160,9 @@ namespace Venrob::Subscreen
 	DEFINE MVER_CRROW = 2;
 	DEFINE MVER_FRAME = 1;
 	DEFINE MVER_RECT = 1;
+	DEFINE MVER_CIRC = 1;
+	DEFINE MVER_LINE = 1;
+	DEFINE MVER_TRI = 1;
 	//Compatible versions
 	DEFINE C_MVER_SETTINGS = 0;
 	DEFINE C_MVER_BGCOLOR = 0;
@@ -185,6 +188,9 @@ namespace Venrob::Subscreen
 	DEFINE C_MVER_CRROW = 0;
 	DEFINE C_MVER_FRAME = 0;
 	DEFINE C_MVER_RECT = 0;
+	DEFINE C_MVER_CIRC = 0;
+	DEFINE C_MVER_LINE = 0;
+	DEFINE C_MVER_TRI = 0;
 	//end Versioning
 	//start Module enums
 	enum //For parameters for modules.
@@ -275,6 +281,10 @@ namespace Venrob::Subscreen
 	DEFINEL MASK_DMTITLE_ALIGN = FLAG1 | FLAG2;
 	//Rectangle
 	DEFINEL FLAG_RECT_FILL = FLAG1;
+	//Circle
+	DEFINEL FLAG_CIRC_FILL = FLAG1;
+	//Triangle
+	DEFINEL FLAG_TRI_FILL = FLAG1;
 	//A_STTNG_FLAGS1
 	DEFINEL FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR = FLAG1;
 	//end Flags
@@ -306,6 +316,9 @@ namespace Venrob::Subscreen
 		MODULE_TYPE_BIGMAP, //FORMAT: {META..., POSCOLOR, EXPLCOLOR, UNEXPLCOLOR, COMPCOLOR, COMP_DEFEATEDCOLOR, BLINKRATE, 16x8TILE, 16x8CSET, 8x8TILE, 8x8CSET}
 		MODULE_TYPE_FRAME, //FORMAT: {META..., TILE, CSET, WID, HEI}
 		MODULE_TYPE_RECT, //FORMAT: {META..., COLOR, WID, HEI}
+		MODULE_TYPE_CIRC, //FORMAT: {META..., COLOR, RAD}
+		MODULE_TYPE_LINE, //FORMAT: {META..., COLOR, X2, Y2}
+		MODULE_TYPE_TRI, //FORMAT: {META..., COLOR, X2, Y2, X3, Y3}
 		/* TODO
 		Complex Modules:
 		COUNTER METER (%)
@@ -866,7 +879,36 @@ namespace Venrob::Subscreen
 			case MODULE_TYPE_RECT: //start
 			{
 				if(module_arr[offs+P1])
-					bit->Rectangle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+M_X]+module_arr[offs+P2]-1, module_arr[offs+M_Y]+module_arr[offs+P3]-1, module_arr[offs+P1], 1, 0, 0, 0, module_arr[offs+M_FLAGS1] & FLAG_RECT_FILL, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P1], 1, 0, 0, 0, module_arr[offs+M_FLAGS1] & FLAG_RECT_FILL, OP_OPAQUE);
+				break;
+			} //end
+			case MODULE_TYPE_CIRC: //start
+			{
+				if(module_arr[offs+P1])
+					bit->Circle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2], module_arr[offs+P1], 1, 0, 0, 0, module_arr[offs+M_FLAGS1] & FLAG_CIRC_FILL, OP_OPAQUE);
+				break;
+			} //end
+			case MODULE_TYPE_LINE: //start
+			{
+				if(module_arr[offs+P1])
+					bit->Line(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y],module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+				break;
+			} //end
+			case MODULE_TYPE_TRI: //start
+			{
+				if(module_arr[offs+P1])
+				{
+					if(module_arr[offs+M_FLAGS1] & FLAG_TRI_FILL)
+					{
+						bit->Triangle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P4], module_arr[offs+P5], 0, 0, module_arr[offs+P1], 0, 0, 0, NULL);
+					}
+					else
+					{
+						bit->Line(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y],module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+						bit->Line(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y],module_arr[offs+P4], module_arr[offs+P5], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+						bit->Line(module_arr[offs+M_LAYER], module_arr[offs+P2], module_arr[offs+P3],module_arr[offs+P4], module_arr[offs+P5], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+					}
+				}
 				break;
 			} //end
 			//case :
@@ -1857,29 +1899,35 @@ namespace Venrob::Subscreen
 	}
 	int incModX(int mod_indx, bool active, int x_off)
 	{
-		if(active)
+		untyped data = active ? activeData : passiveData;
+		int offs = active ? activeModules[mod_indx] : passiveModules[mod_indx];
+		data[offs+M_X]+=x_off;
+		switch(data[offs+M_TYPE])
 		{
-			activeData[activeModules[mod_indx]+M_X]+=x_off;
-			return activeData[activeModules[mod_indx]+M_X];
+			case MODULE_TYPE_TRI:
+				data[offs+P4] += x_off;
+				//fallthrough
+			case MODULE_TYPE_RECT: case MODULE_TYPE_LINE:
+				data[offs+P2] += x_off;
+				break;
 		}
-		else
-		{
-			passiveData[passiveModules[mod_indx]+M_X]+=x_off;
-			return passiveData[passiveModules[mod_indx]+M_X];
-		}
+		return data[offs+M_X];
 	}
 	int incModY(int mod_indx, bool active, int y_off)
 	{
-		if(active)
+		untyped data = active ? activeData : passiveData;
+		int offs = active ? activeModules[mod_indx] : passiveModules[mod_indx];
+		data[offs+M_Y]+=y_off;
+		switch(data[offs+M_TYPE])
 		{
-			activeData[activeModules[mod_indx]+M_Y]+=y_off;
-			return activeData[activeModules[mod_indx]+M_Y];
+			case MODULE_TYPE_TRI:
+				data[offs+P5] += y_off;
+				//fallthrough
+			case MODULE_TYPE_RECT: case MODULE_TYPE_LINE:
+				data[offs+P3] += y_off;
+				break;
 		}
-		else
-		{
-			passiveData[passiveModules[mod_indx]+M_Y]+=y_off;
-			return passiveData[passiveModules[mod_indx]+M_Y];
-		}
+		return data[offs+M_Y];
 	}
 	//end
 	//start Conditionals

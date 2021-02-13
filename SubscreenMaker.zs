@@ -692,10 +692,51 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_RECT: //start
 			{
 				if(module_arr[offs+P1])
-					bit->Rectangle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+M_X]+module_arr[offs+P2]-1, module_arr[offs+M_Y]+module_arr[offs+P3]-1, module_arr[offs+P1], 1, 0, 0, 0, module_arr[offs+M_FLAGS1] & FLAG_RECT_FILL, OP_OPAQUE);
+					bit->Rectangle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P1], 1, 0, 0, 0, module_arr[offs+M_FLAGS1] & FLAG_RECT_FILL, OP_OPAQUE);
 				if(interactive)
 				{
-					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2]-1, module_arr[offs+P3]-1, mod_indx, active, true);
+					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2]}, {module_arr[offs+M_Y], module_arr[offs+P3]}, mod_indx, active, true);
+				}
+				break;
+			} //end
+			case MODULE_TYPE_CIRC: //start
+			{
+				if(module_arr[offs+P1])
+					bit->Circle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2], module_arr[offs+P1], 1, 0, 0, 0, module_arr[offs+M_FLAGS1] & FLAG_CIRC_FILL, OP_OPAQUE);
+				if(interactive)
+				{
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X] - module_arr[offs+P2], module_arr[offs+M_Y] - module_arr[offs+P2], 2 * module_arr[offs+P2], 2 * module_arr[offs+P2], mod_indx, active, true);
+				}
+				break;
+			} //end
+			case MODULE_TYPE_LINE: //start
+			{
+				if(module_arr[offs+P1])
+					bit->Line(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y],module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+				if(interactive)
+				{
+					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2]}, {module_arr[offs+M_Y], module_arr[offs+P3]}, mod_indx, active, true);
+				}
+				break;
+			} //end
+			case MODULE_TYPE_TRI: //start
+			{
+				if(module_arr[offs+P1])
+				{
+					if(module_arr[offs+M_FLAGS1] & FLAG_TRI_FILL)
+					{
+						bit->Triangle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P4], module_arr[offs+P5], 0, 0, module_arr[offs+P1], 0, 0, 0, NULL);
+					}
+					else
+					{
+						bit->Line(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y],module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+						bit->Line(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y],module_arr[offs+P4], module_arr[offs+P5], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+						bit->Line(module_arr[offs+M_LAYER], module_arr[offs+P2], module_arr[offs+P3],module_arr[offs+P4], module_arr[offs+P5], module_arr[offs+P1], 1, 0, 0, 0, OP_OPAQUE);
+					}
+				}
+				if(interactive)
+				{
+					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2], module_arr[offs+P4]}, {module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P5]}, mod_indx, active, true);
 				}
 				break;
 			} //end
@@ -769,6 +810,31 @@ namespace Venrob::SubscreenEditor
 		} //end
 	}
 	
+	untyped min_arr(untyped arr)
+	{
+		untyped min = MAX_FLOAT;
+		for(int q = SizeOfArray(arr)-1; q >= 0; --q)
+			if(arr[q] < min) min = arr[q];
+		return min;
+	}
+	untyped max_arr(untyped arr)
+	{
+		untyped max = MIN_FLOAT;
+		for(int q = SizeOfArray(arr)-1; q >= 0; --q)
+			if(arr[q] > max) max = arr[q];
+		return max;
+	}
+	
+	void editorCursor(int layer, int x_arr, int y_arr, int mod_indx, bool active)
+	{
+		int mx = min_arr(x_arr), my = min_arr(y_arr);
+		editorCursor(layer, mx, my, max_arr(x_arr)-mx, max_arr(y_arr)-my, mod_indx, active, false);
+	}
+	void editorCursor(int layer, int x_arr, int y_arr, int mod_indx, bool active, bool overlapBorder)
+	{
+		int mx = min_arr(x_arr), my = min_arr(y_arr);
+		editorCursor(layer, mx, my, max_arr(x_arr)-mx, max_arr(y_arr)-my, mod_indx, active, overlapBorder);
+	}
 	void editorCursor(int layer, int x, int y, int wid, int hei, int mod_indx, bool active)
 	{
 		editorCursor(layer, x, y, wid, hei, mod_indx, active, false);
@@ -1110,8 +1176,18 @@ namespace Venrob::SubscreenEditor
 				return 255;
 			case MODULE_TYPE_FRAME:
 				return 256 - module_arr[P3]*8;
-			case MODULE_TYPE_RECT:
+			case MODULE_TYPE_CIRC:
 				return 256 - module_arr[P2];
+			case MODULE_TYPE_RECT:
+			case MODULE_TYPE_LINE:
+				if(module_arr[P2] > module_arr[M_X])
+					return 256 - (module_arr[P2] - module_arr[M_X]);
+				else return 255;
+			case MODULE_TYPE_TRI:
+				int mx = Max(module_arr[P2], module_arr[P4]);
+				if(mx > module_arr[M_X])
+					return 256 - (mx - module_arr[M_X]);
+				else return 255;
 		}
 		return 256-16;
 	}
@@ -1144,6 +1220,18 @@ namespace Venrob::SubscreenEditor
 						return (wid/2);
 				}
 				return wid;
+			case MODULE_TYPE_CIRC:
+				return module_arr[P2];
+			case MODULE_TYPE_RECT:
+			case MODULE_TYPE_LINE:
+				if(module_arr[P2] < module_arr[M_X])
+					return (module_arr[M_X] - module_arr[P2]);
+				else return 0;
+			case MODULE_TYPE_TRI:
+				int mx = Min(module_arr[P2], module_arr[P4]);
+				if(mx < module_arr[M_X])
+					return (module_arr[M_X] - mx);
+				else return 0;
 		}
 		return 0;
 	}
@@ -1159,6 +1247,7 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_NONSEL_ITEM_CLASS:
 			case MODULE_TYPE_SEL_ITEM_ID:
 			case MODULE_TYPE_SEL_ITEM_CLASS:
+			{
 				int itm = (module_arr[M_TYPE]==MODULE_TYPE_BUTTONITEM?get_btn_itm(module_arr[P1]):((module_arr[M_TYPE]==MODULE_TYPE_SEL_ITEM_ID?module_arr[P1]:get_item_of_class(module_arr[P1]))));
 				unless(itm > 0) return _BOTTOM-16;
 				itemdata id = Game->LoadItemData(itm);
@@ -1169,6 +1258,7 @@ namespace Venrob::SubscreenEditor
 				int yoffs = (hit ? id->HitYOffset : id->DrawYOffset),
 					thei = (hit ? id->HitHeight : id->TileHeight*16);
 				return _BOTTOM - yoffs - thei;
+			}
 			case MODULE_TYPE_PASSIVESUBSCREEN:
 				return _BOTTOM-56;
 			case MODULE_TYPE_BGCOLOR:
@@ -1195,8 +1285,18 @@ namespace Venrob::SubscreenEditor
 				return _BOTTOM - (Text->FontHeight(module_arr[P1])*2);
 			case MODULE_TYPE_FRAME:
 				return _BOTTOM - module_arr[P4]*8;
+			case MODULE_TYPE_CIRC:
+				return _BOTTOM - module_arr[P2];
 			case MODULE_TYPE_RECT:
-				return _BOTTOM - module_arr[P3];
+			case MODULE_TYPE_LINE:
+				if(module_arr[P3] > module_arr[M_Y])
+					return _BOTTOM - (module_arr[P3] - module_arr[M_Y]);
+				else return _BOTTOM - 1;
+			case MODULE_TYPE_TRI:
+				int my = Max(module_arr[P3], module_arr[P5]);
+				if(my > module_arr[M_Y])
+					return _BOTTOM - (my - module_arr[M_Y]);
+				else return _BOTTOM - 1;
 		}
 		return _BOTTOM-16;
 	}
@@ -1216,6 +1316,18 @@ namespace Venrob::SubscreenEditor
 				bool hit = activeData[STTNG_FLAGS1]&FLAG_ASTTNG_ITEMS_USE_HITBOX_FOR_SELECTOR;
 				int yoffs = (hit ? id->HitYOffset : id->DrawYOffset);
 				return 0 - yoffs;
+			case MODULE_TYPE_CIRC:
+				return module_arr[P2];
+			case MODULE_TYPE_RECT:
+			case MODULE_TYPE_LINE:
+				if(module_arr[P3] < module_arr[M_Y])
+					return (module_arr[M_Y] - module_arr[P3]);
+				else return 0;
+			case MODULE_TYPE_TRI:
+				int my = Min(module_arr[P3], module_arr[P5]);
+				if(my < module_arr[M_Y])
+					return (module_arr[M_Y] - my);
+				else return 0;
 		}
 		return 0;
 	}
@@ -1328,6 +1440,18 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_RECT:
 				cur_ver = MVER_RECT;
 				compat_ver = C_MVER_RECT;
+				break;
+			case MODULE_TYPE_CIRC:
+				cur_ver = MVER_CIRC;
+				compat_ver = C_MVER_CIRC;
+				break;
+			case MODULE_TYPE_LINE:
+				cur_ver = MVER_LINE;
+				compat_ver = C_MVER_LINE;
+				break;
+			case MODULE_TYPE_TRI:
+				cur_ver = MVER_TRI;
+				compat_ver = C_MVER_TRI;
 				break;
 		} //end
 		if(module_arr[M_VER] < compat_ver)
@@ -2563,10 +2687,10 @@ namespace Venrob::SubscreenEditor
 				if(module_arr[M_SIZE]!=P3+1)
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_RECT (%d) must have argument size (3) in format {COLOR, WID, HEI}; argument size %d found", MODULE_TYPE_RECT, module_arr[M_SIZE]-MODULE_META_SIZE);
+						error("MODULE_TYPE_RECT (%d) must have argument size (3) in format {COLOR, X2, Y2}; argument size %d found", MODULE_TYPE_RECT, module_arr[M_SIZE]-MODULE_META_SIZE);
 					return false;
 				}
-				if(module_arr[P2] < 0 || module_arr[P2] > 255 || (module_arr[P2]%1))
+				if(module_arr[P1] < 0 || module_arr[P1] > 255 || (module_arr[P1]%1))
 				{
 					if(DEBUG)
 					{
@@ -2574,16 +2698,112 @@ namespace Venrob::SubscreenEditor
 					}
 					return false;
 				}
-				if(module_arr[P2] < 1 || module_arr[P2] > 256 || (module_arr[P2]%1))
+				if(module_arr[P2] < 0 || module_arr[P2] > 255 || (module_arr[P2]%1))
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_RECT (%d) argument 2 (WID) must be an integer between (1) and (256), inclusive; found %d", MODULE_TYPE_RECT, module_arr[P2]);
+						error("MODULE_TYPE_RECT (%d) argument 2 (X2) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_RECT, module_arr[P2]);
 					return false;
 				}
-				if(module_arr[P3] < 1 || module_arr[P3] > 224 || (module_arr[P3]%1))
+				if(module_arr[P3] < 0 || module_arr[P3] > 223 || (module_arr[P3]%1))
 				{
 					if(DEBUG)
-						error("MODULE_TYPE_RECT (%d) argument 3 (HEI) must be an integer between (1) and (224), inclusive; found %d", MODULE_TYPE_RECT, module_arr[P3]);
+						error("MODULE_TYPE_RECT (%d) argument 3 (Y2) must be an integer between (0) and (223), inclusive; found %d", MODULE_TYPE_RECT, module_arr[P3]);
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_CIRC: //start
+			{
+				if(module_arr[M_SIZE]!=P2+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_CIRC (%d) must have argument size (2) in format {COLOR, RADIUS}; argument size %d found", MODULE_TYPE_CIRC, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > 255 || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_CIRC (%d) argument 1 (COLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_CIRC, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 1 || module_arr[P2] > 400 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_CIRC (%d) argument 2 (RADIUS) must be an integer between (1) and (400), inclusive; found %d", MODULE_TYPE_CIRC, module_arr[P2]);
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_LINE: //start
+			{
+				if(module_arr[M_SIZE]!=P3+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_LINE (%d) must have argument size (3) in format {COLOR, X2, Y2}; argument size %d found", MODULE_TYPE_LINE, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > 255 || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_LINE (%d) argument 1 (COLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_LINE, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 255 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_LINE (%d) argument 2 (X2) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_LINE, module_arr[P2]);
+					return false;
+				}
+				if(module_arr[P3] < 0 || module_arr[P3] > 223 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_LINE (%d) argument 3 (Y2) must be an integer between (0) and (223), inclusive; found %d", MODULE_TYPE_LINE, module_arr[P3]);
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_TRI: //start
+			{
+				if(module_arr[M_SIZE]!=P5+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_TRI (%d) must have argument size (3) in format {COLOR, X2, Y2, X3, Y3}; argument size %d found", MODULE_TYPE_TRI, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P1] < 0 || module_arr[P1] > 255 || (module_arr[P1]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_TRI (%d) argument 1 (COLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_TRI, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 255 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_TRI (%d) argument 2 (X2) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_TRI, module_arr[P2]);
+					return false;
+				}
+				if(module_arr[P3] < 0 || module_arr[P3] > 223 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_TRI (%d) argument 3 (Y2) must be an integer between (0) and (223), inclusive; found %d", MODULE_TYPE_TRI, module_arr[P3]);
+					return false;
+				}
+				if(module_arr[P4] < 0 || module_arr[P4] > 255 || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_TRI (%d) argument 4 (X3) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_TRI, module_arr[P4]);
+					return false;
+				}
+				if(module_arr[P5] < 0 || module_arr[P5] > 223 || (module_arr[P5]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_TRI (%d) argument 5 (Y3) must be an integer between (0) and (223), inclusive; found %d", MODULE_TYPE_TRI, module_arr[P5]);
 					return false;
 				}
 				return true;
@@ -3109,6 +3329,45 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P1] = 0x01;
 		buf_arr[P2] = 16;
 		buf_arr[P3] = 16;
+	}
+	
+	void MakeCircle(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P2+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_CIRC;
+		buf_arr[M_VER] = MVER_CIRC;
+		
+		buf_arr[M_X] = 16;
+		buf_arr[M_Y] = 16;
+		buf_arr[P1] = 0x01;
+		buf_arr[P2] = 16;
+	}
+	
+	void MakeLine(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P3+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_LINE;
+		buf_arr[M_VER] = MVER_LINE;
+		
+		buf_arr[P1] = 0x01;
+		buf_arr[P2] = 16;
+		buf_arr[P3] = 16;
+	}
+	
+	void MakeTriangle(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P5+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_TRI;
+		buf_arr[M_VER] = MVER_TRI;
+		
+		buf_arr[P1] = 0x01;
+		buf_arr[P2] = 16;
+		buf_arr[P3] = 0;
+		buf_arr[P4] = 0;
+		buf_arr[P5] = 16;
 	}
 	//end Constructors
 	//start FileIO

@@ -1148,43 +1148,43 @@ namespace Venrob::SubscreenEditor
 				DEFINE TXTBX_LEFTMARG = 3, TXTBOX_SPACING = 4;
 				int tfx = FRAME_X + TXTBX_LEFTMARG + Text->StringWidth("X:",DIA_FONT);
 				DEFINE XYBOX_WID = 20;
+				int flag = 0;
 				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_PASSIVESUBSCREEN:
 					case MODULE_TYPE_BGCOLOR:
-						titled_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_x, 3, TypeAString::TMODE_NUMERIC_POSITIVE, data, 1, FLAG_DISABLE, "X:");
-						break;
+						flag = FLAG_DISABLE;
 					default:
-						titled_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_x, 3, TypeAString::TMODE_NUMERIC_POSITIVE, data, 1, 0, "X:");
+						titled_inc_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_x, 3, false, data, 1, flag, min_x(arr), max_x(arr), "X:");
 				}
 				tfx += XYBOX_WID+TXTBOX_SPACING+Text->StringWidth("Y:",DIA_FONT);
+				flag = 0;
 				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_BGCOLOR:
-						titled_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_y, 3, TypeAString::TMODE_NUMERIC_POSITIVE, data, 2, FLAG_DISABLE, "Y:");
-						break;
+						flag = FLAG_DISABLE;
 					default:
-						titled_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_y, 3, TypeAString::TMODE_NUMERIC_POSITIVE, data, 2, 0, "Y:");
+						titled_inc_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_y, 3, true, data, 2, flag, min_y(arr), max_y(arr, active), "Y:");
 				}
 				tfx += XYBOX_WID+TXTBOX_SPACING+Text->StringWidth("Layer:",DIA_FONT);
 				DEFINE LAYERBOX_WID = 24;
+				flag = 0;
 				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_BGCOLOR:
-						titled_inc_text_field(bit, tfx, FRAME_Y, LAYERBOX_WID, buf_lyr, 1, false, data, 3, FLAG_DISABLE, 0, 7, "Layer:");
-						break;
+						flag = FLAG_DISABLE;
 					default:
-						titled_inc_text_field(bit, tfx, FRAME_Y, LAYERBOX_WID, buf_lyr, 1, false, data, 3, 0, 0, 7, "Layer:");
+						titled_inc_text_field(bit, tfx, FRAME_Y, LAYERBOX_WID, buf_lyr, 1, false, data, 3, flag, 0, 7, "Layer:");
 				}
 				tfx += LAYERBOX_WID+TXTBOX_SPACING+Text->StringWidth("Pos:",DIA_FONT);
 				DEFINE POSBOX_WID = 24;
+				flag = 0;
 				switch(arr[M_TYPE])
 				{
 					case MODULE_TYPE_BGCOLOR:
-						titled_inc_text_field(bit, tfx, FRAME_Y, POSBOX_WID, buf_pos, 2, false, data, 4, FLAG_DISABLE, 2, active?g_arr[NUM_ACTIVE_MODULES]-1:g_arr[NUM_PASSIVE_MODULES]-1, "Pos:");
-						break;
+						flag = FLAG_DISABLE;
 					default:
-						titled_inc_text_field(bit, tfx, FRAME_Y, POSBOX_WID, buf_pos, 2, false, data, 4, 0, 2, active?g_arr[NUM_ACTIVE_MODULES]-1:g_arr[NUM_PASSIVE_MODULES]-1, "Pos:");
+						titled_inc_text_field(bit, tfx, FRAME_Y, POSBOX_WID, buf_pos, 2, false, data, 4, flag, 2, active?g_arr[NUM_ACTIVE_MODULES]-1:g_arr[NUM_PASSIVE_MODULES]-1, "Pos:");
 				}
 				//end
 				DEFINE OBJ_SPEC_PROCDATA_START = 6;
@@ -2064,26 +2064,24 @@ namespace Venrob::SubscreenEditor
 					} //end
 					case MODULE_TYPE_RECT: //start
 					{
-						int cur_x = FRAME_X + 3;
+						DEFINE C1_X = FRAME_X + 3;
+						DEFINE C2_X = C1_X + 48;
+						DEFINE R1_Y = FRAME_Y + 21;
+						DEFINE R2_Y = R1_Y + 18;
+						DEFINE R3_Y = R2_Y + 10;
 						char32 buftl[] = "Color:";
-						text(bit, cur_x, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
-						arr[P1] = pal_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 16, 16, arr[P1], data);
+						text(bit, C1_X, R1_Y, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						arr[P1] = pal_swatch(bit, C1_X+Text->StringWidth(buftl, DIA_FONT), R1_Y-4, 16, 16, arr[P1], data);
 						
-						char32 buf1[] = "Wid:";
-						cur_x += 24 + Text->StringWidth(buftl, DIA_FONT) + Text->StringWidth(buf1, DIA_FONT);
+						char32 buf1[] = "X2:";
+						titled_inc_text_field(bit, C1_X+Text->StringWidth(buf1, DIA_FONT), R2_Y, 28, argbuf2, 3, false, data, OBJ_SPEC_TFINDX_START+1, 0, 0, 255, buf1);
+						arr[P2] = VBound(atoi(argbuf2), 255, 0);
 						
-						titled_inc_text_field(bit, cur_x, FRAME_Y+19, 28, argbuf2, 3, false, data, OBJ_SPEC_TFINDX_START+1, 0, 1, 256, buf1);
-						arr[P2] = VBound(atoi(argbuf2), 256, 1);
+						char32 buf2[] = "Y2:";
+						titled_inc_text_field(bit, C2_X+Text->StringWidth(buf2, DIA_FONT), R2_Y, 28, argbuf3, 3, false, data, OBJ_SPEC_TFINDX_START+2, 0, 0, 223, buf2);
+						arr[P3] = VBound(atoi(argbuf3), 223, 0);
 						
-						char32 buf2[] = "Hei:";
-						cur_x += 32 + Text->StringWidth(buf2, DIA_FONT);
-						
-						titled_inc_text_field(bit, cur_x, FRAME_Y+19, 28, argbuf3, 3, false, data, OBJ_SPEC_TFINDX_START+2, 0, 1, 224, buf2);
-						arr[P3] = VBound(atoi(argbuf3), 224, 1);
-						
-						cur_x += 32;
-						
-						switch(titled_checkbox(bit, cur_x, FRAME_Y+20, 7, arr[M_FLAGS1]&FLAG_RECT_FILL, data, 0, "Filled?"))
+						switch(titled_checkbox(bit, C2_X, R1_Y, 7, arr[M_FLAGS1]&FLAG_RECT_FILL, data, 0, "Filled?"))
 						{
 							case PROC_UPDATED_FALSE:
 								arr[M_FLAGS1]~=FLAG_RECT_FILL;
@@ -2092,15 +2090,89 @@ namespace Venrob::SubscreenEditor
 								arr[M_FLAGS1]|=FLAG_RECT_FILL;
 								break;
 						}
+						break;
+					} //end
+					case MODULE_TYPE_LINE: //start
+					{
+						DEFINE C1_X = FRAME_X + 3;
+						DEFINE C2_X = C1_X + 48;
+						DEFINE R1_Y = FRAME_Y + 21;
+						DEFINE R2_Y = R1_Y + 18;
+						DEFINE R3_Y = R2_Y + 10;
+						char32 buftl[] = "Color:";
+						text(bit, C1_X, R1_Y, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						arr[P1] = pal_swatch(bit, C1_X+Text->StringWidth(buftl, DIA_FONT), R1_Y-4, 16, 16, arr[P1], data);
 						
-						DEFINE PREVWID = arr[P2];
-						DEFINE PREVHEI = VBound(arr[P3], 144, 0);
-						DEFINE PREVY = ABOVE_BOTTOM_Y-PREVHEI;
-						frame_rect(bit, (WIDTH/2)-(PREVWID/2), PREVY-1, (WIDTH/2)+(PREVWID/2), PREVY+PREVHEI, 1);
-						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview (Shows max 256x144):", PAL[COL_TEXT_MAIN]);
-						if(arr[P1])
+						char32 buf1[] = "X2:";
+						titled_inc_text_field(bit, C1_X+Text->StringWidth(buf1, DIA_FONT), R2_Y, 28, argbuf2, 3, false, data, OBJ_SPEC_TFINDX_START+1, 0, 0, 255, buf1);
+						arr[P2] = VBound(atoi(argbuf2), 255, 0);
+						
+						char32 buf2[] = "Y2:";
+						titled_inc_text_field(bit, C2_X+Text->StringWidth(buf2, DIA_FONT), R2_Y, 28, argbuf3, 3, false, data, OBJ_SPEC_TFINDX_START+2, 0, 0, 223, buf2);
+						arr[P3] = VBound(atoi(argbuf3), 223, 0);
+						break;
+					} //end
+					case MODULE_TYPE_CIRC: //start
+					{
+						DEFINE C1_X = FRAME_X + 3;
+						DEFINE C2_X = C1_X + 48;
+						DEFINE R1_Y = FRAME_Y + 21;
+						DEFINE R2_Y = R1_Y + 18;
+						DEFINE R3_Y = R2_Y + 10;
+						char32 buftl[] = "Color:";
+						text(bit, C1_X, R1_Y, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						arr[P1] = pal_swatch(bit, C1_X+Text->StringWidth(buftl, DIA_FONT), R1_Y-4, 16, 16, arr[P1], data);
+						
+						char32 buf1[] = "Radius:";
+						titled_inc_text_field(bit, C1_X+Text->StringWidth(buf1, DIA_FONT), R2_Y, 28, argbuf2, 3, false, data, OBJ_SPEC_TFINDX_START+1, 0, 0, 255, buf1);
+						arr[P2] = VBound(atoi(argbuf2), 255, 0);
+						
+						switch(titled_checkbox(bit, C2_X, R1_Y, 7, arr[M_FLAGS1]&FLAG_RECT_FILL, data, 0, "Filled?"))
 						{
-							bit->Rectangle(arr[M_LAYER], (WIDTH/2)-(PREVWID/2)+1, PREVY, (WIDTH/2)-(PREVWID/2)+1+PREVWID-1, PREVY+PREVHEI-1, arr[P1], 1, 0, 0, 0, arr[M_FLAGS1] & FLAG_RECT_FILL, OP_OPAQUE);
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_RECT_FILL;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_RECT_FILL;
+								break;
+						}
+						break;
+					} //end
+					case MODULE_TYPE_TRI: //start
+					{
+						DEFINE C1_X = FRAME_X + 3;
+						DEFINE C2_X = C1_X + 48;
+						DEFINE R1_Y = FRAME_Y + 21;
+						DEFINE R2_Y = R1_Y + 18;
+						DEFINE R3_Y = R2_Y + 10;
+						char32 buftl[] = "Color:";
+						text(bit, C1_X, R1_Y, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						arr[P1] = pal_swatch(bit, C1_X+Text->StringWidth(buftl, DIA_FONT), R1_Y-4, 16, 16, arr[P1], data);
+						
+						char32 buf1[] = "X2:";
+						titled_inc_text_field(bit, C1_X+Text->StringWidth(buf1, DIA_FONT), R2_Y, 28, argbuf2, 3, false, data, OBJ_SPEC_TFINDX_START+1, 0, 0, 255, buf1);
+						arr[P2] = VBound(atoi(argbuf2), 255, 0);
+						
+						char32 buf2[] = "Y2:";
+						titled_inc_text_field(bit, C2_X+Text->StringWidth(buf2, DIA_FONT), R2_Y, 28, argbuf3, 3, false, data, OBJ_SPEC_TFINDX_START+2, 0, 0, 223, buf2);
+						arr[P3] = VBound(atoi(argbuf3), 223, 0);
+						
+						char32 buf3[] = "X3:";
+						titled_inc_text_field(bit, C1_X+Text->StringWidth(buf3, DIA_FONT), R3_Y, 28, argbuf4, 3, false, data, OBJ_SPEC_TFINDX_START+3, 0, 0, 255, buf3);
+						arr[P4] = VBound(atoi(argbuf4), 255, 0);
+						
+						char32 buf4[] = "Y3:";
+						titled_inc_text_field(bit, C2_X+Text->StringWidth(buf4, DIA_FONT), R3_Y, 28, argbuf5, 3, false, data, OBJ_SPEC_TFINDX_START+4, 0, 0, 223, buf4);
+						arr[P5] = VBound(atoi(argbuf5), 223, 0);
+						
+						switch(titled_checkbox(bit, C2_X, R1_Y, 7, arr[M_FLAGS1]&FLAG_RECT_FILL, data, 0, "Filled?"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_RECT_FILL;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_RECT_FILL;
+								break;
 						}
 						break;
 					} //end
@@ -3401,7 +3473,8 @@ namespace Venrob::SubscreenEditor
 				MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE,
 				MODULE_TYPE_CRROW,MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE,
 				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE, MODULE_TYPE_FRAME,
-				MODULE_TYPE_RECT};
+				MODULE_TYPE_RECT, MODULE_TYPE_CIRC, MODULE_TYPE_LINE,
+				MODULE_TYPE_TRI};
 			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
 				"Item (ID)", "Item (Type)", "Button Item",
 				"Passive Subscreen", "MiniMap", "Big Map",
@@ -3409,19 +3482,22 @@ namespace Venrob::SubscreenEditor
 				"Magic", "Magic Row", "Counter Meter (Piece)",
 				"Counter Meter (Row)", "Counter", "Minitile",
 				"Clock", "DMap Title", "Frame",
-				"Rectangle"};
+				"Rectangle", "Circle", "Line",
+				"Triangle"};
 			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_BUTTONITEM,
 				MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART,
 				MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW,
 				MODULE_TYPE_CRPIECE, MODULE_TYPE_CRROW, MODULE_TYPE_COUNTER,
 				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE,
-				MODULE_TYPE_FRAME, MODULE_TYPE_RECT};
+				MODULE_TYPE_FRAME, MODULE_TYPE_RECT, MODULE_TYPE_CIRC,
+				MODULE_TYPE_LINE, MODULE_TYPE_TRI};
 			char32 pstrs[] = {"Item (ID)", "Item (Type)", "Button Item",
 				"MiniMap", "Tile Block", "Heart",
 				"Heart Row", "Magic", "Magic Row",
 				"Counter Meter (Piece)", "Counter Meter (Row)", "Counter",
 				"Minitile", "Clock", "DMap Title",
-				"Frame", "Rectangle"};
+				"Frame", "Rectangle", "Circle",
+				"Line", "Triangle"};
 			//end
 			int val = active ? aval : pval;
 			char32 strs = active ? astrs : pstrs;
@@ -3527,6 +3603,18 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_RECT:
 						{
 							MakeRectangle(module_arr); break;
+						}
+						case MODULE_TYPE_CIRC:
+						{
+							MakeCircle(module_arr); break;
+						}
+						case MODULE_TYPE_LINE:
+						{
+							MakeLine(module_arr); break;
+						}
+						case MODULE_TYPE_TRI:
+						{
+							MakeTriangle(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -4744,6 +4832,18 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "Rectangle"); break;
 				}
+				case MODULE_TYPE_CIRC:
+				{
+					strcat(buf, "Circle"); break;
+				}
+				case MODULE_TYPE_LINE:
+				{
+					strcat(buf, "Line"); break;
+				}
+				case MODULE_TYPE_TRI:
+				{
+					strcat(buf, "Triangle"); break;
+				}
 			}
 		} //end
 		
@@ -4848,6 +4948,18 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_RECT:
 				{
 					strcat(buf, "Draws a rectangle."); break;
+				}
+				case MODULE_TYPE_CIRC:
+				{
+					strcat(buf, "Draws a circle."); break;
+				}
+				case MODULE_TYPE_LINE:
+				{
+					strcat(buf, "Draws a line."); break;
+				}
+				case MODULE_TYPE_TRI:
+				{
+					strcat(buf, "Draws a triangle."); break;
 				}
 			}
 		} //end
