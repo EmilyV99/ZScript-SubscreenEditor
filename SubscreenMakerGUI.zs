@@ -1756,7 +1756,7 @@ namespace Venrob::SubscreenEditor
 						char32 buf2[] = "Align:";
 						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
 						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_CNTR_ALIGN)
-						              | (dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, 10000*(arr[M_FLAGS1]&MASK_CNTR_ALIGN), data, SSL_ALIGNMENT, -1, 3, lastframe, 0) / 10000);
+						              | (1L * dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, (arr[M_FLAGS1]&MASK_CNTR_ALIGN)/1L, data, SSL_ALIGNMENT, -1, 3, lastframe, 0));
 						
 						char32 buf3[] = "Counter:";
 						if(arr[M_FLAGS1]&FLAG_CNTR_SPECIAL)
@@ -1833,7 +1833,7 @@ namespace Venrob::SubscreenEditor
 						int p_wid = 1+counter(arr, 0, sub, 1, 2, 2);
 						arr[M_FLAGS1] |= al;
 						frame_rect(sub, 0, 0, ++p_wid, p_hei++, 1);
-						switch(al*10000)
+						switch(al/1L)
 						{
 							case TF_NORMAL: default:
 								sub->Blit(1,bit,0,0,P_BMP_WID,p_hei,P_C_X,P_Y,P_BMP_WID,p_hei, 0, 0, 0, 0, 0, true);
@@ -1917,7 +1917,7 @@ namespace Venrob::SubscreenEditor
 						char32 buf2[] = "Align:";
 						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
 						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_ITEMNM_ALIGN)
-						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_ITEMNM_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
+						              | (1L * dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, (arr[M_FLAGS1]&MASK_ITEMNM_ALIGN)/1L, data, SSL_ALIGNMENT, -1, 3, lastframe, 0));
 						
 						char32 buf3[] = "Width:";
 						titled_inc_text_field(bit, FRAME_X+2+Text->StringWidth(buf3, DIA_FONT), FRAME_Y+24, 32, argbuf6, 3, false, data, OBJ_SPEC_TFINDX_START+0, 0, 0, 256, buf3);
@@ -1949,7 +1949,7 @@ namespace Venrob::SubscreenEditor
 						            ? DrawStringsWid(arr[P1], testbuf, arr[P6])
 						            : Text->StringWidth(testbuf, arr[P1])+1;
 						int xoff;
-						int tf = arr[M_FLAGS1] & MASK_ITEMNM_ALIGN;
+						int tf = (arr[M_FLAGS1] & MASK_ITEMNM_ALIGN)/1L;
 						switch(tf) //start Calculate offsets based on alignment
 						{
 							case TF_NORMAL: break;
@@ -1986,7 +1986,7 @@ namespace Venrob::SubscreenEditor
 						char32 buf2[] = "Align:";
 						text(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+12+2, TF_NORMAL, buf2, PAL[COL_TEXT_MAIN]);
 						arr[M_FLAGS1] = (arr[M_FLAGS1] & ~MASK_DMTITLE_ALIGN)
-						              | dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, arr[M_FLAGS1]&MASK_DMTITLE_ALIGN, data, SSL_ALIGNMENT, -1, 3, lastframe, 0);
+						              | (1L * dropdown_proc(bit, FRAME_X+DDWN_WID_FONT+4+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+12, DDWN_WID_ALIGN, (arr[M_FLAGS1]&MASK_DMTITLE_ALIGN)/1L, data, SSL_ALIGNMENT, -1, 3, lastframe, 0));
 						
 						//
 						int bg = arr[P3];
@@ -2020,7 +2020,7 @@ namespace Venrob::SubscreenEditor
 						//
 						int p_wid = DrawStringsWid(arr[P1], testbuf, 256);
 						int xoff;
-						int tf = arr[M_FLAGS1] & MASK_DMTITLE_ALIGN;
+						int tf = (arr[M_FLAGS1] & MASK_DMTITLE_ALIGN)/1L;
 						switch(tf) //start Calculate offsets based on alignment
 						{
 							case TF_NORMAL: break;
@@ -2033,6 +2033,75 @@ namespace Venrob::SubscreenEditor
 						} //end
 						frame_rect(bit, P_C_X+xoff-1, P_Y-2, P_C_X+2+p_wid+xoff, P_Y+p_hei+1, 1);
 						DrawStringsBitmap(bit, 0, P_C_X+1+(tf==TF_NORMAL?1:0), P_Y, arr[P1], arr[P2], bg, tf, testbuf, OP_OPAQUE, shd_t, shd, 0, 256);
+						break;
+					} //end
+					case MODULE_TYPE_FRAME: //start
+					{
+						char32 buftl[] = "Tile:";
+						int tlarr[2] = {arr[P1], arr[P2]};
+						text(bit, FRAME_X+3, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						tile_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, tlarr, data, false);
+						arr[P1] = tlarr[0];
+						arr[P2] = tlarr[1];
+						
+						char32 buf1[] = "Wid:";
+						titled_inc_text_field(bit, FRAME_X+27+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf1, DIA_FONT), FRAME_Y+19, 28, argbuf3, 2, false, data, OBJ_SPEC_TFINDX_START+1, 0, 2, 32, buf1);
+						arr[P3] = VBound(atoi(argbuf3), 32, 2);
+						char32 buf2[] = "Hei:";
+						titled_inc_text_field(bit, FRAME_X+59+Text->StringWidth(buftl, DIA_FONT)+Text->StringWidth(buf1, DIA_FONT)+Text->StringWidth(buf2, DIA_FONT), FRAME_Y+19, 28, argbuf4, 2, false, data, OBJ_SPEC_TFINDX_START+2, 0, 2, 28, buf2);
+						arr[P4] = VBound(atoi(argbuf4), 28, 2);
+						
+						DEFINE PREVWID = arr[P3] * 8;
+						DEFINE PREVHEI = VBound(arr[P4] * 8, 8*18, 0);
+						DEFINE PREVY = ABOVE_BOTTOM_Y-PREVHEI;
+						frame_rect(bit, (WIDTH/2)-(PREVWID/2), PREVY-1, (WIDTH/2)+(PREVWID/2), PREVY+PREVHEI, 1);
+						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview (Shows max 32x18):", PAL[COL_TEXT_MAIN]);
+						if(arr[P1])
+						{
+							bit->DrawFrame(0, (WIDTH/2)-(PREVWID/2)+1, PREVY, arr[P1], arr[P2], PREVWID/8, PREVHEI/8, true, OP_OPAQUE);
+						}
+						break;
+					} //end
+					case MODULE_TYPE_RECT: //start
+					{
+						int cur_x = FRAME_X + 3;
+						char32 buftl[] = "Color:";
+						text(bit, cur_x, FRAME_Y+21, TF_NORMAL, buftl, PAL[COL_TEXT_MAIN]);
+						arr[P1] = pal_swatch(bit, FRAME_X+3+Text->StringWidth(buftl, DIA_FONT), FRAME_Y+15, 16, 16, arr[P1], data);
+						
+						char32 buf1[] = "Wid:";
+						cur_x += 24 + Text->StringWidth(buftl, DIA_FONT) + Text->StringWidth(buf1, DIA_FONT);
+						
+						titled_inc_text_field(bit, cur_x, FRAME_Y+19, 28, argbuf2, 3, false, data, OBJ_SPEC_TFINDX_START+1, 0, 1, 256, buf1);
+						arr[P2] = VBound(atoi(argbuf2), 256, 1);
+						
+						char32 buf2[] = "Hei:";
+						cur_x += 32 + Text->StringWidth(buf2, DIA_FONT);
+						
+						titled_inc_text_field(bit, cur_x, FRAME_Y+19, 28, argbuf3, 3, false, data, OBJ_SPEC_TFINDX_START+2, 0, 1, 224, buf2);
+						arr[P3] = VBound(atoi(argbuf3), 224, 1);
+						
+						cur_x += 32;
+						
+						switch(titled_checkbox(bit, cur_x, FRAME_Y+20, 7, arr[M_FLAGS1]&FLAG_RECT_FILL, data, 0, "Filled?"))
+						{
+							case PROC_UPDATED_FALSE:
+								arr[M_FLAGS1]~=FLAG_RECT_FILL;
+								break;
+							case PROC_UPDATED_TRUE:
+								arr[M_FLAGS1]|=FLAG_RECT_FILL;
+								break;
+						}
+						
+						DEFINE PREVWID = arr[P2];
+						DEFINE PREVHEI = VBound(arr[P3], 144, 0);
+						DEFINE PREVY = ABOVE_BOTTOM_Y-PREVHEI;
+						frame_rect(bit, (WIDTH/2)-(PREVWID/2), PREVY-1, (WIDTH/2)+(PREVWID/2), PREVY+PREVHEI, 1);
+						text(bit, WIDTH/2, PREVY-8, TF_CENTERED, "Preview (Shows max 256x144):", PAL[COL_TEXT_MAIN]);
+						if(arr[P1])
+						{
+							bit->Rectangle(arr[M_LAYER], (WIDTH/2)-(PREVWID/2)+1, PREVY, (WIDTH/2)-(PREVWID/2)+1+PREVWID-1, PREVY+PREVHEI-1, arr[P1], 1, 0, 0, 0, arr[M_FLAGS1] & FLAG_RECT_FILL, OP_OPAQUE);
+						}
 						break;
 					} //end
 					default:
@@ -3331,24 +3400,28 @@ namespace Venrob::SubscreenEditor
 				MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART, MODULE_TYPE_HEARTROW,
 				MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW, MODULE_TYPE_CRPIECE,
 				MODULE_TYPE_CRROW,MODULE_TYPE_COUNTER, MODULE_TYPE_MINITILE,
-				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
+				MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE, MODULE_TYPE_FRAME,
+				MODULE_TYPE_RECT};
 			char32 astrs[] = {"Sel. Item (ID)", "Sel. Item (Type)", "Item Name",
 				"Item (ID)", "Item (Type)", "Button Item",
 				"Passive Subscreen", "MiniMap", "Big Map",
 				"Tile Block", "Heart", "Heart Row",
 				"Magic", "Magic Row", "Counter Meter (Piece)",
 				"Counter Meter (Row)", "Counter", "Minitile",
-				"Clock", "DMap Title"};
+				"Clock", "DMap Title", "Frame",
+				"Rectangle"};
 			int pval[] = {MODULE_TYPE_NONSEL_ITEM_ID, MODULE_TYPE_NONSEL_ITEM_CLASS, MODULE_TYPE_BUTTONITEM,
 				MODULE_TYPE_MINIMAP, MODULE_TYPE_TILEBLOCK, MODULE_TYPE_HEART,
 				MODULE_TYPE_HEARTROW, MODULE_TYPE_MAGIC, MODULE_TYPE_MAGICROW,
 				MODULE_TYPE_CRPIECE, MODULE_TYPE_CRROW, MODULE_TYPE_COUNTER,
-				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE};
+				MODULE_TYPE_MINITILE, MODULE_TYPE_CLOCK, MODULE_TYPE_DMTITLE,
+				MODULE_TYPE_FRAME, MODULE_TYPE_RECT};
 			char32 pstrs[] = {"Item (ID)", "Item (Type)", "Button Item",
 				"MiniMap", "Tile Block", "Heart",
 				"Heart Row", "Magic", "Magic Row",
 				"Counter Meter (Piece)", "Counter Meter (Row)", "Counter",
-				"Minitile", "Clock", "DMap Title"};
+				"Minitile", "Clock", "DMap Title",
+				"Frame", "Rectangle"};
 			//end
 			int val = active ? aval : pval;
 			char32 strs = active ? astrs : pstrs;
@@ -3446,6 +3519,14 @@ namespace Venrob::SubscreenEditor
 						case MODULE_TYPE_CRROW:
 						{
 							MakeCRRow(module_arr); break;
+						}
+						case MODULE_TYPE_FRAME:
+						{
+							MakeFrame(module_arr); break;
+						}
+						case MODULE_TYPE_RECT:
+						{
+							MakeRectangle(module_arr); break;
 						}
 						default:
 						case MODULE_TYPE_PASSIVESUBSCREEN:
@@ -4655,6 +4736,14 @@ namespace Venrob::SubscreenEditor
 				{
 					strcat(buf, "DMap Title"); break;
 				}
+				case MODULE_TYPE_FRAME:
+				{
+					strcat(buf, "Frame"); break;
+				}
+				case MODULE_TYPE_RECT:
+				{
+					strcat(buf, "Rectangle"); break;
+				}
 			}
 		} //end
 		
@@ -4751,6 +4840,14 @@ namespace Venrob::SubscreenEditor
 				case MODULE_TYPE_DMTITLE:
 				{
 					strcat(buf, "Displays the name of the current DMap."); break;
+				}
+				case MODULE_TYPE_FRAME:
+				{
+					strcat(buf, "Draws a frame, as the engine subscreen uses."); break;
+				}
+				case MODULE_TYPE_RECT:
+				{
+					strcat(buf, "Draws a rectangle."); break;
 				}
 			}
 		} //end

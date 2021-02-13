@@ -520,7 +520,7 @@ namespace Venrob::SubscreenEditor
 				int wid = counter(module_arr, offs, bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y]);
 				if(wid < 8) //Ensure there's a hitbox to grab for repositioning
 					wid = 8;
-				int tf = 10000*(module_arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN);
+				int tf = (module_arr[offs+M_FLAGS1] & MASK_CNTR_ALIGN)/1L;
 				int xoff;
 				switch(tf) //start Calculate offsets based on alignment
 				{
@@ -603,7 +603,7 @@ namespace Venrob::SubscreenEditor
 				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
 				int edwid, edhei;
-				int tf = module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				int tf = (module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN)/1L;
 				if(module_arr[offs+P6])
 				{
 					DrawStringsBitmap(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, module_arr[offs+P7], module_arr[offs+P6]);
@@ -657,7 +657,7 @@ namespace Venrob::SubscreenEditor
 				unless(bg) bg = -1;
 				int shd_t = module_arr[offs+P5];
 				unless(shd) shd_t = SHD_NORMAL;
-				int tf = module_arr[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN;
+				int tf = (module_arr[offs+M_FLAGS1] & MASK_DMTITLE_ALIGN)/1L;
 				DrawStringsBitmap(bit, module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], bg, tf, buf, OP_OPAQUE, shd_t, shd, 0, 256);
 				int edwid = DrawStringsWid(module_arr[offs+P1], buf, 256);
 				int edhei = DrawStringsCount(module_arr[offs+P1], buf, 256) * (Text->FontHeight(module_arr[offs+P1])+0) - 0;
@@ -679,6 +679,26 @@ namespace Venrob::SubscreenEditor
 				break;
 			} //end
 			
+			case MODULE_TYPE_FRAME: //start
+			{
+				if(module_arr[offs+P1])
+					bit->DrawFrame(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P1], module_arr[offs+P2], module_arr[offs+P3], module_arr[offs+P4], true, OP_OPAQUE);
+				if(interactive)
+				{
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3]*8-1, module_arr[offs+P4]*8-1, mod_indx, active, true);
+				}
+				break;
+			} //end
+			case MODULE_TYPE_RECT: //start
+			{
+				if(module_arr[offs+P1])
+					bit->Rectangle(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+M_X]+module_arr[offs+P2]-1, module_arr[offs+M_Y]+module_arr[offs+P3]-1, module_arr[offs+P1], 1, 0, 0, 0, module_arr[offs+M_FLAGS1] & FLAG_RECT_FILL, OP_OPAQUE);
+				if(interactive)
+				{
+					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P2]-1, module_arr[offs+P3]-1, mod_indx, active, true);
+				}
+				break;
+			} //end
 			//case :
 		}
 	}
@@ -1052,6 +1072,7 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_BGCOLOR:
 				return 0;
 			case MODULE_TYPE_BIGMAP:
+				return 256 - (16 * 7);
 			case MODULE_TYPE_MINIMAP:
 				return 256 - (16 * 5);
 			case MODULE_TYPE_TILEBLOCK:
@@ -1070,7 +1091,7 @@ namespace Venrob::SubscreenEditor
 				for(int q = module_arr[P5]-1; q>=0; --q)
 					buf[q] = '0';
 				int wid = Text->StringWidth(buf, module_arr[P1]);
-				switch(10000*(module_arr[M_FLAGS1] & MASK_CNTR_ALIGN))
+				switch((module_arr[M_FLAGS1] & MASK_CNTR_ALIGN)/1L)
 				{
 					case TF_RIGHT:
 						return 255;
@@ -1087,6 +1108,10 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_ITEMNAME:
 			case MODULE_TYPE_DMTITLE:
 				return 255;
+			case MODULE_TYPE_FRAME:
+				return 256 - module_arr[P3]*8;
+			case MODULE_TYPE_RECT:
+				return 256 - module_arr[P2];
 		}
 		return 256-16;
 	}
@@ -1111,7 +1136,7 @@ namespace Venrob::SubscreenEditor
 				for(int q = module_arr[P5]-1; q>=0; --q)
 					buf[q] = '0';
 				int wid = Text->StringWidth(buf, module_arr[P1]);
-				switch(10000*(module_arr[M_FLAGS1] & MASK_CNTR_ALIGN))
+				switch((module_arr[M_FLAGS1] & MASK_CNTR_ALIGN)/1L)
 				{
 					case TF_NORMAL:
 						return 0;
@@ -1149,6 +1174,7 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_BGCOLOR:
 				return 0;
 			case MODULE_TYPE_BIGMAP:
+				return _BOTTOM - (16 * 5);
 			case MODULE_TYPE_MINIMAP:
 				return _BOTTOM - (16 * 3);
 			case MODULE_TYPE_TILEBLOCK:
@@ -1167,6 +1193,10 @@ namespace Venrob::SubscreenEditor
 				return _BOTTOM - Text->FontHeight(module_arr[P1]);
 			case MODULE_TYPE_DMTITLE:
 				return _BOTTOM - (Text->FontHeight(module_arr[P1])*2);
+			case MODULE_TYPE_FRAME:
+				return _BOTTOM - module_arr[P4]*8;
+			case MODULE_TYPE_RECT:
+				return _BOTTOM - module_arr[P3];
 		}
 		return _BOTTOM-16;
 	}
@@ -1290,6 +1320,14 @@ namespace Venrob::SubscreenEditor
 			case MODULE_TYPE_CRROW:
 				cur_ver = MVER_CRROW;
 				compat_ver = C_MVER_CRROW;
+				break;
+			case MODULE_TYPE_FRAME:
+				cur_ver = MVER_FRAME;
+				compat_ver = C_MVER_FRAME;
+				break;
+			case MODULE_TYPE_RECT:
+				cur_ver = MVER_RECT;
+				compat_ver = C_MVER_RECT;
 				break;
 		} //end
 		if(module_arr[M_VER] < compat_ver)
@@ -2490,6 +2528,66 @@ namespace Venrob::SubscreenEditor
 				}
 				return true;
 			} //end
+			case MODULE_TYPE_FRAME: //start
+			{
+				if(module_arr[M_SIZE]!=P4+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_FRAME (%d) must have argument size (4) in format {TILE, CSET, WID, HEI}; argument size %d found", MODULE_TYPE_FRAME, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 11 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_FRAME (%d) argument 2 (CSET) must be an integer between (0) and (11), inclusive; found %d", MODULE_TYPE_FRAME, module_arr[P2]);
+					}
+					return false;
+				}
+				if(module_arr[P3] < 2 || module_arr[P3] > 32 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_FRAME (%d) argument 3 (WID) must be an integer between (2) and (32), inclusive; found %d", MODULE_TYPE_FRAME, module_arr[P3]);
+					return false;
+				}
+				if(module_arr[P4] < 2 || module_arr[P4] > 32 || (module_arr[P4]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_FRAME (%d) argument 4 (HEI) must be an integer between (2) and (28), inclusive; found %d", MODULE_TYPE_FRAME, module_arr[P4]);
+					return false;
+				}
+				return true;
+			} //end
+			case MODULE_TYPE_RECT: //start
+			{
+				if(module_arr[M_SIZE]!=P3+1)
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_RECT (%d) must have argument size (3) in format {COLOR, WID, HEI}; argument size %d found", MODULE_TYPE_RECT, module_arr[M_SIZE]-MODULE_META_SIZE);
+					return false;
+				}
+				if(module_arr[P2] < 0 || module_arr[P2] > 255 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+					{
+						error("MODULE_TYPE_RECT (%d) argument 1 (COLOR) must be an integer between (0) and (255), inclusive; found %d", MODULE_TYPE_RECT, module_arr[P1]);
+					}
+					return false;
+				}
+				if(module_arr[P2] < 1 || module_arr[P2] > 256 || (module_arr[P2]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_RECT (%d) argument 2 (WID) must be an integer between (1) and (256), inclusive; found %d", MODULE_TYPE_RECT, module_arr[P2]);
+					return false;
+				}
+				if(module_arr[P3] < 1 || module_arr[P3] > 224 || (module_arr[P3]%1))
+				{
+					if(DEBUG)
+						error("MODULE_TYPE_RECT (%d) argument 3 (HEI) must be an integer between (1) and (224), inclusive; found %d", MODULE_TYPE_RECT, module_arr[P3]);
+					return false;
+				}
+				return true;
+			} //end
 			default:
 			{
 				if(DEBUG)
@@ -2987,6 +3085,30 @@ namespace Venrob::SubscreenEditor
 		buf_arr[P4] = CR_LIFE;
 		buf_arr[P5] = HP_PER_HEART;
 		buf_arr[P6] = 10;
+	}
+	
+	void MakeFrame(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P4+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_FRAME;
+		buf_arr[M_VER] = MVER_FRAME;
+		
+		buf_arr[P1] = 1;
+		buf_arr[P3] = 4;
+		buf_arr[P4] = 4;
+	}
+	
+	void MakeRectangle(untyped buf_arr)
+	{
+		MakeModule(buf_arr);
+		buf_arr[M_SIZE] = P3+1;
+		buf_arr[M_TYPE] = MODULE_TYPE_RECT;
+		buf_arr[M_VER] = MVER_RECT;
+		
+		buf_arr[P1] = 0x01;
+		buf_arr[P2] = 16;
+		buf_arr[P3] = 16;
 	}
 	//end Constructors
 	//start FileIO
