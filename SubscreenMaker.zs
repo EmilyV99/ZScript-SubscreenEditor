@@ -635,6 +635,8 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X]-1+xoff, module_arr[offs+M_Y]-1, edwid + (shd_t ? 1 : 0), edhei, mod_indx, active, true);
+					//anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + xoff, module_arr[offs+M_Y] + edhei/2, mod_indx, DIR_LEFT);
+					//anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + xoff + edwid - 1, module_arr[offs+M_Y] + edhei/2, mod_indx, DIR_RIGHT);
 				}
 				break;
 			} //end
@@ -691,9 +693,14 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3]*8-1, module_arr[offs+P4]*8-1, mod_indx, active, true);
-					anchor(bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*4, module_arr[offs+M_Y] + module_arr[offs+P4]*8 - 1, mod_indx, DIR_DOWN);
-					anchor(bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*8 - 1, module_arr[offs+M_Y] + module_arr[offs+P4]*4, mod_indx, DIR_RIGHT);
-					anchor(bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*8 - 1, module_arr[offs+M_Y] + module_arr[offs+P4]*8 - 1, mod_indx, DIR_DOWNRIGHT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*4, module_arr[offs+M_Y], mod_indx, DIR_UP);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*4, module_arr[offs+M_Y] + module_arr[offs+P4]*8 - 1, mod_indx, DIR_DOWN);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y] + module_arr[offs+P4]*4, mod_indx, DIR_LEFT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*8 - 1, module_arr[offs+M_Y] + module_arr[offs+P4]*4, mod_indx, DIR_RIGHT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, DIR_UPLEFT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*8 - 1, module_arr[offs+M_Y], mod_indx, DIR_UPRIGHT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y] + module_arr[offs+P4]*8 - 1, mod_indx, DIR_DOWNLEFT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*8 - 1, module_arr[offs+M_Y] + module_arr[offs+P4]*8 - 1, mod_indx, DIR_DOWNRIGHT);
 				}
 				break;
 			} //end
@@ -704,14 +711,14 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2]}, {module_arr[offs+M_Y], module_arr[offs+P3]}, mod_indx, active, true);
-					anchor(bit, active, (module_arr[offs+M_X] + module_arr[offs+P2]) / 2, module_arr[offs+M_Y], mod_indx, DIR_UP);
-					anchor(bit, active, (module_arr[offs+M_X] + module_arr[offs+P2]) / 2, module_arr[offs+P3], mod_indx, DIR_DOWN);
-					anchor(bit, active, module_arr[offs+M_X], (module_arr[offs+M_Y] + module_arr[offs+P3]) / 2, mod_indx, DIR_LEFT);
-					anchor(bit, active, module_arr[offs+P2], (module_arr[offs+M_Y] + module_arr[offs+P3]) / 2, mod_indx, DIR_RIGHT);
-					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, DIR_UPLEFT);
-					anchor(bit, active, module_arr[offs+P2], module_arr[offs+M_Y], mod_indx, DIR_UPRIGHT);
-					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+P3], mod_indx, DIR_DOWNLEFT);
-					anchor(bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, DIR_DOWNRIGHT);
+					anchor(module_arr[offs+M_LAYER], bit, active, (module_arr[offs+M_X] + module_arr[offs+P2]) / 2, module_arr[offs+M_Y], mod_indx, DIR_UP);
+					anchor(module_arr[offs+M_LAYER], bit, active, (module_arr[offs+M_X] + module_arr[offs+P2]) / 2, module_arr[offs+P3], mod_indx, DIR_DOWN);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], (module_arr[offs+M_Y] + module_arr[offs+P3]) / 2, mod_indx, DIR_LEFT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+P2], (module_arr[offs+M_Y] + module_arr[offs+P3]) / 2, mod_indx, DIR_RIGHT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, DIR_UPLEFT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+P2], module_arr[offs+M_Y], mod_indx, DIR_UPRIGHT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+P3], mod_indx, DIR_DOWNLEFT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, DIR_DOWNRIGHT);
 				}
 				break;
 			} //end
@@ -722,6 +729,10 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X] - module_arr[offs+P2], module_arr[offs+M_Y] - module_arr[offs+P2], 2 * module_arr[offs+P2], 2 * module_arr[offs+P2], mod_indx, active, true);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y] - module_arr[offs+P2], mod_indx, DIR_UP);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y] + module_arr[offs+P2], mod_indx, DIR_DOWN);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] - module_arr[offs+P2], module_arr[offs+M_Y], mod_indx, DIR_LEFT);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X] + module_arr[offs+P2], module_arr[offs+M_Y], mod_indx, DIR_RIGHT);
 				}
 				break;
 			} //end
@@ -732,8 +743,8 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2]}, {module_arr[offs+M_Y], module_arr[offs+P3]}, mod_indx, active, true);
-					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, 0);
-					anchor(bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, 1);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, 0);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, 1);
 				}
 				break;
 			} //end
@@ -755,9 +766,9 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2], module_arr[offs+P4]}, {module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P5]}, mod_indx, active, true);
-					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, 0);
-					anchor(bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, 1);
-					anchor(bit, active, module_arr[offs+P4], module_arr[offs+P5], mod_indx, 2);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, 0);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, 1);
+					anchor(module_arr[offs+M_LAYER], bit, active, module_arr[offs+P4], module_arr[offs+P5], mod_indx, 2);
 				}
 				break;
 			} //end
@@ -779,21 +790,128 @@ namespace Venrob::SubscreenEditor
 		y = VBound(y, 223, 0);
 		switch(data[offs+M_TYPE])
 		{
+			/*
+			case MODULE_TYPE_ITEMNAME: //start
+			{
+				//start Calculations
+				char32 buf[64];
+				Game->LoadItemData(0)->GetName(buf);
+				int tf = (data[offs+M_FLAGS1] & MASK_ITEMNM_ALIGN)/1L;
+				int edwid, edhei;
+				if(data[offs+P6])
+				{
+					edwid = data[offs+P6];
+					edhei = DrawStringsCount(data[offs+P1], buf, data[offs+P6]) * (Text->FontHeight(data[offs+P1])+data[offs+P7]) - data[offs+P7];
+				}
+				else
+				{
+					edwid = Text->StringWidth(buf, data[offs+P1]);
+					edhei = Text->FontHeight(data[offs+P1]);
+				}
+				int xoff;
+				switch(tf) //start Calculate offsets based on alignment
+				{
+					case TF_NORMAL: break;
+					case TF_CENTERED:
+						xoff = -edwid/2;
+						break;
+					case TF_RIGHT:
+						xoff = -edwid;
+						break;
+				} //end
+				//end Calculations
+				switch(SubEditorData[SED_ANCHOR_SUBINDX])
+				{
+					case DIR_LEFT:
+						int wid = VBound((data[offs+M_X] + xoff + data[offs+P6]) - x, 256, 0);
+						data[offs+M_X] -= (wid - data[offs+P6]);
+						data[offs+P6] = wid;
+						break;
+					case DIR_RIGHT:
+						data[offs+P6] = VBound(x - (data[offs+M_X] + xoff), 256, 0);
+						break;
+				}
+				break;
+			} //end
+			*/
+			case MODULE_TYPE_CIRC: //start
+			{
+				data[offs+P2] = VBound(Distance(data[offs+M_X], data[offs+M_Y], x, y), 400, 1);
+				break;
+			} //end
 			case MODULE_TYPE_FRAME: //start
 			{
 				//P3 = wid, P4 = hei
 				switch(SubEditorData[SED_ANCHOR_SUBINDX])
 				{
-					case DIR_DOWN:
-						data[offs+P4] = VBound(Div(y - data[offs+M_Y], 8), 28, 2);
+					case DIR_UP: case DIR_LEFTUP: case DIR_RIGHTUP:
+					{
+						int t = Div(y - data[offs+M_Y], 8);
+						int h = data[offs+P4] - t;
+						if(h < -2)
+						{
+							data[offs+M_Y] += data[offs+P4]*8;
+							data[offs+P4] = VBound(Abs(h), 28, 2);
+							SubEditorData[SED_ANCHOR_SUBINDX] = VertFlip(SubEditorData[SED_ANCHOR_SUBINDX]);
+						}
+						else
+						{
+							h = VBound(h, 28, 2);
+							data[offs+M_Y] -= 8 * (h - data[offs+P4]);
+							data[offs+P4] = h;
+						}
 						break;
-					case DIR_RIGHT:
-						data[offs+P3] = VBound(Div(x - data[offs+M_X], 8), 32, 2);
+					}
+					case DIR_DOWN: case DIR_LEFTDOWN: case DIR_RIGHTDOWN:
+					{
+						int h = Div(y - data[offs+M_Y], 8);
+						if(h <= -2)
+						{
+							data[offs+M_Y] += h*8;
+							data[offs+P4] = VBound(Abs(h), 28, 2);
+							SubEditorData[SED_ANCHOR_SUBINDX] = VertFlip(SubEditorData[SED_ANCHOR_SUBINDX]);
+						}
+						else
+						{
+							data[offs+P4] = VBound(h, 28, 2);
+						}
 						break;
-					case DIR_DOWNRIGHT:
-						data[offs+P4] = VBound(Div(y - data[offs+M_Y], 8), 28, 2);
-						data[offs+P3] = VBound(Div(x - data[offs+M_X], 8), 32, 2);
+					}
+				}
+				switch(SubEditorData[SED_ANCHOR_SUBINDX])
+				{
+					case DIR_LEFT: case DIR_LEFTUP: case DIR_LEFTDOWN:
+					{
+						int w = data[offs+P3] - Div(x - data[offs+M_X], 8);
+						if(w <= -2)
+						{
+							data[offs+M_X] += data[offs+P3]*8;
+							data[offs+P3] = VBound(Abs(w), 32, 2);
+							SubEditorData[SED_ANCHOR_SUBINDX] = HorzFlip(SubEditorData[SED_ANCHOR_SUBINDX]);
+						}
+						else
+						{
+							w = VBound(w, 32, 2);
+							data[offs+M_X] -= 8 * (w - data[offs+P3]);
+							data[offs+P3] = w;
+						}
 						break;
+					}
+					case DIR_RIGHT: case DIR_RIGHTUP: case DIR_RIGHTDOWN:
+					{
+						int w = Div(x - data[offs+M_X], 8);
+						if(w < -2)
+						{
+							data[offs+M_X] += w*8;
+							data[offs+P3] = VBound(Abs(w), 32, 2);
+							SubEditorData[SED_ANCHOR_SUBINDX] = HorzFlip(SubEditorData[SED_ANCHOR_SUBINDX]);
+						}
+						else
+						{
+							data[offs+P3] = VBound(w, 32, 2);
+						}
+						break;
+					}
 				}
 				break;
 			} //end
@@ -801,32 +919,19 @@ namespace Venrob::SubscreenEditor
 			{
 				switch(SubEditorData[SED_ANCHOR_SUBINDX])
 				{
-					case DIR_UP:
+					case DIR_UP: case DIR_UPLEFT: case DIR_UPRIGHT:
 						data[offs+M_Y] = y;
 						break;
-					case DIR_DOWN:
+					case DIR_DOWN: case DIR_DOWNLEFT: case DIR_DOWNRIGHT:
 						data[offs+P3] = y;
 						break;
-					case DIR_LEFT:
+				}
+				switch(SubEditorData[SED_ANCHOR_SUBINDX])
+				{
+					case DIR_LEFT: case DIR_UPLEFT: case DIR_DOWNLEFT:
 						data[offs+M_X] = x;
 						break;
-					case DIR_RIGHT:
-						data[offs+P2] = x;
-						break;
-					case DIR_UPLEFT:
-						data[offs+M_Y] = y;
-						data[offs+M_X] = x;
-						break;
-					case DIR_UPRIGHT:
-						data[offs+M_Y] = y;
-						data[offs+P2] = x;
-						break;
-					case DIR_DOWNLEFT:
-						data[offs+P3] = y;
-						data[offs+M_X] = x;
-						break;
-					case DIR_DOWNRIGHT:
-						data[offs+P3] = y;
+					case DIR_RIGHT: case DIR_UPRIGHT: case DIR_DOWNRIGHT:
 						data[offs+P2] = x;
 						break;
 				}

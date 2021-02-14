@@ -231,6 +231,39 @@ namespace Venrob
 		}
 		return dir;
 	} //end
+	
+	/**
+	* Flip a dir horizontally
+	*/
+	int HorzFlip(int dir) //start
+	{
+		switch(dir)
+		{
+			case DIR_LEFT: return DIR_RIGHT;
+			case DIR_RIGHT: return DIR_LEFT;
+			case DIR_LEFTUP: return DIR_RIGHTUP;
+			case DIR_RIGHTUP: return DIR_LEFTUP;
+			case DIR_LEFTDOWN: return DIR_RIGHTDOWN;
+			case DIR_RIGHTDOWN: return DIR_LEFTDOWN;
+		}
+		return dir;
+	} //end
+	/**
+	* Flip a dir horizontally
+	*/
+	int VertFlip(int dir) //start
+	{
+		switch(dir)
+		{
+			case DIR_UP: return DIR_DOWN;
+			case DIR_DOWN: return DIR_UP;
+			case DIR_DOWNLEFT: return DIR_UPLEFT;
+			case DIR_UPLEFT: return DIR_DOWNLEFT;
+			case DIR_DOWNRIGHT: return DIR_UPRIGHT;
+			case DIR_UPRIGHT: return DIR_DOWNRIGHT;
+		}
+		return dir;
+	} //end
 	//end Directional Functions
 	
 	//start CanWalkM

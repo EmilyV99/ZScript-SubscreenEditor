@@ -415,7 +415,7 @@ namespace Venrob::SubscreenEditor
 			//end
 			//Active type procs: functional
 			//start components
-			void anchor(bitmap bit, bool active, int x, int y, int mod_indx, int subindx) //start
+			void anchor(int layer, bitmap bit, bool active, int x, int y, int mod_indx, int subindx) //start
 			{
 				if(SubEditorData[SED_ACTIVE_PANE]) return; //A GUI pane is open, halt all other cursor action
 				int ANCHOR_RADIUS = sys_settings[SSET_ANCHOR_SZ];
@@ -424,7 +424,8 @@ namespace Venrob::SubscreenEditor
 					unless(mod_indx == SubEditorData[SED_ANCHOR_MODINDX]) return;
 				}
 				else unless(mod_flags[mod_indx] & MODFLAG_SELECTED) return;
-				bit->Rectangle(0, x-ANCHOR_RADIUS, y-ANCHOR_RADIUS, x+ANCHOR_RADIUS,y+ANCHOR_RADIUS, PAL[COL_HIGHLIGHT], 1, 0, 0, 0, true, OP_OPAQUE);
+
+				bit->Rectangle(layer, x-ANCHOR_RADIUS, y-ANCHOR_RADIUS, x+ANCHOR_RADIUS,y+ANCHOR_RADIUS, PAL[COL_HIGHLIGHT], 1, 0, 0, 0, true, OP_OPAQUE);
 				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x-ANCHOR_RADIUS, y-ANCHOR_RADIUS, x+ANCHOR_RADIUS, y+ANCHOR_RADIUS, 0, active ? 56 : PASSIVE_EDITOR_TOP - 56))
 				{
 					SubEditorData[SED_TRY_ANCHOR_1] = mod_indx;
@@ -686,7 +687,7 @@ namespace Venrob::SubscreenEditor
 			} //end
 			ProcRet title_bar(bitmap bit, int margin, int barheight, char32 title, untyped dlgdata) //start
 			{
-				title_bar(bit, margin, barheight, title, dlgdata, "");
+				return title_bar(bit, margin, barheight, title, dlgdata, "");
 			} //end
 			Color colorgrid(bitmap bit, int x, int y, Color clr, int len, untyped dlgdata, untyped proc_data, int proc_indx) //start
 			{
@@ -2414,7 +2415,7 @@ namespace Venrob::SubscreenEditor
 					case COND_SCRIPT:
 					{
 						char32 buf1[] = "Indx:";
-						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), V1_Y, 64, argbuf1, 6, false, data, 1, 0, 0, MAX_INT, buf1);
+						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf1, DIA_FONT), V1_Y, 64, argbuf1, 6, false, data, 1, 0, 0, MAX_INT-1, buf1);
 						char32 buf2[] = "Bit:";
 						titled_inc_text_field(bit, FRAME_X+3+Text->StringWidth(buf2, DIA_FONT), V2_Y, 32, argbuf2, 3, false, data, 2, 0, 0, 31, buf2);
 						break;
@@ -2484,7 +2485,7 @@ namespace Venrob::SubscreenEditor
 					}
 					case COND_SCRIPT:
 					{
-						new_arr[M_CND1] = VBound(atoi(argbuf1), MAX_INT, 0);
+						new_arr[M_CND1] = VBound(atoi(argbuf1), MAX_INT-1, 0);
 						new_arr[M_CND2] = VBound(atoi(argbuf2), 32, 0);
 						break;
 					}
@@ -3132,9 +3133,9 @@ namespace Venrob::SubscreenEditor
 					running = false;
 				
 				flag_tab(bit, FRAME_X, FRAME_Y, 112, 16, flagbits, usebits, active
-					? {"Items Use Hitbox Size"}
+					? {"Items Use Hitbox Size", "FooBar"}
 					: {"---"}, active
-					? {"The highlight around items, both in the editor and when selecting them in-game, are based on 'Hit' size if this is on, or 'Draw' size otherwise."}
+					? {"The highlight around items, both in the editor and when selecting them in-game, are based on 'Hit' size if this is on, or 'Draw' size otherwise.", NULL}
 					: NULL,	data, proc_data, 4);
 				
 				//Buttons
