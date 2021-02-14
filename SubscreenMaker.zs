@@ -47,7 +47,11 @@ namespace Venrob::SubscreenEditor
 		SED_QUEUED_DELETION,
 		SED_GLOBAL_TIMER,
 		SED_JUST_CLONED,
-		SED_ZCM_BTN
+		SED_ZCM_BTN,
+		SED_ANCHOR_MODINDX,
+		SED_ANCHOR_SUBINDX,
+		SED_TRY_ANCHOR_1,
+		SED_TRY_ANCHOR_2
 	}; //end
 	//start Module Edit Flags
 	long mod_flags[MAX_INT];
@@ -62,6 +66,7 @@ namespace Venrob::SubscreenEditor
 		SSET_CURSOR_VER, //if SED_CURSORTILE <= 0, then which packaged cursor style to draw
 		SSET_FLAGS1,
 		SSET_FLAGS2,
+		SSET_ANCHOR_SZ,
 		SSET_MAX
 	};
 	
@@ -686,6 +691,9 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], module_arr[offs+M_X], module_arr[offs+M_Y], module_arr[offs+P3]*8-1, module_arr[offs+P4]*8-1, mod_indx, active, true);
+					anchor(bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*4, module_arr[offs+M_Y] + module_arr[offs+P4]*8 - 1, mod_indx, DIR_DOWN);
+					anchor(bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*8 - 1, module_arr[offs+M_Y] + module_arr[offs+P4]*4, mod_indx, DIR_RIGHT);
+					anchor(bit, active, module_arr[offs+M_X] + module_arr[offs+P3]*8 - 1, module_arr[offs+M_Y] + module_arr[offs+P4]*8 - 1, mod_indx, DIR_DOWNRIGHT);
 				}
 				break;
 			} //end
@@ -696,6 +704,14 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2]}, {module_arr[offs+M_Y], module_arr[offs+P3]}, mod_indx, active, true);
+					anchor(bit, active, (module_arr[offs+M_X] + module_arr[offs+P2]) / 2, module_arr[offs+M_Y], mod_indx, DIR_UP);
+					anchor(bit, active, (module_arr[offs+M_X] + module_arr[offs+P2]) / 2, module_arr[offs+P3], mod_indx, DIR_DOWN);
+					anchor(bit, active, module_arr[offs+M_X], (module_arr[offs+M_Y] + module_arr[offs+P3]) / 2, mod_indx, DIR_LEFT);
+					anchor(bit, active, module_arr[offs+P2], (module_arr[offs+M_Y] + module_arr[offs+P3]) / 2, mod_indx, DIR_RIGHT);
+					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, DIR_UPLEFT);
+					anchor(bit, active, module_arr[offs+P2], module_arr[offs+M_Y], mod_indx, DIR_UPRIGHT);
+					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+P3], mod_indx, DIR_DOWNLEFT);
+					anchor(bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, DIR_DOWNRIGHT);
 				}
 				break;
 			} //end
@@ -716,6 +732,8 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2]}, {module_arr[offs+M_Y], module_arr[offs+P3]}, mod_indx, active, true);
+					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, 0);
+					anchor(bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, 1);
 				}
 				break;
 			} //end
@@ -737,6 +755,9 @@ namespace Venrob::SubscreenEditor
 				if(interactive)
 				{
 					editorCursor(module_arr[offs+M_LAYER], {module_arr[offs+M_X], module_arr[offs+P2], module_arr[offs+P4]}, {module_arr[offs+M_Y], module_arr[offs+P3], module_arr[offs+P5]}, mod_indx, active, true);
+					anchor(bit, active, module_arr[offs+M_X], module_arr[offs+M_Y], mod_indx, 0);
+					anchor(bit, active, module_arr[offs+P2], module_arr[offs+P3], mod_indx, 1);
+					anchor(bit, active, module_arr[offs+P4], module_arr[offs+P5], mod_indx, 2);
 				}
 				break;
 			} //end
@@ -744,9 +765,118 @@ namespace Venrob::SubscreenEditor
 		}
 	}
 	
+	bool handleAnchors(bool active, int x, int y)
+	{
+		unless(SubEditorData[SED_LCLICKING])
+		{
+			SubEditorData[SED_ANCHOR_MODINDX] = 0;
+			SubEditorData[SED_ANCHOR_SUBINDX] = 0;
+			return false;
+		}
+		untyped data = active ? activeData : passiveData;
+		int offs = active ? activeModules[SubEditorData[SED_ANCHOR_MODINDX]] : passiveModules[SubEditorData[SED_ANCHOR_MODINDX]];
+		x = VBound(x, 255, 0);
+		y = VBound(y, 223, 0);
+		switch(data[offs+M_TYPE])
+		{
+			case MODULE_TYPE_FRAME: //start
+			{
+				//P3 = wid, P4 = hei
+				switch(SubEditorData[SED_ANCHOR_SUBINDX])
+				{
+					case DIR_DOWN:
+						data[offs+P4] = VBound(Div(y - data[offs+M_Y], 8), 28, 2);
+						break;
+					case DIR_RIGHT:
+						data[offs+P3] = VBound(Div(x - data[offs+M_X], 8), 32, 2);
+						break;
+					case DIR_DOWNRIGHT:
+						data[offs+P4] = VBound(Div(y - data[offs+M_Y], 8), 28, 2);
+						data[offs+P3] = VBound(Div(x - data[offs+M_X], 8), 32, 2);
+						break;
+				}
+				break;
+			} //end
+			case MODULE_TYPE_RECT: //start
+			{
+				switch(SubEditorData[SED_ANCHOR_SUBINDX])
+				{
+					case DIR_UP:
+						data[offs+M_Y] = y;
+						break;
+					case DIR_DOWN:
+						data[offs+P3] = y;
+						break;
+					case DIR_LEFT:
+						data[offs+M_X] = x;
+						break;
+					case DIR_RIGHT:
+						data[offs+P2] = x;
+						break;
+					case DIR_UPLEFT:
+						data[offs+M_Y] = y;
+						data[offs+M_X] = x;
+						break;
+					case DIR_UPRIGHT:
+						data[offs+M_Y] = y;
+						data[offs+P2] = x;
+						break;
+					case DIR_DOWNLEFT:
+						data[offs+P3] = y;
+						data[offs+M_X] = x;
+						break;
+					case DIR_DOWNRIGHT:
+						data[offs+P3] = y;
+						data[offs+P2] = x;
+						break;
+				}
+				break;
+			} //end
+			case MODULE_TYPE_LINE: //start
+			{
+				switch(SubEditorData[SED_ANCHOR_SUBINDX])
+				{
+					case 0:
+						data[offs+M_X] = x;
+						data[offs+M_Y] = y;
+						break;
+					case 1:
+						data[offs+P2] = x;
+						data[offs+P3] = y;
+						break;
+				}
+				break;
+			} //end
+			case MODULE_TYPE_TRI: //start
+			{
+				switch(SubEditorData[SED_ANCHOR_SUBINDX])
+				{
+					case 0:
+						data[offs+M_X] = x;
+						data[offs+M_Y] = y;
+						break;
+					case 1:
+						data[offs+P2] = x;
+						data[offs+P3] = y;
+						break;
+					case 2:
+						data[offs+P4] = x;
+						data[offs+P5] = y;
+						break;
+				}
+				break;
+			} //end
+		}
+		return true;
+	}
+	
 	void handleDragging(bool active)
 	{
 		int dx, dy;
+		if(SubEditorData[SED_ANCHOR_MODINDX] && handleAnchors(active, SubEditorData[SED_MOUSE_X], SubEditorData[SED_MOUSE_Y]+56))
+		{
+			return;
+		}
 		if(SubEditorData[SED_LCLICKING] && !SubEditorData[SED_LCLICKED]) //start
 		{
 			clearPreparedSelector();
@@ -757,7 +887,7 @@ namespace Venrob::SubscreenEditor
 			// setModX(mod_indx, active, module_arr[M_X]);
 			// setModY(mod_indx, active, module_arr[M_Y]);
 		} //end
-		else //start
+		else //start Arrow keys
 		{
 			if(Input->Press[CB_UP])
 			{
@@ -825,6 +955,8 @@ namespace Venrob::SubscreenEditor
 		return max;
 	}
 	
+	//start editorCursor
+	//start overloads
 	void editorCursor(int layer, int x_arr, int y_arr, int mod_indx, bool active)
 	{
 		int mx = min_arr(x_arr), my = min_arr(y_arr);
@@ -839,6 +971,7 @@ namespace Venrob::SubscreenEditor
 	{
 		editorCursor(layer, x, y, wid, hei, mod_indx, active, false);
 	}
+	//end overloads
 	void editorCursor(int layer, int x, int y, int wid, int hei, int mod_indx, bool active, bool overlapBorder)
 	{
 		if(SubEditorData[SED_ACTIVE_PANE]) return; //A GUI pane is open, halt all other cursor action
@@ -846,6 +979,8 @@ namespace Venrob::SubscreenEditor
 		int sx = overlapBorder ? x+1 : x, sy = overlapBorder ? y+1 : y, swid = overlapBorder ? wid-2 : wid, shei = overlapBorder ? hei-2 : hei;
 		bool onGUI = DIALOG::isHoveringGUI();
 		bool isHovering = !onGUI && (active ? DIALOG::DLGCursorBox(x, y, x+wid, y+hei, 0, 56) : DIALOG::DLGCursorBox(x, y, x+wid, y+hei, 0, PASSIVE_EDITOR_TOP - 56));
+		if(SubEditorData[SED_ANCHOR_MODINDX] || SubEditorData[SED_TRY_ANCHOR_1])
+			return;
 		if(isHovering && SubEditorData[SED_LCLICKED]) //Clicking
 		{
 			SubEditorData[SED_TRY_SELECT] = mod_indx;
@@ -881,6 +1016,7 @@ namespace Venrob::SubscreenEditor
 		else if(isHovering)
 			DrawSelector(layer, sx, sy, swid, shei, active, true, SEL_RECTANGLE, PAL[COL_CURSOR]);
 	}
+	//end
 	
 	enum
 	{
@@ -992,7 +1128,20 @@ namespace Venrob::SubscreenEditor
 		SubEditorData[SED_LASTMOUSE_X] = SubEditorData[SED_MOUSE_X];
 		SubEditorData[SED_LASTMOUSE_Y] = SubEditorData[SED_MOUSE_Y];
 		SubEditorData[SED_LASTMOUSE_Z] = SubEditorData[SED_MOUSE_Z];
-		if(SubEditorData[SED_TRY_SELECT])
+		if(SubEditorData[SED_TRY_ANCHOR_1])
+		{
+			SubEditorData[SED_ANCHOR_MODINDX] = SubEditorData[SED_TRY_ANCHOR_1];
+			SubEditorData[SED_ANCHOR_SUBINDX] = SubEditorData[SED_TRY_ANCHOR_2];
+			for(int q = Max(g_arr[NUM_ACTIVE_MODULES], g_arr[NUM_PASSIVE_MODULES])-1; q >= 0; --q)
+				mod_flags[q] ~= MODFLAG_SELECTED;
+			mod_flags[SubEditorData[SED_ANCHOR_MODINDX]] |= MODFLAG_SELECTED;
+			SubEditorData[SED_SELECTED] = SubEditorData[SED_ANCHOR_MODINDX];
+			
+			SubEditorData[SED_TRY_SELECT] = 0;
+			SubEditorData[SED_TRY_ANCHOR_1] = 0;
+			SubEditorData[SED_TRY_ANCHOR_2] = 0;
+		}
+		else if(SubEditorData[SED_TRY_SELECT])
 		{
 			unless((mod_flags[SubEditorData[SED_TRY_SELECT]] & MODFLAG_SELECTED) || keyproc(KEY_LSHIFT) || keyproc(KEY_RSHIFT))
 			{
@@ -1002,6 +1151,8 @@ namespace Venrob::SubscreenEditor
 			mod_flags[SubEditorData[SED_TRY_SELECT]] |= MODFLAG_SELECTED;
 			SubEditorData[SED_SELECTED] = SubEditorData[SED_TRY_SELECT];
 			SubEditorData[SED_TRY_SELECT] = 0;
+			SubEditorData[SED_ANCHOR_MODINDX] = 0;
+			SubEditorData[SED_ANCHOR_SUBINDX] = 0;
 		}
 		else if(SubEditorData[SED_LCLICKED] && !DIALOG::isHoveringGUI())
 		{
@@ -1009,6 +1160,8 @@ namespace Venrob::SubscreenEditor
 				mod_flags[q] ~= MODFLAG_SELECTED;
 			SubEditorData[SED_SELECTED] = 0;
 			SubEditorData[SED_TRY_SELECT] = 0;
+			SubEditorData[SED_ANCHOR_MODINDX] = 0;
+			SubEditorData[SED_ANCHOR_SUBINDX] = 0;
 		}
 		DrawCursor();
 		
@@ -3764,6 +3917,7 @@ namespace Venrob::SubscreenEditor
 		{
 			loadBasicPal(PAL);
 			sys_settings[SSET_FLAGS1] |= SSET_FLAG_DELWARN;
+			sys_settings[SSET_ANCHOR_SZ] = 3;
 		}
 		f->Free();
 	}

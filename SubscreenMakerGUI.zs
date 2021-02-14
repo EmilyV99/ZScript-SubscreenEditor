@@ -415,6 +415,22 @@ namespace Venrob::SubscreenEditor
 			//end
 			//Active type procs: functional
 			//start components
+			void anchor(bitmap bit, bool active, int x, int y, int mod_indx, int subindx) //start
+			{
+				if(SubEditorData[SED_ACTIVE_PANE]) return; //A GUI pane is open, halt all other cursor action
+				int ANCHOR_RADIUS = sys_settings[SSET_ANCHOR_SZ];
+				if(SubEditorData[SED_ANCHOR_MODINDX])
+				{
+					unless(mod_indx == SubEditorData[SED_ANCHOR_MODINDX]) return;
+				}
+				else unless(mod_flags[mod_indx] & MODFLAG_SELECTED) return;
+				bit->Rectangle(0, x-ANCHOR_RADIUS, y-ANCHOR_RADIUS, x+ANCHOR_RADIUS,y+ANCHOR_RADIUS, PAL[COL_HIGHLIGHT], 1, 0, 0, 0, true, OP_OPAQUE);
+				if(SubEditorData[SED_LCLICKED] && DLGCursorBox(x-ANCHOR_RADIUS, y-ANCHOR_RADIUS, x+ANCHOR_RADIUS, y+ANCHOR_RADIUS, 0, active ? 56 : PASSIVE_EDITOR_TOP - 56))
+				{
+					SubEditorData[SED_TRY_ANCHOR_1] = mod_indx;
+					SubEditorData[SED_TRY_ANCHOR_2] = subindx;
+				}
+			} //end
 			ProcRet x_out(bitmap bit, int x, int y, int len, untyped dlgdata) //start
 			{
 				ProcRet ret = PROC_NULL;
@@ -1147,7 +1163,7 @@ namespace Venrob::SubscreenEditor
 				
 				DEFINE TXTBX_LEFTMARG = 3, TXTBOX_SPACING = 4;
 				int tfx = FRAME_X + TXTBX_LEFTMARG + Text->StringWidth("X:",DIA_FONT);
-				DEFINE XYBOX_WID = 20;
+				DEFINE XYBOX_WID = 28;
 				int flag = 0;
 				switch(arr[M_TYPE])
 				{
@@ -1155,7 +1171,7 @@ namespace Venrob::SubscreenEditor
 					case MODULE_TYPE_BGCOLOR:
 						flag = FLAG_DISABLE;
 					default:
-						titled_inc_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_x, 3, false, data, 1, flag, min_x(arr), max_x(arr), "X:");
+						titled_inc_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_x, 3, false, data, 1, flag, 0, 255, "X:");
 				}
 				tfx += XYBOX_WID+TXTBOX_SPACING+Text->StringWidth("Y:",DIA_FONT);
 				flag = 0;
@@ -1164,7 +1180,7 @@ namespace Venrob::SubscreenEditor
 					case MODULE_TYPE_BGCOLOR:
 						flag = FLAG_DISABLE;
 					default:
-						titled_inc_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_y, 3, true, data, 2, flag, min_y(arr), max_y(arr, active), "Y:");
+						titled_inc_text_field(bit, tfx, FRAME_Y, XYBOX_WID, buf_y, 3, true, data, 2, flag, 0, 223, "Y:");
 				}
 				tfx += XYBOX_WID+TXTBOX_SPACING+Text->StringWidth("Layer:",DIA_FONT);
 				DEFINE LAYERBOX_WID = 24;
@@ -2200,8 +2216,8 @@ namespace Venrob::SubscreenEditor
 			Game->LItems[curlvl] = LItem;
 			if(do_save_changes) //start
 			{
-				arr[M_X] = VBound(atoi(buf_x), max_x(arr), min_x(arr));
-				arr[M_Y] = VBound(atoi(buf_y), max_y(arr, active), min_y(arr));
+				arr[M_X] = atoi(buf_x);
+				arr[M_Y] = atoi(buf_y);
 				arr[M_LAYER] = VBound(atoi(buf_lyr), 7, 0);
 				switch(arr[M_TYPE])
 				{
@@ -2217,6 +2233,8 @@ namespace Venrob::SubscreenEditor
 						break;
 					}
 				}
+				arr[M_X] = VBound(atoi(buf_x), max_x(arr), min_x(arr));
+				arr[M_Y] = VBound(atoi(buf_y), max_y(arr, active), min_y(arr));
 				if(active)
 				{
 					mod_indx = VBound(atoi(buf_pos), g_arr[NUM_ACTIVE_MODULES]-1, 1);
@@ -2819,6 +2837,12 @@ namespace Venrob::SubscreenEditor
 			data[DLG_DATA_WID] = WIDTH;
 			data[DLG_DATA_HEI] = HEIGHT;
 			//
+			DEFINE MISCFIELD_WID = 28;
+			DEFINE MISCFIELD_NUMCHARS = 5;
+			DEFINE MISCFIELD_SPACE = 2;
+			char32 b1[MISCFIELD_NUMCHARS+1];
+			itoa(b1, sys_settings[SSET_ANCHOR_SZ]);
+			//
 			null_screen();
 			draw_dlg(bit, data);
 			KillButtons();
@@ -2870,7 +2894,28 @@ namespace Venrob::SubscreenEditor
 						}
 					}
 				}
-				
+				int tfx = WIDTH-FRAME_X-MISCFIELD_WID, tfy = FRAME_Y;
+				titled_inc_text_field(bit, tfx, tfy, MISCFIELD_WID, b1, MISCFIELD_NUMCHARS, false, data, 1, 0, 1, 5, "Anchor Size:");
+				/*
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b2, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 2, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b3, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 3, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b4, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 4, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b5, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 5, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b6, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 6, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b7, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 7, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b8, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 8, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b9, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 9, FLAG_DISABLE, "--");
+					tfy+=Text->FontHeight(DIA_FONT)+2+2+MISCFIELD_SPACE;
+					titled_text_field(bit, tfx, tfy, MISCFIELD_WID, b10, MISCFIELD_NUMCHARS, TypeAString::TMODE_NUMERIC_POSITIVE, data, 10, FLAG_DISABLE, "--");
+				*/
 				//
 				null_screen();
 				draw_dlg(bit, data);
@@ -2889,6 +2934,7 @@ namespace Venrob::SubscreenEditor
 			{
 				sys_settings[SSET_FLAGS1] = flagbits[0];
 				sys_settings[SSET_FLAGS2] = flagbits[1];
+				sys_settings[SSET_ANCHOR_SZ] = VBound(atoi(b1), 5, 1);
 			}
 			else
 			{
