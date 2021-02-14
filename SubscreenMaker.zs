@@ -836,7 +836,7 @@ namespace Venrob::SubscreenEditor
 			*/
 			case MODULE_TYPE_CIRC: //start
 			{
-				data[offs+P2] = VBound(Distance(data[offs+M_X], data[offs+M_Y], x, y), 400, 1);
+				data[offs+P2] = Floor(VBound(Distance(data[offs+M_X], data[offs+M_Y], x, y), 400, 1));
 				break;
 			} //end
 			case MODULE_TYPE_FRAME: //start
