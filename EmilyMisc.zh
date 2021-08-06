@@ -721,6 +721,9 @@ namespace Emily
 		Screen->Rectangle(layer,0,subscrArea?-56:0,255,175,color,1,0,0,0,true,OP_OPAQUE);
 	} //end
 	
+	
+	DEFINE DRAWSTR_BUF_SZ = 2048;
+	DEFINE DRAWSTR_PTR_SZ = 4096;
 	/**
 	 * This will work as DrawString, but, it can draw over multiple vertical lines.
 	 * Text over the Max Width, as well as newline characters ('\n'), will break to the next line.
@@ -735,7 +738,7 @@ namespace Emily
 			Screen->DrawString(layer, x, y, font, color, background_color, format, ptr, opacity);
 			return;
 		}
-		int cpyptr[2048];
+		int cpyptr[DRAWSTR_PTR_SZ];
 		strcpy(cpyptr,ptr);
 		int fontHeight = Text->FontHeight(font);
 		while(true)
@@ -773,7 +776,7 @@ namespace Emily
 			}
 			if(pos && !(endpos == pos && pos <= 1))
 			{
-				int buf[256];
+				int buf[DRAWSTR_BUF_SZ];
 				memcpy(buf, 0, cpyptr, 0, pos); //Copy first string
 				Screen->DrawString(layer, x, y, font, color, background_color, format, buf, opacity);
 			}
@@ -798,7 +801,7 @@ namespace Emily
 			Screen->DrawString(layer, x, y, font, color, background_color, format, ptr, opacity, shadow_type, shadow_color);
 			return;
 		}
-		int cpyptr[2048];
+		int cpyptr[DRAWSTR_PTR_SZ];
 		strcpy(cpyptr,ptr);
 		int fontHeight = Text->FontHeight(font);
 		while(true)
@@ -836,7 +839,7 @@ namespace Emily
 			}
 			if(pos && !(endpos == pos && pos <= 1))
 			{
-				int buf[256];
+				int buf[DRAWSTR_BUF_SZ];
 				memcpy(buf, 0, cpyptr, 0, pos); //Copy first string
 				Screen->DrawString(layer, x, y, font, color, background_color, format, buf, opacity, shadow_type, shadow_color);
 			}
@@ -871,7 +874,7 @@ namespace Emily
 			b->DrawString(layer, x, y, font, color, background_color, format, ptr, opacity);
 			return;
 		}
-		int cpyptr[2048];
+		int cpyptr[DRAWSTR_PTR_SZ];
 		strcpy(cpyptr,ptr);
 		int fontHeight = Text->FontHeight(font);
 		while(true)
@@ -909,7 +912,7 @@ namespace Emily
 			}
 			if(pos && !(endpos == pos && pos <= 1))
 			{
-				int buf[256];
+				int buf[DRAWSTR_BUF_SZ];
 				memcpy(buf, 0, cpyptr, 0, pos); //Copy first string
 				b->DrawString(layer, x, y, font, color, background_color, format, buf, opacity);
 			}
@@ -934,7 +937,7 @@ namespace Emily
 			b->DrawString(layer, x, y, font, color, background_color, format, ptr, opacity, shadow_type, shadow_color);
 			return;
 		}
-		int cpyptr[2048];
+		int cpyptr[DRAWSTR_PTR_SZ];
 		strcpy(cpyptr,ptr);
 		int fontHeight = Text->FontHeight(font);
 		while(true)
@@ -972,7 +975,7 @@ namespace Emily
 			}
 			if(pos && !(endpos == pos && pos <= 1))
 			{
-				int buf[256];
+				int buf[DRAWSTR_BUF_SZ];
 				memcpy(buf, 0, cpyptr, 0, pos); //Copy first string
 				b->DrawString(layer, x, y, font, color, background_color, format, buf, opacity, shadow_type, shadow_color);
 			}
@@ -999,7 +1002,7 @@ namespace Emily
 	{
 		if(MaxWidth <= 0) return 1;
 		int count = 1;
-		int cpyptr[2048];
+		int cpyptr[DRAWSTR_PTR_SZ];
 		strcpy(cpyptr,ptr);
 		int fontHeight = Text->FontHeight(font);
 		while(true)
@@ -1055,7 +1058,7 @@ namespace Emily
 	{
 		if(MaxWidth <= 0) return 1;
 		int runningWid = 0;
-		int cpyptr[2048];
+		int cpyptr[DRAWSTR_PTR_SZ];
 		strcpy(cpyptr,ptr);
 		int fontHeight = Text->FontHeight(font);
 		while(true)
@@ -1095,7 +1098,7 @@ namespace Emily
 			}
 			if(pos && !(endpos == pos && pos <= 1))
 			{
-				int buf[256];
+				int buf[DRAWSTR_BUF_SZ];
 				memcpy(buf, 0, cpyptr, 0, pos); //Copy first string
 				int w = Text->StringWidth(buf, font);
 				if(w > runningWid)
