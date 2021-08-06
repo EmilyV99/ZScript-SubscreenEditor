@@ -16,7 +16,7 @@ SETTINGS: Global options for an entire subscreen.
 	-Stored in a settings module, which is always the first module (module '0')
 */
 
-namespace Venrob
+namespace Emily
 {
 	typedef const int DEFINE;
 	typedef const int CONFIG;
@@ -25,7 +25,7 @@ namespace Venrob
 	typedef const long CONFIGL;
 }
 
-namespace Venrob::Subscreen
+namespace Emily::Subscreen
 {
 	//start Constants/vars
 	DEFINE MAX_MODULE_SIZE = 32;
@@ -1998,7 +1998,7 @@ namespace Venrob::Subscreen
 		set_32b(script_conditional, indx, bit, state);
 	} //end
 	//end Conditionals
-	using namespace Venrob::Subscreen::Internal;
+	using namespace Emily::Subscreen::Internal;
 	namespace Internal //start
 	{
 		//start Loggers
@@ -2023,53 +2023,53 @@ namespace Venrob::Subscreen
 		
 		void error(char32 msg)
 		{
-			printf("[ERROR] [VenrobSubscreen.zh] %s\n", msg);
+			printf("[ERROR] [EmilySubscreen.zh] %s\n", msg);
 		}
 		
 		void error(char32 msg, untyped arg1)
 		{
 			char32 buf[2048];
-			sprintf(buf, "[ERROR] [VenrobSubscreen.zh] %s\n", msg);
+			sprintf(buf, "[ERROR] [EmilySubscreen.zh] %s\n", msg);
 			printf(buf, arg1);
 		}
 		
 		void error(char32 msg, untyped arg1, untyped arg2)
 		{
 			char32 buf[2048];
-			sprintf(buf, "[ERROR] [VenrobSubscreen.zh] %s\n", msg);
+			sprintf(buf, "[ERROR] [EmilySubscreen.zh] %s\n", msg);
 			printf(buf, arg1, arg2);
 		}
 		
 		void error(char32 msg, untyped arg1, untyped arg2, untyped arg3)
 		{
 			char32 buf[2048];
-			sprintf(buf, "[ERROR] [VenrobSubscreen.zh] %s\n", msg);
+			sprintf(buf, "[ERROR] [EmilySubscreen.zh] %s\n", msg);
 			printf(buf, arg1, arg2, arg3);
 		}
 		
 		void error(char32 msg, untyped arg1, untyped arg2, untyped arg3, untyped arg4)
 		{
 			char32 buf[2048];
-			sprintf(buf, "[ERROR] [VenrobSubscreen.zh] %s\n", msg);
+			sprintf(buf, "[ERROR] [EmilySubscreen.zh] %s\n", msg);
 			printf(buf, arg1, arg2, arg3, arg4);
 		}
 		
 		void debug(char32 msg)
 		{
-			printf("[DEBUG] [VenrobSubscreen.zh] %s\n", msg);
+			printf("[DEBUG] [EmilySubscreen.zh] %s\n", msg);
 		}
 		
 		void debug(char32 msg, untyped arg1)
 		{
 			char32 buf[2048];
-			sprintf(buf, "[DEBUG] [VenrobSubscreen.zh] %s\n", msg);
+			sprintf(buf, "[DEBUG] [EmilySubscreen.zh] %s\n", msg);
 			printf(buf, arg1);
 		}
 		
 		void debug(char32 msg, untyped arg1, untyped arg2)
 		{
 			char32 buf[2048];
-			sprintf(buf, "[DEBUG] [VenrobSubscreen.zh] %s\n", msg);
+			sprintf(buf, "[DEBUG] [EmilySubscreen.zh] %s\n", msg);
 			printf(buf, arg1, arg2);
 		} //end Loggers
 		

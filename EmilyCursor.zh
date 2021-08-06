@@ -2,7 +2,7 @@
 #option HEADER_GUARD on
 #include "std.zh"
 
-namespace Venrob
+namespace Emily
 {
 	/**
 	 * Returns true if the cursor is inside the box defined by (x,y) -> (x2,y2)

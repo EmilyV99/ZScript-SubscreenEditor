@@ -1,9 +1,9 @@
 #option SHORT_CIRCUIT on
 #option HEADER_GUARD on
 #include "TypeAString.zh"
-#include "VenrobKeyboardManager.zh"
+#include "EmilyKeyboardManager.zh"
 
-namespace Venrob::SubscreenEditor
+namespace Emily::SubscreenEditor
 {
 	//start Palette
 	enum Color
@@ -12,6 +12,7 @@ namespace Venrob::SubscreenEditor
 		//System UI colors; these don't change
 		WHITE = 0xEF,
 		BLACK = 0xE0,
+		RED = 0xE1,
 		DGRAY = 0xEC,
 		GRAY = 0xED,
 		LGRAY = 0xEE,
@@ -45,7 +46,9 @@ namespace Venrob::SubscreenEditor
 		COL_FIELD_BG, //The color for fields, such as text entry and checkboxes.
 		COL_HIGHLIGHT, //The color used to highlight your cursor (i.e. selected object)
 		COL_CURSOR, //The color of the provided cursor
-		//
+		//0x0C
+		COL_ERROR_HIGHLIGHT, //Color used to highlight errors
+		//0x10
 		COL_MAX = PAL_SIZE
 	};
 	
@@ -89,6 +92,9 @@ namespace Venrob::SubscreenEditor
 			case COL_TEXT_TITLE_BAR:
 				strcat(buf, "Text(Title)");
 				break;
+			case COL_ERROR_HIGHLIGHT:
+				strcat(buf, "Error");
+				break;
 			default:
 				strcat(buf, "--");
 				return false;
@@ -111,6 +117,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_TITLE_BAR] = GRAY;
 		Palette[COL_NULL] = BLACK;
 		Palette[COL_TEXT_TITLE_BAR] = WHITE;
+		Palette[COL_ERROR_HIGHLIGHT] = RED;
 	}
 	void loadClassicDarkPal(Color Palette)
 	{
@@ -126,6 +133,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_TITLE_BAR] = DGRAY;
 		Palette[COL_NULL] = BLACK;
 		Palette[COL_TEXT_TITLE_BAR] = LBLUE;
+		Palette[COL_ERROR_HIGHLIGHT] = RED;
 	}
 	void loadBasicPal(Color Palette)
 	{
@@ -141,6 +149,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_TITLE_BAR] = SYS_GRAY;
 		Palette[COL_NULL] = SYS_BLACK;
 		Palette[COL_TEXT_TITLE_BAR] = SYS_WHITE;
+		Palette[COL_ERROR_HIGHLIGHT] = RED;
 	}
 	void loadBasicDarkPal(Color Palette)
 	{
@@ -156,6 +165,7 @@ namespace Venrob::SubscreenEditor
 		Palette[COL_TITLE_BAR] = SYS_GRAY;
 		Palette[COL_NULL] = SYS_BLACK;
 		Palette[COL_TEXT_TITLE_BAR] = SYS_BLACK;
+		Palette[COL_ERROR_HIGHLIGHT] = RED;
 	} //end
 	//end 
 	//start Key procs
@@ -372,6 +382,27 @@ namespace Venrob::SubscreenEditor
 				int frm = (tmr - aspeedtime >= 0) ? 0 : Div(tmr, Max(1,id->ASpeed));
 				bit->FastTile(0, x, y, id->Tile + frm, id->CSet, OP_OPAQUE);
 			} //end
+			void reloadarr(bitmap bit, int x, int y, int c) //start
+			{
+				int pix[] = {
+					0,0,1,1,1,1,0,0,0,0,
+					0,1,0,0,0,0,1,0,0,0,
+					1,0,0,0,0,0,0,1,0,0,
+					1,0,0,0,0,1,0,1,0,1,
+					1,0,0,0,0,0,1,1,1,0,
+					1,0,0,0,0,0,0,1,0,0,
+					0,1,0,0,0,1,0,0,0,0,
+					0,0,1,1,1,0,0,0,0,0
+				};
+				for(int q = 0; q < 10*8; ++q)
+				{
+					if(pix[q])
+					{
+						bit->PutPixel(0, x+(q%10), y+Div(q,10), c, 0, 0, 0, OP_OPAQUE);
+					}
+				}
+				
+			} //end
 			//end
 			//start Deco: Special
 			void corner_border_effect(bitmap bit, int corner_x, int corner_y, int len, int corner_dir, int color) //start
@@ -394,7 +425,7 @@ namespace Venrob::SubscreenEditor
 				rect(bit, x2, y2, x2-(margin-1), y1, DRCol);
 				rect(bit, x1, y1, x2, y1+(margin-1), ULCol);
 				
-				rect(bit, x1+margin, y1+margin, x2-margin, y2-margin, FillCol);
+				if(FillCol) rect(bit, x1+margin, y1+margin, x2-margin, y2-margin, FillCol);
 			} //end
 			void frame_rect(bitmap bit, int x1, int y1, int x2, int y2, int margin, int FillCol) //start
 			{
@@ -535,6 +566,12 @@ namespace Venrob::SubscreenEditor
 			ProcRet button(bitmap bit, int x, int y, int wid, int hei, char32 btnText, untyped dlgdata, untyped proc_data, int proc_indx)
 			{
 				button(bit, x, y, wid, hei, btnText, dlgdata, proc_data, proc_indx, 0);
+			} //end
+			ProcRet reloadButton(bitmap bit, int x, int y, untyped dlgdata, untyped proc_data, int proc_indx, long flags) //start
+			{
+				ProcRet r = button(bit, x, y, 14, 12, "", dlgdata, proc_data, proc_indx, flags);
+				reloadarr(bit, x+2, y+2, PAL[COL_TEXT_MAIN]);
+				return r;
 			} //end
 			ProcRet radio(bitmap bit, int x, int y, int rad, untyped dlgdata, untyped proc_data, int proc_indx, int rad_indx, long flags) //start
 			{
@@ -3902,6 +3939,18 @@ namespace Venrob::SubscreenEditor
 							load_passive_file(passive_indx+1);
 							runEditor(0);
 						}
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + (BUTTON_WIDTH + 5)*0, HEIGHT-(2*((MARGIN_WIDTH+2)+BUTTON_HEIGHT)), BUTTON_WIDTH, BUTTON_HEIGHT, "%Save", data, proc_data, 13))
+						{
+							open_data_pane(DLG_SAVE, PANE_T_SYSTEM);
+						}
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + (BUTTON_WIDTH + 5)*1, HEIGHT-(2*((MARGIN_WIDTH+2)+BUTTON_HEIGHT)), BUTTON_WIDTH, BUTTON_HEIGHT, "E%xport", data, proc_data, 14))
+						{
+							open_data_pane(DLG_EXPORT, PANE_T_SYSTEM);
+						}
+						if(PROC_CONFIRM==button(bit, FRAME_X + MARGIN_WIDTH + (BUTTON_WIDTH + 5)*2, HEIGHT-(2*((MARGIN_WIDTH+2)+BUTTON_HEIGHT)), BUTTON_WIDTH, BUTTON_HEIGHT, "%Load", data, proc_data, 15))
+						{
+							open_data_pane(DLG_LOAD, PANE_T_SYSTEM);
+						}
 						//UNFINISHED TEXT- explain how to get back to this menu from another mode
 					}
 				}
@@ -4025,18 +4074,424 @@ namespace Venrob::SubscreenEditor
 			Game->ClickToFreezeEnabled = !dis;
 		}
 		//end Main Menu
-		//start SaveLoad
+		//start Save/Load/Export
 		void save()
 		{
-			msg_dlg("WIP", "This feature is still under construction. Please wait for an update.");
-			return;
+			pick_file(true, FEXT_PROJ);
 		}
 		void load()
 		{
-			msg_dlg("WIP", "This feature is still under construction. Please wait for an update.");
+			pick_file(false, FEXT_PROJ);
 		}
-		//end SaveLoad
+		void export()
+		{
+			pick_file(true, FEXT_ZS);
+		}
+		//end
 		//Misc Mini-DLGs
+		//start Select File
+		enum file_ext
+		{
+			FEXT_ZS,
+			FEXT_PROJ,
+			FEXT_TXT
+		};
+		void get_ext(char32 buf, file_ext ext) //start
+		{
+			char32 def = "%s";
+			char32 pat = buf[0] ? buf : def;
+			switch(ext)
+			{
+				case FEXT_ZS:
+					sprintf(buf, pat, ".zs");
+					break;
+				case FEXT_PROJ:
+					sprintf(buf, pat, ".z_sub_proj");
+					break;
+				case FEXT_TXT:
+					sprintf(buf, pat, ".txt");
+					break;
+			}
+		} //end
+		int load_bufs(char32 bufarr, directory dir, int index) //start
+		{
+			int sz = SizeOfArray(bufarr);
+			int dirsz = dir->Size;
+			//start Bound the index
+			if(index > dirsz - sz)
+				index = dirsz - sz;
+			if(index < 0)
+				index = 0;
+			//end
+			
+			for(int q = 0; q < sz; ++q)
+			{
+				if(q >= dirsz)
+				{
+					remchr(bufarr[q], 0);
+				}
+				else
+				{
+					dir->GetFilename(q + index, bufarr[q]);
+					replchar(bufarr[q], '\\', '/');
+				}
+			}
+			
+			return index; //Return the bounded index
+		} //end
+		void replchar(char32 buf, char32 from, char32 to) //start
+		{
+			for(int q = strlen(buf)-1; q >= 0; --q)
+			{
+				if(buf[q] == from) buf[q] = to;
+			}
+		} //end
+		bool browse_dir(char32 buf, char32 browse) //start
+		{
+			switch(browse)
+			{
+				case "../": //Up a dir
+					int q;
+					while(buf[q] == '/') ++q;
+					if(buf[q]) //Has at least 1 dir
+					{
+						q = strlen(buf)-1;
+						while(q > -1 && buf[q] == '/') --q; //pass ending slashes
+						until(q < 0 || buf[q] == '/') --q; //pass last directory
+						remchr(buf, q+1); //Remove the last directory
+						return true;
+					}
+					return false;
+				case "./": //Same dir, no browse
+					return false;
+				default:
+					sprintf(buf, "%s%s", buf, browse);
+					return true;
+			}
+		} //end
+		bool isDir(char32 buf) //start
+		{
+			unless(buf[0]) return true;
+			return buf[strlen(buf)-1] == '/';
+		} //end
+		void extr_ext(char32 buf, char32 filename) //start
+		{
+			remchr(buf, 0);
+			int q = strlen(filename)-1;
+			for(; q >= 0 && filename[q] != '.'; --q);
+			if(q >= 0)
+			{
+				for(int p = 0; filename[q]; ++p)
+				{
+					buf[p] = filename[q++];
+				}
+			}
+		} //end
+		bool check_ext(char32 filename, file_ext ext) //start
+		{
+			char32 buf[128];
+			char32 buf2[128];
+			extr_ext(buf, filename);
+			get_ext(buf2, ext);
+			return !strcmp(buf, buf2);
+		} //end
+		file pick_file(bool save, file_ext ext)
+		{
+			gen_startup();
+			//start setup
+			DEFINE WIDTH = save ? 192 : 147
+				 , BAR_HEIGHT = 11
+			     , HEIGHT = 112+BAR_HEIGHT
+				 , MARGIN_WIDTH = 1
+				 , FRAME_X = MARGIN_WIDTH+2
+				 , FRAME_Y = MARGIN_WIDTH+BAR_HEIGHT+2
+				 ;
+			bitmap bit = create(WIDTH, HEIGHT);
+			bit->ClearToColor(0, PAL[COL_NULL]);
+			
+			char32 title[128] = "File Select (%s)";
+			sprintf(title, title, save ? "Save %s" : "Load %s");
+			get_ext(title, ext);
+			untyped data[DLG_DATA_SZ];
+			data[DLG_DATA_WID] = WIDTH;
+			data[DLG_DATA_HEI] = HEIGHT;
+			char32 namebuf[128];
+			//
+			null_screen();
+			draw_dlg(bit, data);
+			KillButtons();
+			Waitframe();
+			//
+			center_dlg(bit, data);
+			
+			bool running = true;
+			file ret = NULL;
+			char32 dirname[2048] = "/SubEditor/Saved/";
+			char32 savename[128];
+			directory dir = FileSystem->LoadDirectory(dirname);
+			char32 fb0[128]; char32 fb1[128]; char32 fb2[128]; char32 fb3[128]; char32 fb4[128];
+			char32 fb5[128]; char32 fb6[128]; char32 fb7[128]; char32 fb8[128]; char32 fb9[128];
+			char32 fbufs[] = {fb0, fb1, fb2, fb3, fb4, fb5, fb6, fb7, fb8, fb9};
+			//printf("Ptrs: %d{%d,%d,%d,%d,%d,%d,%d,%d,%d,%d}\n",fbufs,fb0,fb1,fb2,fb3,fb4,fb5,fb6,fb7,fb8,fb9);
+			DEFINE NUM_FILES_SHOWN = 10;
+			bool selUpdated;
+			int selIndx = 0; //The highlighted option
+			int scrollIndx = load_bufs(fbufs, dir, 0); //The scroll position
+			PalIndex selColor = COL_HIGHLIGHT;
+			//end
+			untyped proc_data[6];
+			while(running)
+			{
+				int traceind = 0;
+Trace(traceind++);
+				if(selUpdated)
+				{
+					char32 selbuf[128];
+					dir->GetFilename(selIndx, selbuf);
+					replchar(selbuf, '\\', '/');
+					selColor = COL_ERROR_HIGHLIGHT;
+					if(save || check_ext(selbuf, ext) || isDir(selbuf))
+						selColor = COL_HIGHLIGHT;
+					if(isDir(selbuf) && !(strcmp(dirname, "/") || strcmp(selbuf, "../")))
+						selColor = COL_ERROR_HIGHLIGHT;
+				}
+Trace(traceind++);
+				bit->ClearToColor(0, PAL[COL_NULL]);
+				//Deco
+				frame_rect(bit, 0, 0, WIDTH-1, HEIGHT-1, MARGIN_WIDTH);
+				//Func
+				if(title_bar(bit, MARGIN_WIDTH, BAR_HEIGHT, title, data, (save ? "Select a location to save your file, and a name." : "Select a file to load."))==PROC_CANCEL || CancelButtonP())
+				{
+					running = false;
+					ret = NULL;
+				}
+				
+				char32 do_load = NULL;
+				
+Trace(traceind++);
+				DEFINE FILEPROC_WID = 128;
+				{ //start file panel
+					DEFINE X = FRAME_X, WID = FILEPROC_WID, VSPACE = 2;
+					DEFINE UNIT_HEIGHT = Text->FontHeight(DIA_FONT)+VSPACE;
+					DEFINE Y = FRAME_Y + UNIT_HEIGHT, HEI = NUM_FILES_SHOWN*UNIT_HEIGHT+VSPACE;
+					DEFINE BTNWID = dir->Size > NUM_FILES_SHOWN ? 10 : 0, TXTWID = WID - BTNWID;
+					bool isHoveringList = DLGCursorBox(X, Y, X+TXTWID-1, Y+HEI-1, data);
+					frame_rect(bit, FRAME_X, FRAME_Y, FRAME_X+WID-1, FRAME_Y+UNIT_HEIGHT-1, 1, PAL[COL_FIELD_BG]);
+					text(bit, X+2, FRAME_Y+2, TF_NORMAL, dirname, PAL[COL_TEXT_FIELD], 124, UNIT_HEIGHT-2);
+					rect(bit, X, Y, X+WID-1, Y+HEI-1, PAL[COL_FIELD_BG]);
+					//start text
+					int ty = Y+2;
+Trace(traceind++);
+					for(int q = 0; q < 10; ++q)
+					{
+						unless(fbufs[q][0]) break; //Don't bother drawing empty strings
+						
+						if(selIndx == q + scrollIndx)
+						{
+							rect(bit, X, ty-2, X+TXTWID-1, ty+UNIT_HEIGHT-2, PAL[selColor]);
+						}
+						text(bit, X+2, ty, TF_NORMAL, fbufs[q], PAL[COL_TEXT_FIELD]);
+						ty += UNIT_HEIGHT;
+					}
+					//end
+Trace(traceind++);
+					frame_rect(bit, X, Y, X+WID-1, Y+HEI-1, 1, 0);
+					//start Directionals
+					{
+						if(keyprocp(KEY_UP) || SubEditorData[SED_MOUSE_Z] > SubEditorData[SED_LASTMOUSE_Z])
+						{
+							selIndx = Max(selIndx-1, 0);
+							selUpdated = true;
+							if(selIndx < scrollIndx)
+								scrollIndx = load_bufs(fbufs, dir, selIndx);
+						}	
+						else if(keyprocp(KEY_DOWN) || SubEditorData[SED_MOUSE_Z] < SubEditorData[SED_LASTMOUSE_Z])
+						{
+							selIndx = Min(selIndx+1, dir->Size-1);
+							selUpdated = true;
+							if(selIndx >= scrollIndx+NUM_FILES_SHOWN)
+								scrollIndx = load_bufs(fbufs, dir, selIndx-NUM_FILES_SHOWN+1);
+						}
+					} //end
+Trace(traceind++);
+					if(BTNWID) //start
+					{
+						DEFINE BTN_X = X+TXTWID, BTNHEI = HEI/4;
+						DEFINE MAX_SCROLL_INDX = dir->Size - NUM_FILES_SHOWN;
+						int by = Y;
+						if(PROC_CONFIRM==button(bit, BTN_X, by, BTNWID, BTNHEI, "", data, proc_data, 0, (scrollIndx <= 0) ? FLAG_DISABLE : 0))
+						{
+							scrollIndx = load_bufs(fbufs, dir, 0);
+						}
+						line(bit, BTN_X + 2, by + (BTNHEI/2)-1, (BTN_X + BTNWID/2)-1, by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + BTNWID - 2 - 1, by + (BTNHEI/2)-1, (BTN_X + BTNWID/2), by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + 2, by + BTNHEI - 2 - 1, (BTN_X + BTNWID/2)-1, by + (BTNHEI/2), (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + BTNWID - 2 - 1, by + BTNHEI - 2 - 1, (BTN_X + BTNWID/2), by + (BTNHEI/2), (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						by += BTNHEI;
+						if(PROC_CONFIRM==button(bit, BTN_X, by, BTNWID, BTNHEI, "", data, proc_data, 1, (scrollIndx <= 0) ? FLAG_DISABLE : 0))
+						{
+							scrollIndx = load_bufs(fbufs, dir, scrollIndx-1);
+						}
+						line(bit, BTN_X + 2, by + (BTNHEI/2)-1, (BTN_X + BTNWID/2)-1, by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + BTNWID - 2 - 1, by + (BTNHEI/2)-1, (BTN_X + BTNWID/2), by+2, (scrollIndx <=0) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						by += BTNHEI;
+						if(PROC_CONFIRM==button(bit, BTN_X, by, BTNWID, BTNHEI, "", data, proc_data, 2, (scrollIndx >= MAX_SCROLL_INDX) ? FLAG_DISABLE : 0))
+						{
+							scrollIndx = load_bufs(fbufs, dir, scrollIndx+1);
+						}
+						line(bit, BTN_X + 2, by + 5, (BTN_X + BTNWID/2)-1, by+(BTNHEI/2)+2, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + BTNWID - 2 - 1, by + 5, (BTN_X + BTNWID/2), by+(BTNHEI/2)+2, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						by += BTNHEI;
+						if(PROC_CONFIRM==button(bit, BTN_X, by, BTNWID, BTNHEI, "", data, proc_data, 3, (scrollIndx >= MAX_SCROLL_INDX) ? FLAG_DISABLE : 0))
+						{
+							scrollIndx = load_bufs(fbufs, dir, MAX_SCROLL_INDX);
+						}
+						line(bit, BTN_X + 2, by + 2, (BTN_X + BTNWID/2)-1, by+(BTNHEI/2)-1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + BTNWID - 2 - 1, by + 2, (BTN_X + BTNWID/2), by+(BTNHEI/2)-1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + 2, by + (BTNHEI/2), (BTN_X + BTNWID/2)-1, by + BTNHEI - 2 - 1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+						line(bit, BTN_X + BTNWID - 2 - 1, by + (BTNHEI/2), (BTN_X + BTNWID/2), by + BTNHEI - 2 - 1, (scrollIndx >= MAX_SCROLL_INDX) ? PAL[COL_DISABLED] : PAL[COL_TEXT_MAIN]);
+					} //end
+Trace(traceind++);
+					if(isHoveringList) //start
+					{
+						int cy = DLGMouseY(data);
+						int indx = Div(cy-Y, UNIT_HEIGHT);
+						if(indx < dir->Size) //Hovering over valid entry
+						{
+							if(SubEditorData[SED_DCLICKED])
+							{
+								do_load = fbufs[indx];
+							}
+							else if(SubEditorData[SED_LCLICKED])
+							{
+								selIndx = scrollIndx + indx;
+								selUpdated = true;
+							}
+						}
+					} //end
+				} //end
+Trace(traceind++);
+				
+				DEFINE BUTTON_WIDTH = 32, BUTTON_HEIGHT = 16;
+				if(PROC_CONFIRM==button(bit, FRAME_X, HEIGHT-BUTTON_HEIGHT-2, BUTTON_WIDTH, BUTTON_HEIGHT, save ? "Save" : "Load", data, proc_data, 4, FLAG_DEFAULT)) //start
+				{
+					if(save)
+					{
+						if(savename[0])
+						{
+							char32 buf[2048];
+							sprintf(buf, "%s%s%%s", dirname, savename);
+							get_ext(buf, ext);
+							ProcRet r = PROC_CONFIRM;
+							if(FileSystem->FileExists(buf))
+							{
+								r = yesno_dlg("File Already Exists", "Would you like to overwrite it?", "Yes", "No");
+							}
+							file f;
+							if(f->Create(buf))
+							{
+								ret = f;
+								running = false;
+							}
+							else
+							{
+								if(DEBUG) err_dlg("Unkown file error!");
+								f->Free();
+							}
+							
+						}
+						do_load = NULL;
+					}
+					else
+					{
+						do_load = fbufs[selIndx-scrollIndx];
+					}
+				} //end
+Trace(traceind++);
+				if(PROC_CONFIRM==reloadButton(bit, 2*FRAME_X + FILEPROC_WID -1, FRAME_Y, data, proc_data, 5, 0))
+				{
+					dir->Reload();
+					until(dir->Size || !dirname[1])
+					{
+						browse_dir(dirname, "../");
+						dir = FileSystem->LoadDirectory(dirname[1] ? dirname : "");
+					}
+					scrollIndx = load_bufs(fbufs, dir, scrollIndx);
+					selIndx = 0;
+					selUpdated = true;
+				}
+Trace(traceind++);
+				
+				if(do_load) //start
+				{
+					if(isDir(do_load))
+					{
+						if(browse_dir(dirname, do_load))
+						{
+							dir->Free();
+							dir = FileSystem->LoadDirectory(dirname[1] ? dirname : "");
+							until(dir->Size || !dirname[1])
+							{
+								browse_dir(dirname, "../");
+								dir = FileSystem->LoadDirectory(dirname[1] ? dirname : "");
+							}
+							selIndx = 0;
+							selUpdated = true;
+							scrollIndx = load_bufs(fbufs, dir, 0);
+						}
+					}
+					else
+					{
+						printf("File '%s'\n", do_load);
+						if(save)
+						{
+							strcpy(savename, do_load);
+							//Remove extension
+							int q = strlen(savename)-1;
+							while(q >= 0 && savename[q] != '.') --q;
+							if(q >= 0)
+								remchr(savename, q);
+						}
+						else if(check_ext(do_load, ext))
+						{
+							char32 tmpbuf[2048];
+							sprintf(tmpbuf, "%s%s", dirname, do_load);
+							file f;
+							if(f->Open(tmpbuf))
+							{
+								ret = f;
+								running = false;
+							}
+							else
+							{
+								if(DEBUG) err_dlg("Unkown file error!");
+								f->Free();
+							}
+						}
+					}
+				} //end
+Trace(traceind++);
+				
+				//
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+Trace(traceind++);
+			}
+			for(int q = 0; q < DIA_CLOSING_DELAY; ++q) //Delay on closing
+			{
+				null_screen();
+				draw_dlg(bit, data);
+				KillButtons();
+				subscr_Waitframe();
+			}
+			
+			bit->Free();
+			gen_final();
+			return ret;
+		}
+		//end Select File
 		//start Select Color
 		Color pick_color(Color default_color)
 		{
@@ -4638,7 +5093,7 @@ namespace Venrob::SubscreenEditor
 							itoa(buf,q+1);
 						else getSpecialString(buf, strings, q);
 						text(listbit, TXT_X, ty, TF_NORMAL, ptr, PAL[COL_TEXT_FIELD]);
-						ty += Text->FontHeight(DIA_FONT) + TXT_VSPACE;
+						ty += UNIT_HEIGHT;
 					}
 				}
 				//Directionals

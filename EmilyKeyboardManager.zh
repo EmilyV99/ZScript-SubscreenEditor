@@ -1,6 +1,6 @@
 /////////////////////////////////////////
-//   VenrobKeyboardManager.zh Header   //
-//                Venrob               //
+//   EmilyKeyboardManager.zh Header    //
+//               EmilyV99              //
 //            Version: 0.01            //
 //               11 Sep 19             //
 /////////////////////////////////////////
@@ -9,19 +9,20 @@
 #option HEADER_GUARD on
 #include "std.zh"
 
-namespace Venrob
+namespace Emily
 {
 	typedef const int DEFINE;
+	typedef const long DEFINEL;
 	namespace KeyStorage
 	{
 		DEFINE SIZE_KEY = 127; //Size of 'Input->Key[]'
-		int Key[SIZE_KEY];
-		DEFINE FLAG_PRESSED = 001b;
-		DEFINE FLAG_INPUT = 010b;
-		DEFINE FLAG_TRUE_INPUT = 100b;
+		long Key[SIZE_KEY];
+		DEFINEL FLAG_PRESSED = 001bL;
+		DEFINEL FLAG_INPUT = 010bL;
+		DEFINEL FLAG_TRUE_INPUT = 100bL;
 	}
 }
-using namespace Venrob::KeyStorage;
+using namespace Emily::KeyStorage;
 
 void pollKeys()
 {

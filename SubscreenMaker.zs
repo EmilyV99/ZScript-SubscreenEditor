@@ -1,10 +1,10 @@
 #option SHORT_CIRCUIT on
 #option HEADER_GUARD on
 #include "std.zh"
-#include "VenrobSubscreen.zh"
-#include "VenrobCursor.zh"
+#include "EmilySubscreen.zh"
+#include "EmilyCursor.zh"
 #include "SubscreenMakerGUI.zs"
-#include "VenrobBitmaps.zh"
+#include "EmilyBitmaps.zh"
 
 /* NOTES
  * '.z_asub', '.z_psub' for individual subscreens
@@ -12,14 +12,16 @@
  * '.zs' for script export
  */
 
-namespace Venrob::SubscreenEditor
+namespace Emily::SubscreenEditor
 {
-	using namespace Venrob::Subscreen;
-	using namespace Venrob::Subscreen::Internal;
-	using namespace Venrob::SubscreenEditor::DIALOG::PARTS;
-	char32 FileEncoding[] = "Venrob_Subscreen_FileSystem"; //Do not change this! This is used for validating saved files.
+	using namespace Emily::Subscreen;
+	using namespace Emily::Subscreen::Internal;
+	using namespace Emily::SubscreenEditor::DIALOG::PARTS;
+	char32 FileEncoding[] = "Emily_Subscreen_FileSystem"; //Do not change this! This is used for validating saved files.
 	//start SubEditorData
 	untyped SubEditorData[MAX_INT] = {0, 0, 0, 0, 0, false, false, false, false, false, false, KEY_ENTER, KEY_ENTER_PAD, KEY_ESC, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0, false, false};
+	DEFINE DCLICK_DELAY1 = 15;
+	DEFINE DCLICK_DELAY2 = 15;
 	enum
 	{
 		SED_SELECTED,
@@ -51,7 +53,10 @@ namespace Venrob::SubscreenEditor
 		SED_ANCHOR_MODINDX,
 		SED_ANCHOR_SUBINDX,
 		SED_TRY_ANCHOR_1,
-		SED_TRY_ANCHOR_2
+		SED_TRY_ANCHOR_2,
+		SED_DCLTIMER1,
+		SED_DCLTIMER2,
+		SED_DCLICKED
 	}; //end
 	//start Module Edit Flags
 	long mod_flags[MAX_INT];
@@ -78,6 +83,8 @@ namespace Venrob::SubscreenEditor
 		Subscreen::init();
 		//start Init Filesystem
 		file f;
+		f->Create("SubEditor/Saved/foo.tmp");
+		f->Remove();
 		f->Create("SubEditor/Instructions.txt");
 		f->WriteString("Files of format '###.z_psub' and '###.z_asub' in this folder"
 					   " represent passive and active subscreen data respectively.\n"
@@ -90,11 +97,10 @@ namespace Venrob::SubscreenEditor
 					   " a project package. These can be any name, and loaded via the"
 					   " 'Load' option in the script.\n"
 					   "These are NOT created automatically; they are only saved via the"
-					   "'Save' menu.\n"
+					   "'Save' button.\n"
 					   "'z_sub_proj' files are not usable in a final quest; they only"
 					   " act as a way to save your working files. To export a subscreen"
-					   " set for use in a quest, you will need to use the '.zs' option"
-					   " in the 'Save' menu.\n"
+					   " set for use in a quest, you will need to use the 'Export' button.\n"
 					   "To use an exported '.zs' file, simply import it as any other script,"
 					   " and assign the dmapdata scripts 'ActiveSub' and 'PassiveSub'.\n"
 					   "Set 'InitD[7]' to the index of the Passive Subscreen, and"
@@ -222,7 +228,7 @@ namespace Venrob::SubscreenEditor
 	{
 		void run()
 		{
-			using namespace Venrob::SubscreenEditor::DIALOG;
+			using namespace Emily::SubscreenEditor::DIALOG;
 			if(!DEBUG)
 			{
 				ProcRet r = yesno_dlg("Exit Game","Would you like to save first, or just exit?","Save","Quit");
@@ -1130,7 +1136,7 @@ namespace Venrob::SubscreenEditor
 	
 	enum SystemPane
 	{
-		DLG_LOAD = 1, DLG_SAVEAS, DLG_THEMES, DLG_OPTIONS, DLG_NEWOBJ, DLG_SYSTEM
+		DLG_LOAD = 1, DLG_SAVE, DLG_EXPORT, DLG_THEMES, DLG_OPTIONS, DLG_NEWOBJ, DLG_SYSTEM
 	};
 	
 	void open_data_pane(int indx, bool active)
@@ -1175,10 +1181,13 @@ namespace Venrob::SubscreenEditor
 				switch(pane)
 				{
 					case DLG_LOAD:
-						DIALOG::load(); //UNFINISHED
+						DIALOG::load();
 						break;
-					case DLG_SAVEAS:
-						DIALOG::save(); //UNFINISHED
+					case DLG_SAVE:
+						DIALOG::save();
+						break;
+					case DLG_EXPORT:
+						DIALOG::export();
 						break;
 					//
 					case DLG_NEWOBJ:
@@ -1221,6 +1230,31 @@ namespace Venrob::SubscreenEditor
 		SubEditorData[SED_LCLICKED] = Input->Mouse[MOUSE_LEFT] && !SubEditorData[SED_LCLICKING];
 		SubEditorData[SED_RCLICKED] = Input->Mouse[MOUSE_RIGHT] && !SubEditorData[SED_RCLICKING];
 		SubEditorData[SED_MCLICKED] = Input->Mouse[MOUSE_MIDDLE] && !SubEditorData[SED_MCLICKING];
+		SubEditorData[SED_DCLICKED] = false;
+		
+		//start Double-click detector
+		if(SubEditorData[SED_DCLTIMER1] > 0) --SubEditorData[SED_DCLTIMER1];
+		else if(SubEditorData[SED_DCLTIMER1] < 0) ++SubEditorData[SED_DCLTIMER1];
+		if(SubEditorData[SED_DCLTIMER2]) --SubEditorData[SED_DCLTIMER2];
+		if(SubEditorData[SED_LCLICKED])
+		{
+			if(SubEditorData[SED_DCLTIMER2])
+				SubEditorData[SED_DCLTIMER1] = -DCLICK_DELAY1;
+			else SubEditorData[SED_DCLTIMER1] = DCLICK_DELAY1;
+		}
+		if(SubEditorData[SED_LCLICKING] && !Input->Mouse[MOUSE_LEFT]) //Detected LClick Release
+		{
+			if(SubEditorData[SED_DCLTIMER1] > 0) //Click+Release detected
+			{
+				SubEditorData[SED_DCLTIMER2] = DCLICK_DELAY2;
+			}
+			else if(SubEditorData[SED_DCLTIMER1] < 0)
+			{
+				SubEditorData[SED_DCLICKED] = true;
+			}
+		}
+		//end
+		
 		SubEditorData[SED_LCLICKING] = Input->Mouse[MOUSE_LEFT];
 		SubEditorData[SED_RCLICKING] = Input->Mouse[MOUSE_RIGHT];
 		SubEditorData[SED_MCLICKING] = Input->Mouse[MOUSE_MIDDLE];
